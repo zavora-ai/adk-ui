@@ -1,0 +1,52 @@
+[package]
+name = "adk-ui"
+version = "0.4.0"
+edition = "2024"
+rust-version = "1.85.0"
+license = "Apache-2.0"
+authors = ["James Karanja Maina <james.karanja@zavora.ai>"]
+description = "Dynamic UI generation for ADK-Rust agents - render forms, cards, tables, charts and more"
+repository = "https://github.com/zavora-ai/adk-ui"
+documentation = "https://docs.rs/adk-ui"
+keywords = ["ai", "agent", "ui", "generative", "adk"]
+categories = ["api-bindings", "gui"]
+readme = "README.md"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "2.0"
+schemars = "0.8"
+async-trait = "0.1"
+adk-core = { git = "https://github.com/zavora-ai/adk-rust", version = "0.4", optional = true }
+jsonschema = "0.29"
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
+
+[features]
+default = []
+remote-catalogs = ["reqwest"]
+adk-core = ["dep:adk-core"]
+
+[dependencies.reqwest]
+version = "0.12"
+optional = true
+
+[dev-dependencies]
+tokio = { version = "1.40", features = ["macros", "rt-multi-thread"] }
+anyhow = "1.0"
+dotenvy = "0.15"
+adk-agent = { git = "https://github.com/zavora-ai/adk-rust", version = "0.4" }
+adk-model = { git = "https://github.com/zavora-ai/adk-rust", version = "0.4" }
+adk-cli = { git = "https://github.com/zavora-ai/adk-rust", version = "0.4" }
+adk-runner = { git = "https://github.com/zavora-ai/adk-rust", version = "0.4" }
+adk-server = { git = "https://github.com/zavora-ai/adk-rust", version = "0.4" }
+adk-session = { git = "https://github.com/zavora-ai/adk-rust", version = "0.4" }
+axum = "0.8"
+base64 = "0.22"
+futures = "0.3"
+tracing = "0.1"
+
+[[example]]
+name = "ui_server"
+path = "examples/ui_server/main.rs"
+required-features = ["adk-core"]

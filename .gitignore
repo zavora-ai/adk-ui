@@ -1,0 +1,12 @@
+.DS_Store
+.env
+.playwright-cli/
+.vscode/
+*.log
+
+target/
+coverage/
+.turbo/
+
+**/node_modules/
+**/dist/
