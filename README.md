@@ -1,8 +1,8 @@
 # adk-ui
 
-Build agent-driven user interfaces that feel like real products, not debug payloads.
+Build agent-driven user interfaces that feel like real products.
 
-`adk-ui` gives Rust agents a practical UI vocabulary: forms, dashboards, confirmations, alerts, tables, charts, progress states, modals, toasts, and protocol-aware surfaces that can be rendered by real clients. If your agent can reason about a workflow, `adk-ui` helps it express that workflow as an interface people can use.
+`adk-ui` gives AI Agents a practical UI vocabulary: forms, dashboards, confirmations, alerts, tables, charts, progress states, modals, toasts, and protocol-aware surfaces that can be rendered by real clients. If your agent can reason about a workflow, `adk-ui` helps it express that workflow as an interface people can use.
 
 [![Crates.io](https://img.shields.io/crates/v/adk-ui.svg)](https://crates.io/crates/adk-ui)
 [![Documentation](https://docs.rs/adk-ui/badge.svg)](https://docs.rs/adk-ui)
