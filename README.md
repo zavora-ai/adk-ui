@@ -1,6 +1,6 @@
 # adk-ui
 
-Build agent-driven interfaces that feel like real products, not debug payloads.
+Build agent-driven user interfaces that feel like real products, not debug payloads.
 
 `adk-ui` gives Rust agents a practical UI vocabulary: forms, dashboards, confirmations, alerts, tables, charts, progress states, modals, toasts, and protocol-aware surfaces that can be rendered by real clients. If your agent can reason about a workflow, `adk-ui` helps it express that workflow as an interface people can use.
 
@@ -8,9 +8,9 @@ Build agent-driven interfaces that feel like real products, not debug payloads.
 [![Documentation](https://docs.rs/adk-ui/badge.svg)](https://docs.rs/adk-ui)
 [![License](https://img.shields.io/crates/l/adk-ui.svg)](LICENSE)
 
-## Why People Pick adk-ui
+## Why adk-ui?
 
-- Start simple: give an agent high-level render tools instead of hand-authoring a UI framework from scratch.
+- Simple agentic UI: give an agent high-level render tools instead of hand-authoring a UI framework from scratch.
 - Stay honest at protocol boundaries: A2UI, AG-UI, and MCP Apps are supported with explicit capability signaling rather than vague compatibility claims.
 - Ship faster: this repo includes a Rust demo server, a React reference client, protocol adapters, examples, tests, and migration docs.
 - Keep the loop agentic: the same system can ask for input, render a result, request confirmation, and react to follow-up actions.
