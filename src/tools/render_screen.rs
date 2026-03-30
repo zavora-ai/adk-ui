@@ -88,11 +88,11 @@ Returns a JSONL string with createSurface/updateDataModel/updateComponents messa
 
     async fn execute(&self, _ctx: Arc<dyn ToolContext>, args: Value) -> Result<Value> {
         let params: RenderScreenParams = serde_json::from_value(args.clone()).map_err(|e| {
-            crate::compat::AdkError::Tool(format!("Invalid parameters: {}. Got: {}", e, args))
+            crate::compat::AdkError::tool(format!("Invalid parameters: {}. Got: {}", e, args))
         })?;
 
         if params.components.is_empty() {
-            return Err(crate::compat::AdkError::Tool(
+            return Err(crate::compat::AdkError::tool(
                 "Invalid parameters: components must not be empty.".to_string(),
             ));
         }
@@ -106,7 +106,7 @@ Returns a JSONL string with createSurface/updateDataModel/updateComponents messa
         });
 
         if !has_root {
-            return Err(crate::compat::AdkError::Tool(
+            return Err(crate::compat::AdkError::tool(
                 "Invalid parameters: components must include a root component with id \"root\"."
                     .to_string(),
             ));
@@ -131,7 +131,7 @@ Returns a JSONL string with createSurface/updateDataModel/updateComponents messa
                 let messages = surface.to_a2ui_messages();
                 if params.validate {
                     let validator = A2uiValidator::new().map_err(|e| {
-                        crate::compat::AdkError::Tool(format!(
+                        crate::compat::AdkError::tool(format!(
                             "Failed to initialize A2UI validator: {}",
                             e
                         ))
@@ -145,7 +145,7 @@ Returns a JSONL string with createSurface/updateDataModel/updateComponents messa
                                 .map(|err| format!("{} at {}", err.message, err.instance_path))
                                 .collect::<Vec<_>>()
                                 .join("; ");
-                            return Err(crate::compat::AdkError::Tool(format!(
+                            return Err(crate::compat::AdkError::tool(format!(
                                 "A2UI validation failed: {}",
                                 details
                             )));

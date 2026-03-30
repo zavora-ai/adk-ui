@@ -25,6 +25,12 @@ mod standalone {
         Other(String),
     }
 
+    impl AdkError {
+        pub fn tool(msg: impl Into<String>) -> Self {
+            AdkError::Tool(msg.into())
+        }
+    }
+
     impl fmt::Display for AdkError {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             match self {

@@ -24,7 +24,7 @@ impl UiProtocolAdapter for A2uiAdapter {
 
     fn to_protocol_payload(&self, surface: &UiSurface) -> Result<Value, crate::compat::AdkError> {
         let jsonl = surface.to_a2ui_jsonl().map_err(|error| {
-            crate::compat::AdkError::Tool(format!("Failed to encode A2UI JSONL: {}", error))
+            crate::compat::AdkError::tool(format!("Failed to encode A2UI JSONL: {}", error))
         })?;
         Ok(json!({
             "protocol": "a2ui",
@@ -37,7 +37,7 @@ impl UiProtocolAdapter for A2uiAdapter {
 
     fn validate(&self, payload: &Value) -> Result<(), crate::compat::AdkError> {
         if payload.get("jsonl").and_then(Value::as_str).is_none() {
-            return Err(crate::compat::AdkError::Tool(
+            return Err(crate::compat::AdkError::tool(
                 "A2UI payload validation failed: missing jsonl string".to_string(),
             ));
         }

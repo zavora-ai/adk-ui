@@ -89,7 +89,7 @@ impl Tool for RenderChartTool {
 
     async fn execute(&self, _ctx: Arc<dyn ToolContext>, args: Value) -> Result<Value> {
         let params: RenderChartParams = serde_json::from_value(args)
-            .map_err(|e| crate::compat::AdkError::Tool(format!("Invalid parameters: {}", e)))?;
+            .map_err(|e| crate::compat::AdkError::tool(format!("Invalid parameters: {}", e)))?;
         let protocol_options = params.protocol.clone();
 
         let kind = match params.chart_type.as_str() {

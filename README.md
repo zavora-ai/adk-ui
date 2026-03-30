@@ -1,8 +1,8 @@
 # adk-ui
 
-Build agent-driven user interfaces that feel like real products.
+Dynamic UI generation for [ADK-Rust](https://adk-rust.com) agents — render forms, cards, tables, charts, and more.
 
-`adk-ui` gives AI Agents a practical UI vocabulary: forms, dashboards, confirmations, alerts, tables, charts, progress states, modals, toasts, and protocol-aware surfaces that can be rendered by real clients. If your agent can reason about a workflow, `adk-ui` helps it express that workflow as an interface people can use.
+`adk-ui` provides AI agents with a structured UI vocabulary: forms, dashboards, confirmations, alerts, tables, charts, progress indicators, modals, toasts, and protocol-aware surfaces that real clients can render. If your agent can reason about a workflow, `adk-ui` helps it express that workflow as an interface people can use.
 
 [![Crates.io](https://img.shields.io/crates/v/adk-ui.svg)](https://crates.io/crates/adk-ui)
 [![Documentation](https://docs.rs/adk-ui/badge.svg)](https://docs.rs/adk-ui)
@@ -10,43 +10,43 @@ Build agent-driven user interfaces that feel like real products.
 
 ## Why adk-ui?
 
-- Simple agentic UI: give an agent high-level render tools instead of hand-authoring a UI framework from scratch.
-- Stay honest at protocol boundaries: A2UI, AG-UI, and MCP Apps are supported with explicit capability signaling rather than vague compatibility claims.
-- Ship faster: this repo includes a Rust demo server, a React reference client, protocol adapters, examples, tests, and migration docs.
-- Keep the loop agentic: the same system can ask for input, render a result, request confirmation, and react to follow-up actions.
-- Grow without repainting everything: use high-level tools first, then choose the protocol surface that matches your host or client architecture.
+- **Structured agentic UI** — give agents high-level render tools instead of hand-authoring frontend code.
+- **Protocol-honest boundaries** — A2UI, AG-UI, and MCP Apps are supported with explicit capability signaling, not vague compatibility claims.
+- **Ship faster** — includes a Rust demo server, a React reference client, protocol adapters, examples, tests, and migration docs.
+- **Keep the loop agentic** — the same system can request input, render results, ask for confirmation, and react to follow-up actions.
+- **Grow without rewriting** — start with high-level tools, then choose the protocol surface that matches your host or client architecture.
 
-## What It Looks Like
+## Screenshots
 
-### A2UI dashboard
+### A2UI Dashboard
 
 ![A2UI dashboard](docs/screenshots/a2ui-dashboard.png)
 
-### AG-UI operations flow
+### AG-UI Operations Flow
 
 ![AG-UI operations flow](docs/screenshots/ag-ui-command-center.png)
 
-### MCP Apps bridge-driven confirm flow
+### MCP Apps Confirm Flow
 
 ![MCP Apps confirm flow](docs/screenshots/mcp-apps-confirm.png)
 
 ## What You Can Build
 
-- A support intake assistant that turns open-ended requests into structured forms, triage queues, and escalation confirms.
-- An operations agent that renders dashboards, alerts, and approval prompts instead of dumping raw JSON into chat.
-- A scheduling assistant that shows availability, collects preferences, and confirms bookings.
-- An inventory or facilities workflow that moves from dashboard to form to approval to toast in one agent session.
+- A **support intake assistant** that turns open-ended requests into structured forms, triage queues, and escalation confirmations.
+- An **operations agent** that renders dashboards, alerts, and approval prompts instead of dumping raw JSON into chat.
+- A **scheduling assistant** that shows availability, collects preferences, and confirms bookings.
+- An **inventory or facilities workflow** that moves from dashboard → form → approval → toast in a single agent session.
 
-## 5-Minute Quick Start
+## Quick Start
 
-### 1. Add the crate
+### 1. Add the dependency
 
 ```toml
 [dependencies]
-adk-ui = "0.4.0"
+adk-ui = "0.4"
 ```
 
-### 2. Add the UI toolset to your agent
+### 2. Register the UI toolset with your agent
 
 ```rust
 use adk_agent::LlmAgentBuilder;
@@ -65,169 +65,142 @@ for tool in tools {
 let agent = builder.build()?;
 ```
 
-### 3. Run the example stack in this repo
+### 3. Run the example stack
 
-The bundled demo uses the Rust example server plus the React client.
+The bundled demo pairs the Rust example server with the React client.
 
 ```bash
-# In the repo root
+# Install dependencies from the repo root
+npm install
+
+# Start the Rust example server
 export GOOGLE_API_KEY=...
 cargo run --example ui_server --features adk-core
 ```
 
 ```bash
-# In another terminal
+# In a second terminal
 cd examples/ui_react_client
-npm install
 npm run dev -- --host 127.0.0.1
 ```
 
-Then open [http://127.0.0.1:5173/](http://127.0.0.1:5173/), choose a protocol profile, and run one of the built-in prompts.
+Open [http://127.0.0.1:5173/](http://127.0.0.1:5173/), choose a protocol profile, and run one of the built-in prompts.
 
-## Beginner-Friendly Mental Model
+> The repo uses npm workspaces, so the React example and the shared renderer package install together from the root. A fresh clone should start with `npm install` at the top level.
 
-Think of `adk-ui` as a UI layer for agents, not as a replacement web framework.
+## Generative UI Concept
+
+`adk-ui` is a UI layer for agents, not a replacement web framework.
 
 Your agent decides:
 
-- what the user needs next
-- which UI pattern fits that moment
-- what data should be shown or collected
-- what action should happen after the user responds
+1. What the user needs next
+2. Which UI pattern fits the moment
+3. What data to show or collect
+4. What action should follow the user's response
 
-`adk-ui` gives the agent structured tools to express those decisions safely.
+`adk-ui` gives the agent structured tools to express those decisions safely. A single conversation can naturally move through:
 
-That means the same conversation can naturally move through:
-
-1. a prompt from the user
-2. a rendered form or dashboard
-3. a follow-up action such as confirm, submit, or retry
-4. a new surface, update, or toast
+1. A prompt from the user
+2. A rendered form or dashboard
+3. A follow-up action (confirm, submit, retry)
+4. A new surface, update, or toast
 
 ## Agentic UI Examples
 
-### Example 1: Support intake
+### Support Intake
 
-User says:
+> *"My payroll export failed and finance needs it today."*
 
-```text
-My payroll export failed and finance needs it today.
-```
+The agent renders a support intake form with severity, environment, screenshots, and deadline fields — summarizes the issue back to the user — then asks for confirmation before escalating to the on-call queue.
 
-Agent flow:
+### Operations Command Center
 
-- render a support intake form with severity, environment, screenshots, and deadline
-- summarize the issue back to the user
-- ask for confirmation before escalating to the on-call queue
+> *"Show me cluster health and let me approve a failover if needed."*
 
-### Example 2: Operations command center
+The agent renders a dashboard with alerts, node tables, and traffic charts — surfaces a confirmation card for risky actions — then renders a toast or status panel after approval.
 
-User says:
+### Scheduling Assistant
 
-```text
-Show me cluster health and let me approve a failover if needed.
-```
+> *"Book me the earliest available appointment next week."*
 
-Agent flow:
+The agent shows available time slots — collects preferences or missing constraints — confirms the selection — then renders a success state with the booked details.
 
-- render a dashboard with alerts, node tables, and traffic charts
-- surface a confirmation card when a risky action is needed
-- render a toast or follow-up status panel after approval
+## Supported Protocols
 
-### Example 3: Scheduling assistant
+`adk-ui` supports three protocol surfaces, each designed for a different integration boundary:
 
-User says:
+| Protocol | Best For |
+|----------|----------|
+| **A2UI** | Direct structured surface transport between agent/server and renderer. Cleanest starting point. |
+| **AG-UI** | Consumers that need event streams, lifecycle updates, and stable message/tool semantics. |
+| **MCP Apps** | Host/app bridge integrations with `ui://` resources, structured content, and bridge-aware metadata. |
 
-```text
-Book me the earliest available appointment next week.
-```
+A legacy `adk_ui` profile remains available for backward compatibility during migration. New integrations should use `a2ui`, `ag_ui`, or `mcp_apps`.
 
-Agent flow:
+### Choosing the Right Protocol
 
-- show available time slots
-- collect preferences or missing constraints
-- confirm the final selection
-- render a success state with the booked details
+- Start with **A2UI** for the most direct structured surface path.
+- Use **AG-UI** when the consumer wants event semantics.
+- Use **MCP Apps** when the host/app bridge model matters.
 
-## Protocols, Explained Simply
-
-You do not need to master every protocol on day one. Start with the shape that fits your client boundary.
-
-### A2UI
-
-Choose `a2ui` when you want a practical structured surface transport between your agent/server and a renderer. It is the cleanest starting point in this repo and the most direct way to render agent-produced surfaces in the React client.
-
-### AG-UI
-
-Choose `ag_ui` when your consumer cares about event streams, lifecycle updates, and stable message/tool semantics. In this repo, AG-UI support is intentionally explicit about its boundaries: native run-input ingestion is in place, while some runtime emission still passes through compatibility-oriented paths.
-
-### MCP Apps
-
-Choose `mcp_apps` when your integration boundary looks like a host/app bridge and you want `ui://` resources, structured content, and bridge-aware host metadata. In this repo, MCP Apps support is centered on the practical bridge flows we actually run today, not a claim of full embedded-host parity.
-
-### Legacy `adk_ui`
-
-The legacy internal profile is still available for backward compatibility during migration, but new integrations should prefer `a2ui`, `ag_ui`, or `mcp_apps`.
+If unsure, start with A2UI, validate the user journey, then introduce AG-UI or MCP Apps at the boundary that needs them.
 
 ## Compliance Snapshot
 
-This section is deliberately concrete. It is meant to help integrators understand what is implemented today.
+This section is deliberately concrete to help integrators understand what is implemented today.
 
-### Implementation metrics
+### Implementation Metrics
 
-- `30` component types
-- `13` high-level render tools
-- `39 / 39` render tool x protocol combinations covered by Rust matrix tests
-- `4 / 4` selectable runtime profiles smoke-tested in the live example client on `2026-03-20`
-- capability metadata is exposed at runtime through `/api/ui/capabilities`
+| Metric | Value |
+|--------|-------|
+| Component types | 30 |
+| High-level render tools | 13 |
+| Render tool × protocol combinations tested | 39 / 39 |
+| Runtime profiles smoke-tested in live client | 4 / 4 (as of 2026-03-20) |
+| Runtime capability metadata | Exposed via `/api/ui/capabilities` |
 
-### Protocol support snapshot
+### Protocol Support
 
-| Protocol | Upstream Target | Implementation Tier | What Works Well Today | Live Validation |
-|----------|------------------|---------------------|-----------------------|-----------------|
-| `a2ui` | `v0.9` draft-aligned | Hybrid subset | `jsonl`, flat components, `createSurface`, `updateComponents`, `updateDataModel`, client metadata, validation feedback, local actions | Dashboard render validated in browser |
-| `ag_ui` | Stable `0.1` subset | Compatibility subset | native run-input ingestion, run lifecycle, stable text/tool event ingestion, message snapshot ingestion, action loop support in the React client | Render + confirm action validated in browser |
+| Protocol | Upstream Target | Tier | What Works Today | Live Validation |
+|----------|----------------|------|------------------|-----------------|
+| `a2ui` | `v0.9` draft-aligned | Hybrid subset | JSONL, flat components, `createSurface`, `updateComponents`, `updateDataModel`, client metadata, validation feedback, local actions | Dashboard render validated in browser |
+| `ag_ui` | Stable `0.1` subset | Compatibility subset | Native run-input ingestion, run lifecycle, stable text/tool event ingestion, message snapshot ingestion, action loop support in React client | Render + confirm action validated in browser |
 | `mcp_apps` | `SEP-1865` subset | Compatibility subset | `ui://` resources, structured tool results, initialize/message/model-context bridge endpoints, host context, inline HTML fallback | Initialize + render + confirm action validated in browser |
-| `adk_ui` | Internal legacy profile | Legacy | backward-compatible runtime behavior during migration | Smoke-tested in browser |
+| `adk_ui` | Internal legacy | Legacy | Backward-compatible runtime behavior during migration | Tested in browser |
 
-### Important honesty note
+> **Honesty note:** `adk-ui` does not present AG-UI or MCP Apps as fully native or complete implementations. Runtime capability signals and documentation are intentionally explicit about hybrid and compatibility subsets so downstream clients can make informed decisions.
 
-`adk-ui` does not present AG-UI or MCP Apps as fully native, fully complete implementations. The runtime capability signal and docs are intentionally explicit about hybrid and compatibility subsets so downstream clients can make correct decisions.
-
-## How The Pieces Fit Together
-
-At a high level:
+## Architecture
 
 ```text
 User prompt
-  -> agent decides what UI to render
-  -> adk-ui tool emits a surface or protocol-aware payload
-  -> client renders the surface
-  -> user acts on the interface
-  -> action goes back to the agent
-  -> agent updates, confirms, or completes the workflow
+  → Agent decides what UI to render
+  → adk-ui tool emits a surface or protocol-aware payload
+  → Client renders the surface
+  → User acts on the interface
+  → Action routes back to the agent
+  → Agent updates, confirms, or completes the workflow
 ```
 
 This repo includes:
 
 - Rust-side UI models, validation, prompts, templates, and protocol adapters
-- a React reference client that can render and act on those surfaces
-- protocol boundary code for A2UI, AG-UI, and MCP Apps
-- tests and examples for real integration paths
+- A React reference client that renders and acts on agent-produced surfaces
+- Protocol boundary code for A2UI, AG-UI, and MCP Apps
+- Tests and examples for real integration paths
 
-## What Is In The Box
-
-### Render tools
+## Render Tools
 
 | Tool | Purpose |
 |------|---------|
 | `render_screen` | Emit protocol-aware screen surfaces from component definitions |
-| `render_page` | Build multi-section pages and emit protocol-aware payloads |
+| `render_page` | Build multi-section pages with protocol-aware payloads |
 | `render_kit` | Generate A2UI kit/catalog artifacts |
 | `render_form` | Collect structured user input |
-| `render_card` | Show information-rich cards with actions |
+| `render_card` | Display information-rich cards with actions |
 | `render_alert` | Surface status and severity messages |
-| `render_confirm` | Ask the user to approve a risky or important action |
+| `render_confirm` | Request user approval for risky or important actions |
 | `render_table` | Display sortable tabular data |
 | `render_chart` | Display line, bar, area, and pie charts |
 | `render_layout` | Build dashboard-style layouts |
@@ -235,55 +208,47 @@ This repo includes:
 | `render_modal` | Display modal dialogs |
 | `render_toast` | Show temporary notifications |
 
-### Core strengths
+### Core Strengths
 
-- type-safe Rust schema plus TypeScript-friendly rendering surface
-- server-side validation before bad UI reaches the browser
-- streaming updates via `UiUpdate`
-- tested system prompts for reliable tool use
-- prebuilt templates for common business flows
-- protocol adapters that reduce per-tool drift
+- Type-safe Rust schema with TypeScript-friendly rendering surface
+- Server-side validation before bad UI reaches the browser
+- Streaming updates via `UiUpdate`
+- Tested system prompts for reliable tool use
+- Prebuilt templates for common business flows
+- Protocol adapters that reduce per-tool drift
 
-## Examples In This Repo
+## Examples
 
 | Example | Description | Command |
 |---------|-------------|---------|
 | `ui_server` | Rust server with SSE and protocol-aware UI tool output | `cargo run --example ui_server --features adk-core` |
 | `ui_react_client` | React reference client with protocol profile selector | `cd examples/ui_react_client && npm run dev -- --host 127.0.0.1` |
-| `ui_protocol_profiles` | Coverage demo for tool/protocol output combinations | `cargo run --example ui_protocol_profiles` |
-| `streaming_demo` | Streaming progress and incremental updates | `cargo run --example streaming_demo` |
 
-## Choosing The Right Protocol
+Protocol coverage and streaming behaviors are exercised through the live React client and the Rust test suite in [`/tests`](tests/).
 
-If you want a practical default in this repo:
-
-- choose `a2ui` for the most direct structured surface path
-- choose `ag_ui` when the consumer wants event semantics
-- choose `mcp_apps` when the host/app bridge model matters
-
-If you are unsure, start with `a2ui`, validate the user journey, then introduce `ag_ui` or `mcp_apps` at the integration boundary that actually needs them.
-
-## Migration And Deprecation
+## Migration and Deprecation
 
 The legacy `adk_ui` runtime profile is on a planned migration path:
 
-- announced: `2026-02-07`
-- sunset target: `2026-12-31`
-- preferred profiles: `a2ui`, `ag_ui`, `mcp_apps`
+| Milestone | Date |
+|-----------|------|
+| Announced | 2026-02-07 |
+| Sunset target | 2026-12-31 |
+| Preferred profiles | `a2ui`, `ag_ui`, `mcp_apps` |
 
-Detailed migration guidance lives in [docs/PROTOCOL_MIGRATION.md](docs/PROTOCOL_MIGRATION.md).
+See [docs/PROTOCOL_MIGRATION.md](docs/PROTOCOL_MIGRATION.md) for detailed guidance.
 
-## Additional Docs
+## Additional Documentation
 
-- [Protocol migration guide](docs/PROTOCOL_MIGRATION.md)
-- [Protocol modernization workplan](docs/PROTOCOL_MODERNIZATION_WORKPLAN.md)
-- [Framework continuity roadmap](docs/FRAMEWORK_CONTINUITY_ROADMAP.md)
-- [React client notes](examples/ui_react_client/README.md)
+- [Protocol Migration Guide](docs/PROTOCOL_MIGRATION.md)
+- [Protocol Modernization Workplan](docs/PROTOCOL_MODERNIZATION_WORKPLAN.md)
+- [Framework Continuity Roadmap](docs/FRAMEWORK_CONTINUITY_ROADMAP.md)
+- [React Client Notes](examples/ui_react_client/README.md)
 
 ## License
 
 Apache-2.0
 
-## Part Of ADK-Rust
+## Part of ADK-Rust
 
 `adk-ui` is part of the [ADK-Rust](https://adk-rust.com) ecosystem for building AI agents in Rust.

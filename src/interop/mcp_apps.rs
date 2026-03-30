@@ -230,7 +230,7 @@ fn validate_domain_list(
 
     for domain in domains {
         if !is_allowed_domain(domain) {
-            return Err(crate::compat::AdkError::Tool(format!(
+            return Err(crate::compat::AdkError::tool(format!(
                 "Invalid mcp_apps option '{}': unsupported domain '{}'",
                 field, domain
             )));
@@ -244,7 +244,7 @@ pub fn validate_mcp_apps_render_options(
 ) -> Result<(), crate::compat::AdkError> {
     if let Some(domain) = options.domain.as_deref() {
         if !is_allowed_domain(domain) {
-            return Err(crate::compat::AdkError::Tool(format!(
+            return Err(crate::compat::AdkError::tool(format!(
                 "Invalid mcp_apps option 'domain': unsupported domain '{}'",
                 domain
             )));

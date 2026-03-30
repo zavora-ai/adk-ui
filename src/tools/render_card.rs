@@ -95,7 +95,7 @@ Use for status updates, summaries, or any structured info with optional action b
 
     async fn execute(&self, _ctx: Arc<dyn ToolContext>, args: Value) -> Result<Value> {
         let params: RenderCardParams = serde_json::from_value(args)
-            .map_err(|e| crate::compat::AdkError::Tool(format!("Invalid parameters: {}", e)))?;
+            .map_err(|e| crate::compat::AdkError::tool(format!("Invalid parameters: {}", e)))?;
         let protocol_options = params.protocol.clone();
 
         // Build card content

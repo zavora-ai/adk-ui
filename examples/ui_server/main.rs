@@ -1,5 +1,5 @@
 use adk_agent::LlmAgentBuilder;
-use adk_core::{Agent, Content, Event, FunctionResponseData, MultiAgentLoader, Part, Tool};
+use adk_core::{Agent, Content, Event, FunctionResponseData, MultiAgentLoader, Part, SessionId, Tool, UserId};
 use adk_model::gemini::GeminiModel;
 use adk_runner::{Runner, RunnerConfig};
 use adk_server::{ServerConfig, create_app, shutdown_signal};
@@ -1314,7 +1314,15 @@ async fn handle_protocol_native_run_sse(
     })?;
 
     let event_stream = runner
-        .run(user_id, session_id.clone(), content)
+        .run(
+            UserId::try_from(user_id.as_str()).map_err(|e| {
+                (StatusCode::BAD_REQUEST, format!("invalid userId: {}", e))
+            })?,
+            SessionId::try_from(session_id.as_str()).map_err(|e| {
+                (StatusCode::BAD_REQUEST, format!("invalid sessionId: {}", e))
+            })?,
+            content,
+        )
         .await
         .map_err(|error| {
             (
@@ -1536,6 +1544,7 @@ async fn main() -> Result<()> {
         ExampleRuntimeState { config },
         protocol_native_run_sse_middleware,
     ));
+    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{port}")).await?;
 
     println!("=== ADK UI Aggregated Server ===");
     println!("Server running on http://localhost:{}", port);
@@ -1552,7 +1561,6 @@ async fn main() -> Result<()> {
     println!("React client: http://localhost:5173");
     println!();
 
-    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{port}")).await?;
     axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_signal())
         .await?;

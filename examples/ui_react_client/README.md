@@ -5,16 +5,18 @@ React frontend for rendering dynamic UI components from ADK agents.
 ## Quick Start
 
 ```bash
-# Start the UI server (in adk-rust root)
-GOOGLE_API_KEY=... cargo run --example ui_server
+# From the adk-ui repo root, install the workspace once
+npm install
+
+# Start the UI server (in the adk-ui repo root)
+GOOGLE_API_KEY=... cargo run --example ui_server --features adk-core
 
 # In another terminal, start this client
 cd examples/ui_react_client
-npm install
-npm run dev
+npm run dev -- --host 127.0.0.1
 ```
 
-Open http://localhost:5173 to interact with the agent.
+Open http://127.0.0.1:5173 to interact with the agent.
 
 ## What This Does
 

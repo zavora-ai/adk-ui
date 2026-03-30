@@ -123,7 +123,7 @@ impl Tool for RenderPageTool {
 
     async fn execute(&self, _ctx: Arc<dyn ToolContext>, args: Value) -> Result<Value> {
         let params: RenderPageParams = serde_json::from_value(args.clone()).map_err(|e| {
-            crate::compat::AdkError::Tool(format!("Invalid parameters: {}. Got: {}", e, args))
+            crate::compat::AdkError::tool(format!("Invalid parameters: {}. Got: {}", e, args))
         })?;
 
         let registry = CatalogRegistry::new();
@@ -238,7 +238,7 @@ impl Tool for RenderPageTool {
                 let messages = surface.to_a2ui_messages();
                 if params.validate {
                     let validator = A2uiValidator::new().map_err(|e| {
-                        crate::compat::AdkError::Tool(format!(
+                        crate::compat::AdkError::tool(format!(
                             "Failed to initialize A2UI validator: {}",
                             e
                         ))
@@ -252,7 +252,7 @@ impl Tool for RenderPageTool {
                                 .map(|err| format!("{} at {}", err.message, err.instance_path))
                                 .collect::<Vec<_>>()
                                 .join("; ");
-                            return Err(crate::compat::AdkError::Tool(format!(
+                            return Err(crate::compat::AdkError::tool(format!(
                                 "A2UI validation failed: {}",
                                 details
                             )));
@@ -261,7 +261,7 @@ impl Tool for RenderPageTool {
                 }
 
                 let jsonl = encode_jsonl(messages).map_err(|e| {
-                    crate::compat::AdkError::Tool(format!("Failed to encode A2UI JSONL: {}", e))
+                    crate::compat::AdkError::tool(format!("Failed to encode A2UI JSONL: {}", e))
                 })?;
 
                 // Keep historical return type for default protocol compatibility.

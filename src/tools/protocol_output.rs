@@ -85,7 +85,7 @@ impl SurfaceProtocolOptions {
         let options = match &self.mcp_apps {
             Some(value) => {
                 serde_json::from_value::<McpAppsRenderOptions>(value.clone()).map_err(|error| {
-                    crate::compat::AdkError::Tool(format!(
+                    crate::compat::AdkError::tool(format!(
                         "Invalid mcp_apps options payload: {}",
                         error
                     ))
@@ -161,7 +161,7 @@ fn serialize_envelope<P: Serialize>(
     envelope: ToolEnvelope<P>,
 ) -> Result<Value, crate::compat::AdkError> {
     serde_json::to_value(envelope).map_err(|e| {
-        crate::compat::AdkError::Tool(format!("Failed to serialize protocol envelope: {}", e))
+        crate::compat::AdkError::tool(format!("Failed to serialize protocol envelope: {}", e))
     })
 }
 
@@ -174,7 +174,7 @@ pub(crate) fn render_ui_response_with_protocol(
         Some(protocol) => protocol,
         None => {
             return serde_json::to_value(ui).map_err(|e| {
-                crate::compat::AdkError::Tool(format!("Failed to serialize UI: {}", e))
+                crate::compat::AdkError::tool(format!("Failed to serialize UI: {}", e))
             });
         }
     };
@@ -185,7 +185,7 @@ pub(crate) fn render_ui_response_with_protocol(
     match protocol {
         UiProtocol::A2ui => {
             let jsonl = surface.to_a2ui_jsonl().map_err(|e| {
-                crate::compat::AdkError::Tool(format!("Failed to encode A2UI JSONL: {}", e))
+                crate::compat::AdkError::tool(format!("Failed to encode A2UI JSONL: {}", e))
             })?;
             let envelope = ToolEnvelope::new(
                 ToolEnvelopeProtocol::A2ui,
@@ -219,7 +219,7 @@ pub(crate) fn render_ui_response_with_protocol(
             let mcp_options = match &options.mcp_apps {
                 Some(value) => serde_json::from_value::<McpAppsRenderOptions>(value.clone())
                     .map_err(|error| {
-                        crate::compat::AdkError::Tool(format!(
+                        crate::compat::AdkError::tool(format!(
                             "Invalid mcp_apps options payload: {}",
                             error
                         ))

@@ -69,7 +69,7 @@ impl Tool for RenderToastTool {
 
     async fn execute(&self, _ctx: Arc<dyn ToolContext>, args: Value) -> Result<Value> {
         let params: RenderToastParams = serde_json::from_value(args)
-            .map_err(|e| crate::compat::AdkError::Tool(format!("Invalid parameters: {}", e)))?;
+            .map_err(|e| crate::compat::AdkError::tool(format!("Invalid parameters: {}", e)))?;
         let protocol_options = params.protocol.clone();
 
         let variant = match params.variant.as_str() {

@@ -51,7 +51,7 @@ impl Tool for RenderKitTool {
 
     async fn execute(&self, _ctx: Arc<dyn ToolContext>, args: Value) -> Result<Value> {
         let params: RenderKitParams = serde_json::from_value(args.clone()).map_err(|e| {
-            crate::compat::AdkError::Tool(format!("Invalid parameters: {}. Got: {}", e, args))
+            crate::compat::AdkError::tool(format!("Invalid parameters: {}. Got: {}", e, args))
         })?;
 
         let generator = KitGenerator::new();

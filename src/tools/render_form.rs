@@ -137,7 +137,7 @@ Use field types: text, email, password, number, select, textarea. Set required=t
 
     async fn execute(&self, _ctx: Arc<dyn ToolContext>, args: Value) -> Result<Value> {
         let params: RenderFormParams = serde_json::from_value(args)
-            .map_err(|e| crate::compat::AdkError::Tool(format!("Invalid parameters: {}", e)))?;
+            .map_err(|e| crate::compat::AdkError::tool(format!("Invalid parameters: {}", e)))?;
         let protocol_options = params.protocol.clone();
 
         let form_id = stable_id(&format!("form:{}:{}", params.title, params.submit_action));

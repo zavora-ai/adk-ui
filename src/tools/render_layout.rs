@@ -201,7 +201,7 @@ Section types: stats (label/value/status), table, chart, alert, text, key_value,
 
     async fn execute(&self, _ctx: Arc<dyn ToolContext>, args: Value) -> Result<Value> {
         let params: RenderLayoutParams = serde_json::from_value(args.clone()).map_err(|e| {
-            crate::compat::AdkError::Tool(format!("Invalid parameters: {}. Got: {}", e, args))
+            crate::compat::AdkError::tool(format!("Invalid parameters: {}. Got: {}", e, args))
         })?;
         let protocol_options = params.protocol.clone();
 
