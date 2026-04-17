@@ -543,6 +543,8 @@ fn parse_function_response_part(part: &Value) -> Result<Option<Part>, RuntimeErr
             response: pick_value(payload, &["response", "result", "data", "payload"])
                 .cloned()
                 .unwrap_or(Value::Null),
+            file_data: vec![],
+            inline_data: vec![],
         },
         id: pick_string(function_response, &["id"]),
     }))
