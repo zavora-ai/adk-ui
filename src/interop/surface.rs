@@ -14,6 +14,8 @@ pub enum UiProtocol {
     A2ui,
     AgUi,
     McpApps,
+    #[cfg(feature = "awp")]
+    Awp,
 }
 
 /// Protocol-neutral UI surface representation.

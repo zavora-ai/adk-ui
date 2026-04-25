@@ -43,7 +43,7 @@ Dynamic UI generation for [ADK-Rust](https://adk-rust.com) agents — render for
 
 ```toml
 [dependencies]
-adk-ui = "0.4"
+adk-ui = "0.7"
 ```
 
 ### 2. Register the UI toolset with your agent
@@ -135,6 +135,7 @@ The agent shows available time slots — collects preferences or missing constra
 | **A2UI** | Direct structured surface transport between agent/server and renderer. Cleanest starting point. |
 | **AG-UI** | Consumers that need event streams, lifecycle updates, and stable message/tool semantics. |
 | **MCP Apps** | Host/app bridge integrations with `ui://` resources, structured content, and bridge-aware metadata. |
+| **AWP** | Agentic Web Protocol — dual-user rendering with HTML output, capability manifest export, and bandwidth-adaptive mode. Requires `awp` feature flag. |
 
 A legacy `adk_ui` profile remains available for backward compatibility during migration. New integrations should use `a2ui`, `ag_ui`, or `mcp_apps`.
 
@@ -143,8 +144,20 @@ A legacy `adk_ui` profile remains available for backward compatibility during mi
 - Start with **A2UI** for the most direct structured surface path.
 - Use **AG-UI** when the consumer wants event semantics.
 - Use **MCP Apps** when the host/app bridge model matters.
+- Use **AWP** when you need dual-user rendering (HTML for humans, structured data for agents) with bandwidth-adaptive output.
 
-If unsure, start with A2UI, validate the user journey, then introduce AG-UI or MCP Apps at the boundary that needs them.
+If unsure, start with A2UI, validate the user journey, then introduce AG-UI, MCP Apps, or AWP at the boundary that needs them.
+
+### AWP Feature Flag
+
+AWP integration is behind an optional Cargo feature flag:
+
+```toml
+[dependencies]
+adk-ui = { version = "0.7", features = ["awp"] }
+```
+
+This adds the `AwpAdapter`, HTML renderer with `BandwidthMode`, capability manifest export via `UiToolset::to_capability_entries()`, and `ToolEnvelope` AWP bridge fields. Without the flag, adk-ui compiles without any AWP dependencies.
 
 ## Compliance Snapshot
 
@@ -157,7 +170,7 @@ This section is deliberately concrete to help integrators understand what is imp
 | Component types | 30 |
 | High-level render tools | 13 |
 | Render tool × protocol combinations tested | 39 / 39 |
-| Runtime profiles smoke-tested in live client | 4 / 4 (as of 2026-03-20) |
+| Runtime profiles smoke-tested in live client | 5 / 5 (as of 2026-04-25) |
 | Runtime capability metadata | Exposed via `/api/ui/capabilities` |
 
 ### Protocol Support
@@ -168,6 +181,7 @@ This section is deliberately concrete to help integrators understand what is imp
 | `ag_ui` | Stable `0.1` subset | Compatibility subset | Native run-input ingestion, run lifecycle, stable text/tool event ingestion, message snapshot ingestion, action loop support in React client | Render + confirm action validated in browser |
 | `mcp_apps` | `SEP-1865` subset | Compatibility subset | `ui://` resources, structured tool results, initialize/message/model-context bridge endpoints, host context, inline HTML fallback | Initialize + render + confirm action validated in browser |
 | `adk_ui` | Internal legacy | Legacy | Backward-compatible runtime behavior during migration | Tested in browser |
+| `awp` | AWP v1.0 | Compatibility subset | HTML rendering from typed components, capability manifest export, bandwidth-adaptive mode, ToolEnvelope bridge | Dashboard + form + command center validated in browser |
 
 > **Honesty note:** `adk-ui` does not present AG-UI or MCP Apps as fully native or complete implementations. Runtime capability signals and documentation are intentionally explicit about hybrid and compatibility subsets so downstream clients can make informed decisions.
 
@@ -213,6 +227,7 @@ This repo includes:
 - Type-safe Rust schema with TypeScript-friendly rendering surface
 - Server-side validation before bad UI reaches the browser
 - Streaming updates via `UiUpdate`
+- HTML renderer for all 30+ component types with bandwidth-adaptive output
 - Tested system prompts for reliable tool use
 - Prebuilt templates for common business flows
 - Protocol adapters that reduce per-tool drift

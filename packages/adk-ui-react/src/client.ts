@@ -4,7 +4,7 @@ import type { A2uiStore } from './a2ui/store';
 import { uiEventToMessage, type UiEvent } from './types';
 import { UnifiedRenderStore } from './store';
 
-export type UiProtocol = 'adk_ui' | 'a2ui' | 'ag_ui' | 'mcp_apps';
+export type UiProtocol = 'adk_ui' | 'a2ui' | 'ag_ui' | 'mcp_apps' | 'awp';
 
 export interface ProtocolClientOptions {
     protocol?: UiProtocol;

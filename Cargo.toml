@@ -1,6 +1,6 @@
 [package]
 name = "adk-ui"
-version = "0.6.0"
+version = "0.7.0"
 edition = "2024"
 rust-version = "1.85.0"
 license = "Apache-2.0"
@@ -19,6 +19,7 @@ thiserror = "2.0"
 schemars = "0.8"
 async-trait = "0.1"
 adk-core = { version = "0.6", optional = true }
+awp-types = { path = "awp-types", optional = true }
 jsonschema = "0.29"
 chrono = { version = "0.4", default-features = false, features = ["clock"] }
 
@@ -26,6 +27,7 @@ chrono = { version = "0.4", default-features = false, features = ["clock"] }
 default = []
 remote-catalogs = ["reqwest"]
 adk-core = ["dep:adk-core"]
+awp = ["dep:awp-types"]
 
 [dependencies.reqwest]
 version = "0.12"
@@ -44,6 +46,7 @@ adk-session = { version = "0.6" }
 axum = "0.8"
 base64 = "0.22"
 futures = "0.3"
+proptest = "1.5"
 tracing = "0.1"
 
 [[example]]

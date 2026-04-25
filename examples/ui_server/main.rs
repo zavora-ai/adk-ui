@@ -128,6 +128,7 @@ enum UiProfile {
     A2ui,
     AgUi,
     McpApps,
+    Awp,
 }
 
 #[derive(Debug, Clone)]
@@ -166,6 +167,7 @@ impl UiProfile {
             Self::A2ui => "a2ui",
             Self::AgUi => "ag_ui",
             Self::McpApps => "mcp_apps",
+            Self::Awp => "awp",
         }
     }
 }
@@ -243,6 +245,7 @@ fn parse_ui_profile(raw: &str) -> Option<UiProfile> {
         "a2ui" => Some(UiProfile::A2ui),
         "ag_ui" => Some(UiProfile::AgUi),
         "mcp_apps" => Some(UiProfile::McpApps),
+        "awp" => Some(UiProfile::Awp),
         _ => None,
     }
 }
@@ -1052,8 +1055,20 @@ fn json_error_response(status: StatusCode, message: impl Into<String>) -> Respon
 }
 
 fn capabilities_response() -> Response {
+    let mut protocols: Vec<serde_json::Value> = UI_PROTOCOL_CAPABILITIES
+        .iter()
+        .map(|spec| serde_json::to_value(spec).unwrap_or_default())
+        .collect();
+
+    #[cfg(feature = "awp")]
+    {
+        if let Ok(awp_spec) = serde_json::to_value(&adk_ui::AWP_PROTOCOL_CAPABILITY) {
+            protocols.push(awp_spec);
+        }
+    }
+
     let response = axum::Json(json!({
-        "protocols": UI_PROTOCOL_CAPABILITIES,
+        "protocols": protocols,
     }))
     .into_response();
     with_cors_headers(response)

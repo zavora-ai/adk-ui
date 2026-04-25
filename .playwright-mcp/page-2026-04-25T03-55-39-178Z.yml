@@ -1,0 +1,111 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - paragraph [ref=e6]: ADK-RUST UI EXAMPLES
+      - heading "ADK UI" [level=1] [ref=e7]
+      - paragraph [ref=e8]:
+        - text: Create dynamic user interfaces with ADK UI, with support for standard protocols such as
+        - strong [ref=e9]: A2UI
+        - text: ","
+        - strong [ref=e10]: AG-UI
+        - text: ", and"
+        - strong [ref=e11]: MCP Apps
+        - text: .
+    - generic [ref=e12]:
+      - generic [ref=e13]:
+        - generic [ref=e14]: Runs
+        - strong [ref=e15]: "0"
+      - generic [ref=e16]:
+        - generic [ref=e17]: Tool Responses
+        - strong [ref=e18]: "0"
+      - generic [ref=e19]:
+        - generic [ref=e20]: Last Latency
+        - strong [ref=e21]: n/a
+      - generic [ref=e22]:
+        - generic [ref=e23]: Status
+        - strong [ref=e24]: Idle
+  - generic [ref=e25]:
+    - generic [ref=e26]:
+      - generic [ref=e27]: Demo App
+      - combobox "Demo App" [ref=e28]:
+        - option "UI Demo (8080)" [selected]
+        - option "Support Intake (8080)"
+        - option "Appointments (8080)"
+        - option "Events (8080)"
+        - option "Facilities (8080)"
+        - option "Inventory (8080)"
+      - paragraph [ref=e29]: General purpose multi-surface demo
+    - generic [ref=e30]:
+      - generic [ref=e31]: Protocol Profile
+      - combobox "Protocol Profile" [ref=e32]:
+        - option "Legacy ADK UI"
+        - option "A2UI"
+        - option "AG-UI"
+        - option "MCP Apps"
+        - option "AWP" [selected]
+      - paragraph [ref=e33]: Agentic Web Protocol — dual-user rendering with HTML output, capability manifest export, and bandwidth-adaptive mode.
+    - generic [ref=e34]:
+      - generic [ref=e35]:
+        - generic [ref=e36]: Server Capability Signal
+        - button "Refresh" [ref=e37] [cursor=pointer]
+      - generic [ref=e69]:
+        - generic [ref=e70]: "1.0"
+        - generic [ref=e71]: "Mode: Compatibility Subset"
+        - generic [ref=e72]: "Spec: Draft"
+      - paragraph [ref=e73]: AWP-aligned HTML rendering with capability manifest export and bandwidth-adaptive output.
+      - generic [ref=e74]:
+        - generic [ref=e75]: html_rendering
+        - generic [ref=e76]: capability_manifest_export
+        - generic [ref=e77]: bandwidth_adaptive
+        - generic [ref=e78]: tool_envelope_bridge
+      - generic [ref=e79]:
+        - generic [ref=e80]: HTML renderer produces static markup; interactive behaviors require client-side hydration.
+        - generic [ref=e81]: Chart components render as data-attribute placeholders, not visual charts.
+  - generic [ref=e39]:
+    - complementary [ref=e40]:
+      - generic [ref=e41]:
+        - heading "Prompt Launcher" [level=2] [ref=e42]
+        - generic [ref=e43]: "8080"
+      - generic [ref=e44]:
+        - button "Create a dashboard with three KPI cards and a trend chart." [ref=e45] [cursor=pointer]
+        - button "Design an onboarding form with progress, validation hints, and submit actions." [ref=e46] [cursor=pointer]
+        - button "Build an operations command center with alerts, table, and a confirmation modal." [ref=e47] [cursor=pointer]
+      - generic [ref=e48]:
+        - generic [ref=e49]: Custom Prompt
+        - textbox "Custom Prompt" [ref=e50]:
+          - /placeholder: Describe the UI you want the agent to render...
+        - button "Run Live Prompt" [disabled] [ref=e51]
+    - main [ref=e52]:
+      - generic [ref=e53]:
+        - heading "Live Render Canvas" [level=2] [ref=e54]
+        - generic [ref=e55]: waiting
+      - generic [ref=e56]:
+        - heading "No surface rendered yet" [level=3] [ref=e57]
+        - paragraph [ref=e58]:
+          - text: Run a prompt to stream tool output and render a dynamic UI surface for
+          - strong [ref=e59]: AWP
+          - text: .
+      - generic [ref=e60]:
+        - heading "Assistant Text Output" [level=3] [ref=e61]
+        - generic [ref=e62]: No text output captured yet.
+    - complementary [ref=e63]:
+      - generic [ref=e64]:
+        - heading "Runtime Event Stream" [level=2] [ref=e65]
+        - generic [ref=e66]: "2"
+      - generic [ref=e67]:
+        - group [ref=e82]:
+          - generic "capabilities Loaded /api/ui/capabilities a2ui 06:55:28" [ref=e83] [cursor=pointer]:
+            - generic [ref=e84]:
+              - generic [ref=e85]: capabilities
+              - generic [ref=e86]: Loaded /api/ui/capabilities
+            - generic [ref=e87]:
+              - generic [ref=e88]: a2ui
+              - generic [ref=e89]: 06:55:28
+        - group [ref=e90]:
+          - generic "capabilities Loaded /api/ui/capabilities a2ui 06:55:28" [ref=e91] [cursor=pointer]:
+            - generic [ref=e92]:
+              - generic [ref=e93]: capabilities
+              - generic [ref=e94]: Loaded /api/ui/capabilities
+            - generic [ref=e95]:
+              - generic [ref=e96]: a2ui
+              - generic [ref=e97]: 06:55:28

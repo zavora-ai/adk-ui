@@ -171,6 +171,49 @@ impl UiToolset {
     }
 }
 
+#[cfg(feature = "awp")]
+impl UiToolset {
+    /// Export enabled tools as AWP CapabilityEntry values.
+    ///
+    /// Uses the per-tool include flags to determine which tools to export.
+    /// Does not require a `ReadonlyContext` or async context.
+    pub fn to_capability_entries(&self) -> Vec<awp_types::CapabilityEntry> {
+        let mut entries = Vec::new();
+
+        macro_rules! maybe_export {
+            ($flag:expr, $tool:expr) => {
+                if $flag {
+                    let tool = $tool;
+                    entries.push(awp_types::CapabilityEntry {
+                        name: tool.name().to_string(),
+                        description: tool.description().to_string(),
+                        endpoint: format!("/tools/{}", tool.name()),
+                        method: "POST".to_string(),
+                        input_schema: tool.parameters_schema().map(|v| v.to_string()),
+                        output_schema: None,
+                    });
+                }
+            };
+        }
+
+        maybe_export!(self.include_screen, RenderScreenTool::new());
+        maybe_export!(self.include_page, RenderPageTool::new());
+        maybe_export!(self.include_kit, RenderKitTool::new());
+        maybe_export!(self.include_form, RenderFormTool::new());
+        maybe_export!(self.include_card, RenderCardTool::new());
+        maybe_export!(self.include_alert, RenderAlertTool::new());
+        maybe_export!(self.include_confirm, RenderConfirmTool::new());
+        maybe_export!(self.include_table, RenderTableTool::new());
+        maybe_export!(self.include_chart, RenderChartTool::new());
+        maybe_export!(self.include_layout, RenderLayoutTool::new());
+        maybe_export!(self.include_progress, RenderProgressTool::new());
+        maybe_export!(self.include_modal, RenderModalTool::new());
+        maybe_export!(self.include_toast, RenderToastTool::new());
+
+        entries
+    }
+}
+
 impl Default for UiToolset {
     fn default() -> Self {
         Self::new()

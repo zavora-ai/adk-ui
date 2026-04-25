@@ -1,9 +1,13 @@
 mod adapter;
 pub mod ag_ui;
+#[cfg(feature = "awp")]
+pub mod awp;
 pub mod mcp_apps;
 pub mod surface;
 
 pub use adapter::{A2uiAdapter, AgUiAdapter, McpAppsAdapter, UiProtocolAdapter};
+#[cfg(feature = "awp")]
+pub use awp::AwpAdapter;
 pub use ag_ui::{
     ADK_UI_SURFACE_EVENT_NAME, AgUiActivityDeltaEvent, AgUiActivitySnapshotEvent, AgUiCustomEvent,
     AgUiErrorEvent, AgUiEvent, AgUiEventType, AgUiMessagesSnapshotEvent, AgUiRawEvent,

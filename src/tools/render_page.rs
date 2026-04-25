@@ -282,6 +282,11 @@ impl Tool for RenderPageTool {
                 let adapter = McpAppsAdapter::new(options);
                 adapter.to_protocol_payload(&surface)
             }
+            #[cfg(feature = "awp")]
+            UiProtocol::Awp => {
+                let adapter = crate::interop::AwpAdapter::new();
+                adapter.to_protocol_payload(&surface)
+            }
         }
     }
 }

@@ -1,6 +1,9 @@
 pub mod a2ui;
+#[cfg(feature = "awp")]
+pub mod awp_compat;
 pub mod catalog_registry;
 pub mod compat;
+pub mod html;
 pub mod interop;
 pub mod kit;
 pub mod model;
@@ -23,8 +26,12 @@ pub use protocol_capabilities::{
     UI_PROTOCOL_CAPABILITIES, UiProtocolCapabilitySpec, UiProtocolDeprecationSpec,
     UiProtocolImplementationTier, UiProtocolSpecTrack, normalize_runtime_ui_protocol,
 };
+#[cfg(feature = "awp")]
+pub use protocol_capabilities::AWP_PROTOCOL_CAPABILITY;
 pub use schema::*;
 pub use templates::{StatItem, TemplateData, UiTemplate, UserData, render_template};
 pub use tools::*;
 pub use toolset::UiToolset;
 pub use validation::{Validate, ValidationError, validate_ui_response};
+
+pub use html::{BandwidthMode, HtmlRenderOptions, render_components_html, render_surface_html};

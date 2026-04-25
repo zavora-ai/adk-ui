@@ -2,7 +2,7 @@ import type { ParsedA2uiMessage } from './a2ui/parser';
 import { applyParsedMessages, parseJsonl } from './a2ui/parser';
 import type { A2uiComponent, A2uiStore } from './a2ui/store';
 
-type SupportedProtocol = 'a2ui' | 'ag_ui' | 'mcp_apps' | 'adk_ui';
+type SupportedProtocol = 'a2ui' | 'ag_ui' | 'mcp_apps' | 'adk_ui' | 'awp';
 
 export type ProtocolSurfaceSnapshot = {
     protocol: SupportedProtocol;
@@ -14,6 +14,7 @@ export type ProtocolSurfaceSnapshot = {
         | 'mcp_apps_structured_content'
         | 'mcp_apps_html_resource'
         | 'adk_ui_surface'
+        | 'awp_surface'
         | 'surface_object';
     surfaceId: string;
     catalogId?: string;
@@ -91,6 +92,7 @@ function normalizeProtocol(value: unknown): SupportedProtocol | null {
     if (normalized === 'ag_ui' || normalized === 'ag-ui') return 'ag_ui';
     if (normalized === 'mcp_apps' || normalized === 'mcp-apps') return 'mcp_apps';
     if (normalized === 'adk_ui' || normalized === 'adk-ui') return 'adk_ui';
+    if (normalized === 'awp') return 'awp';
     return null;
 }
 
@@ -663,6 +665,13 @@ export function extractProtocolSurface(
 
     if (protocol === 'adk_ui') {
         const fromSurface = extractSurfaceFromRawSurfaceRecord(payload, 'adk_ui', 'adk_ui_surface');
+        if (fromSurface) {
+            return fromSurface;
+        }
+    }
+
+    if (protocol === 'awp') {
+        const fromSurface = extractSurfaceFromRawSurfaceRecord(payload, 'awp', 'awp_surface');
         if (fromSurface) {
             return fromSurface;
         }

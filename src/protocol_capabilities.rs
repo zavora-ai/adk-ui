@@ -149,6 +149,30 @@ pub const UI_PROTOCOL_CAPABILITIES: &[UiProtocolCapabilitySpec] = &[
     },
 ];
 
+/// AWP protocol capability specification.
+///
+/// Exposed as a standalone constant so downstream crates (adk-server, adk-gateway)
+/// can conditionally include it in their runtime protocol arrays.
+#[cfg(feature = "awp")]
+pub const AWP_PROTOCOL_CAPABILITY: UiProtocolCapabilitySpec = UiProtocolCapabilitySpec {
+    protocol: "awp",
+    versions: &["1.0"],
+    implementation_tier: UiProtocolImplementationTier::CompatibilitySubset,
+    spec_track: UiProtocolSpecTrack::Draft,
+    summary: "AWP-aligned HTML rendering with capability manifest export and bandwidth-adaptive output.",
+    features: &[
+        "html_rendering",
+        "capability_manifest_export",
+        "bandwidth_adaptive",
+        "tool_envelope_bridge",
+    ],
+    limitations: &[
+        "HTML renderer produces static markup; interactive behaviors require client-side hydration.",
+        "Chart components render as data-attribute placeholders, not visual charts.",
+    ],
+    deprecation: None,
+};
+
 /// Normalize runtime UI profile aliases to canonical values.
 pub fn normalize_runtime_ui_protocol(raw: &str) -> Option<&'static str> {
     match raw.trim().to_ascii_lowercase().as_str() {
@@ -156,6 +180,8 @@ pub fn normalize_runtime_ui_protocol(raw: &str) -> Option<&'static str> {
         "a2ui" => Some("a2ui"),
         "ag_ui" | "ag-ui" => Some("ag_ui"),
         "mcp_apps" | "mcp-apps" => Some("mcp_apps"),
+        #[cfg(feature = "awp")]
+        "awp" => Some("awp"),
         _ => None,
     }
 }

@@ -11,7 +11,7 @@ import {
 } from '../../../packages/adk-ui-react/src/index.ts';
 import './App.css';
 
-type UiProtocol = 'adk_ui' | 'a2ui' | 'ag_ui' | 'mcp_apps';
+type UiProtocol = 'adk_ui' | 'a2ui' | 'ag_ui' | 'mcp_apps' | 'awp';
 
 interface SurfaceSnapshot {
   protocol?: SharedProtocolSurfaceSnapshot['protocol'];
@@ -20,6 +20,8 @@ interface SurfaceSnapshot {
   components: Component[];
   dataModel: Record<string, unknown>;
   bridge?: SharedProtocolSurfaceSnapshot['bridge'];
+  /** AWP-rendered HTML for iframe display */
+  html?: string;
 }
 
 interface StreamLogEvent {
@@ -184,6 +186,11 @@ const PROTOCOLS: Array<{ id: UiProtocol; label: string; hint: string }> = [
     label: 'MCP Apps',
     hint: 'Compatibility subset with framework bridge endpoints, bridge-aware structured content, ui:// resources, and inline HTML fallback.',
   },
+  {
+    id: 'awp',
+    label: 'AWP',
+    hint: 'Agentic Web Protocol — dual-user rendering with HTML output, capability manifest export, and bandwidth-adaptive mode.',
+  },
 ];
 
 const MAX_EVENT_LOG = 120;
@@ -244,6 +251,7 @@ function normalizeProtocol(value: unknown): UiProtocol | null {
   if (normalized === 'a2ui') return 'a2ui';
   if (normalized === 'ag_ui' || normalized === 'ag-ui') return 'ag_ui';
   if (normalized === 'mcp_apps' || normalized === 'mcp-apps') return 'mcp_apps';
+  if (normalized === 'awp') return 'awp';
   return null;
 }
 
@@ -583,6 +591,18 @@ function protocolInstruction(protocol: UiProtocol): string {
       'Call at least one `render_*` tool before any plain text response.',
       'If rendering fails, call `render_alert` with an error message.',
       'Return rich UI with forms, charts, and actionable controls.',
+    ].join(' ');
+  }
+  if (protocol === 'awp') {
+    return [
+      'Use adk-ui tools and explicitly set `protocol` to `awp`.',
+      'AWP (Agentic Web Protocol) produces both a structured component tree and rendered HTML in a single response.',
+      'The runtime will generate embeddable HTML from your components automatically.',
+      'Prefer rich components (cards, tables, charts, alerts, forms) instead of plain text-only layouts.',
+      'Prefer `render_layout`, `render_table`, `render_chart`, and `render_form` when they fit the request.',
+      'Call at least one `render_*` tool before any plain text response.',
+      'If rendering fails, call `render_alert` with an error message.',
+      'Return rich UI with layouts, data visuals, and clear actions.',
     ].join(' ');
   }
   return [
@@ -1180,7 +1200,21 @@ function extractSurfaceFromToolResponse(response: unknown): SurfaceSnapshot | nu
     return null;
   }
 
-  return extractSurfaceFromProtocolSnapshot(surface);
+  const snapshot = extractSurfaceFromProtocolSnapshot(surface);
+  if (!snapshot) {
+    return null;
+  }
+
+  // Extract AWP HTML from the payload for iframe rendering
+  if (snapshot.protocol === 'awp' && isRecord(response)) {
+    const payload = isRecord(response) ? (pickField(response as Record<string, unknown>, 'payload') as Record<string, unknown> | undefined) : undefined;
+    const html = payload && typeof payload === 'object' ? (payload as Record<string, unknown>).html : undefined;
+    if (typeof html === 'string' && html.length > 0) {
+      snapshot.html = html;
+    }
+  }
+
+  return snapshot;
 }
 
 function normalizeAlertVariant(value: unknown): 'info' | 'success' | 'warning' | 'error' {
@@ -2710,6 +2744,11 @@ function flattenSurfaceComponents(components: Component[]): Component[] {
 }
 
 function isLowFidelitySurface(surface: SurfaceSnapshot): boolean {
+  // AWP surfaces with HTML rendering are never low-fidelity — the HTML is the rich output
+  if (surface.html) {
+    return false;
+  }
+
   const flat = flattenSurfaceComponents(surface.components);
   if (flat.length < 5) {
     return false;
@@ -3669,13 +3708,28 @@ function App() {
 
           {surface ? (
             <div className="render-surface" data-surface={surface.surfaceId}>
-              {surface.components.map((component, index) => (
-                <UiRenderer
-                  key={`${component.id ?? 'component'}-${index}`}
-                  component={component}
-                  onAction={registerUiAction}
+              {surface.html ? (
+                <iframe
+                  srcDoc={surface.html}
+                  title="AWP Rendered Surface"
+                  sandbox="allow-scripts"
+                  style={{
+                    width: '100%',
+                    minHeight: '500px',
+                    border: 'none',
+                    borderRadius: '8px',
+                    background: 'white',
+                  }}
                 />
-              ))}
+              ) : (
+                surface.components.map((component, index) => (
+                  <UiRenderer
+                    key={`${component.id ?? 'component'}-${index}`}
+                    component={component}
+                    onAction={registerUiAction}
+                  />
+                ))
+              )}
             </div>
           ) : (
             <div className="empty-state">

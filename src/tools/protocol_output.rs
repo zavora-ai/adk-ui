@@ -4,6 +4,8 @@ use crate::interop::{
     AgUiEvent, McpAppsRenderOptions, McpAppsSurfacePayload, UiProtocol, UiSurface,
     surface_to_event_stream, surface_to_mcp_apps_payload, validate_mcp_apps_render_options,
 };
+#[cfg(feature = "awp")]
+use crate::interop::UiProtocolAdapter;
 use crate::model::{ToolEnvelope, ToolEnvelopeProtocol};
 use crate::schema::{Component, UiResponse};
 use schemars::JsonSchema;
@@ -157,6 +159,12 @@ struct McpAppsEnvelopePayload {
     payload: McpAppsSurfacePayload,
 }
 
+#[cfg(feature = "awp")]
+#[derive(Debug, Clone, Serialize)]
+struct AwpEnvelopePayload {
+    payload: Value,
+}
+
 fn serialize_envelope<P: Serialize>(
     envelope: ToolEnvelope<P>,
 ) -> Result<Value, crate::compat::AdkError> {
@@ -232,6 +240,28 @@ pub(crate) fn render_ui_response_with_protocol(
                 ToolEnvelopeProtocol::McpApps,
                 surface.surface_id,
                 McpAppsEnvelopePayload { payload },
+            );
+            serialize_envelope(envelope)
+        }
+        #[cfg(feature = "awp")]
+        UiProtocol::Awp => {
+            // For AWP, render HTML from the original typed components (UiResponse),
+            // not from the projected UiSurface (which contains A2UI-format summaries).
+            let html_options = crate::html::HtmlRenderOptions::default();
+            let html = crate::html::render_components_html(&ui.components, &html_options);
+            let awp_payload = json!({
+                "protocol": "awp",
+                "surface_id": surface.surface_id,
+                "components": surface.components,
+                "data_model": surface.data_model,
+                "html": html,
+            });
+            let envelope = ToolEnvelope::new(
+                ToolEnvelopeProtocol::Awp,
+                surface.surface_id,
+                AwpEnvelopePayload {
+                    payload: awp_payload,
+                },
             );
             serialize_envelope(envelope)
         }
