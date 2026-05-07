@@ -43,7 +43,7 @@ Dynamic UI generation for [ADK-Rust](https://adk-rust.com) agents — render for
 
 ```toml
 [dependencies]
-adk-ui = "0.7"
+adk-ui = "0.8"
 ```
 
 ### 2. Register the UI toolset with your agent
@@ -154,7 +154,7 @@ AWP integration is behind an optional Cargo feature flag:
 
 ```toml
 [dependencies]
-adk-ui = { version = "0.7", features = ["awp"] }
+adk-ui = { version = "0.8", features = ["awp"] }
 ```
 
 This adds the `AwpAdapter`, HTML renderer with `BandwidthMode`, capability manifest export via `UiToolset::to_capability_entries()`, and `ToolEnvelope` AWP bridge fields. Without the flag, adk-ui compiles without any AWP dependencies.
