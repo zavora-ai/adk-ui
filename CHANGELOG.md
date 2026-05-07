@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-05-07
+
+### Changed
+
+- Upgraded all `adk-*` dependencies to 0.8.0 (adk-core, adk-agent, adk-model, adk-cli, adk-runner, adk-server, adk-session).
+- Switched `awp-types` from local stub to published crate (v0.8.0 on crates.io).
+- Updated `ToolEnvelope::to_awp_response()` to match the published `AwpResponse` struct (uses `Uuid`, `AwpVersion`, `status` fields).
+- Added `uuid` as optional dependency (gated behind `awp` feature).
+- Removed local `awp-types/` stub directory.
+- Clean upgrade — no other API changes required.
+
 ## [0.7.0] - 2026-04-25
 
 ### Added

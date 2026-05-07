@@ -78,11 +78,12 @@ impl<P: Serialize> ToolEnvelope<P> {
                 e
             ))
         })?;
-        let mut response = awp_types::AwpResponse::new(payload);
-        if let Some(ref req_id) = self.request_id {
-            response = response.with_request_id(req_id.clone());
-        }
-        Ok(response)
+        Ok(awp_types::AwpResponse {
+            id: uuid::Uuid::now_v7(),
+            version: awp_types::CURRENT_VERSION,
+            status: "ok".to_string(),
+            payload,
+        })
     }
 }
 
