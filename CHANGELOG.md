@@ -12,6 +12,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Upgraded all `adk-*` and `awp-types` dependencies to 1.0.0 — stable release.
 - Bumped `adk-ui` to 1.0.0 to match the ADK-Rust ecosystem stable release.
 
+## [1.0.0] - 2026-05-14
+
+### Changed
+
+- Upgraded all `adk-*` and `awp-types` dependencies to 1.0.0 — stable release aligned with the ADK-Rust 1.0 ecosystem.
+- Bumped `adk-ui` to version 1.0.0 marking the first stable release.
+
+## [1.0.0] - 2026-05-15
+
+### Changed
+
+- Upgraded all `adk-*` dependencies to 1.0.0 (adk-core, adk-agent, adk-model, adk-cli, adk-runner, adk-server, adk-session).
+- Upgraded `awp-types` to 1.0.0.
+- Bumped adk-ui to 1.0.0 — stable release aligned with the ADK-Rust 1.0 ecosystem.
+
 ## [0.8.0] - 2026-05-07
 
 ### Changed
