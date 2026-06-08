@@ -1,6 +1,6 @@
 [package]
 name = "adk-ui"
-version = "0.8.0"
+version = "1.0.0"
 edition = "2024"
 rust-version = "1.85.0"
 license = "Apache-2.0"
@@ -18,8 +18,8 @@ serde_json = "1.0"
 thiserror = "2.0"
 schemars = "0.8"
 async-trait = "0.1"
-adk-core = { version = "0.8", optional = true }
-awp-types = { version = "0.8", optional = true }
+adk-core = { version = "1", optional = true }
+awp-types = { version = "1", optional = true }
 uuid = { version = "1", features = ["v7"], optional = true }
 jsonschema = "0.29"
 chrono = { version = "0.4", default-features = false, features = ["clock"] }
@@ -38,12 +38,12 @@ optional = true
 tokio = { version = "1.40", features = ["macros", "rt-multi-thread"] }
 anyhow = "1.0"
 dotenvy = "0.15"
-adk-agent = { version = "0.8" }
-adk-model = { version = "0.8" }
-adk-cli = { version = "0.8" }
-adk-runner = { version = "0.8" }
-adk-server = { version = "0.8" }
-adk-session = { version = "0.8" }
+adk-agent = { version = "1" }
+adk-model = { version = "1" }
+adk-cli = { version = "1" }
+adk-runner = { version = "1" }
+adk-server = { version = "1" }
+adk-session = { version = "1" }
 axum = "0.8"
 base64 = "0.22"
 futures = "0.3"
