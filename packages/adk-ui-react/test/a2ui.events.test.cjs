@@ -5,6 +5,7 @@ const {
     buildActionEvent,
     buildErrorEvent,
     buildValidationFailedEvent,
+    resolveActionResponsePath,
     runLocalAction,
 } = require('../dist/index.js');
 
@@ -38,6 +39,41 @@ describe('A2ui events', () => {
             literal: 'ok',
             score: 3,
         });
+    });
+
+    it('assigns actionId when wantResponse is set (A2UI v1.0)', () => {
+        const event = buildActionEvent(
+            {
+                event: {
+                    name: 'typeahead',
+                    wantResponse: true,
+                    responsePath: '/form/suggestions',
+                    context: { prefix: { path: '/form/q' } },
+                },
+            },
+            'main',
+            'input_1',
+            {
+                dataModel: { form: { q: 'app' } },
+            },
+        );
+
+        assert.equal(event.version, 'v1.0');
+        assert.equal(event.action.wantResponse, true);
+        assert.equal('responsePath' in event.action, false);
+        assert.equal(
+            resolveActionResponsePath({
+                event: {
+                    name: 'typeahead',
+                    wantResponse: true,
+                    responsePath: '/form/suggestions',
+                },
+            }),
+            '/form/suggestions',
+        );
+        assert.equal(typeof event.action.actionId, 'string');
+        assert.match(event.action.actionId, /^typeahead_/);
+        assert.equal(event.action.context.prefix, 'app');
     });
 
     it('returns null when no event is configured', () => {

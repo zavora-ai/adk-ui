@@ -5,7 +5,12 @@ import { AlertCircle, CheckCircle, Info, XCircle, User, Mail, Calendar } from 'l
 
 import type { CheckRule, FunctionRegistry } from './bindings';
 import { evaluateChecks, isDataBinding, resolveDynamicString, resolveDynamicValue, resolvePath } from './bindings';
-import { buildActionEvent, buildValidationFailedEvent, runLocalAction } from './events';
+import {
+    buildActionEvent,
+    buildValidationFailedEvent,
+    resolveActionResponsePath,
+    runLocalAction,
+} from './events';
 import type {
     A2uiActionDefinition,
     A2uiActionEventPayload,
@@ -371,6 +376,15 @@ const A2uiComponentView: React.FC<{ component: A2uiComponent; scope?: Record<str
                             functions: ctx.functions,
                         });
                         if (event) {
+                            if (event.action.wantResponse && event.action.actionId) {
+                                ctx.store.trackPendingAction({
+                                    actionId: event.action.actionId,
+                                    surfaceId: ctx.surfaceId,
+                                    name: event.action.name,
+                                    responsePath: resolveActionResponsePath(action),
+                                    createdAt: event.action.timestamp,
+                                });
+                            }
                             ctx.onAction?.(event);
                             ctx.onClientMessage?.(event);
                         }

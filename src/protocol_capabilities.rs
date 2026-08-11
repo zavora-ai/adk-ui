@@ -1,7 +1,14 @@
 use serde::Serialize;
 
 /// Default runtime protocol profile for server integrations.
+///
+/// New integrations should prefer an explicit protocol (`a2ui`, `ag_ui`,
+/// `mcp_apps`, or `awp`). The legacy default remains for compatibility until
+/// the 2026-12-31 sunset.
 pub const UI_DEFAULT_PROTOCOL: &str = "adk_ui";
+
+/// Preferred default for new integrations (A2UI current production family).
+pub const UI_PREFERRED_PROTOCOL: &str = "a2ui";
 
 /// Tool envelope version used by protocol-aware legacy tool responses.
 pub const TOOL_ENVELOPE_VERSION: &str = "1.0";
@@ -39,6 +46,7 @@ pub enum UiProtocolSpecTrack {
     Internal,
     Stable,
     Draft,
+    Candidate,
 }
 
 /// Static capability contract for each supported UI protocol.
@@ -61,7 +69,9 @@ pub const ADK_UI_LEGACY_DEPRECATION: UiProtocolDeprecationSpec = UiProtocolDepre
     announced_on: "2026-02-07",
     sunset_target_on: Some("2026-12-31"),
     replacement_protocols: &["a2ui", "ag_ui", "mcp_apps"],
-    note: Some("Legacy adk_ui profile remains supported during migration."),
+    note: Some(
+        "Legacy adk_ui profile remains supported during migration. Prefer a2ui for new integrations.",
+    ),
 };
 
 pub const UI_PROTOCOL_CAPABILITIES: &[UiProtocolCapabilitySpec] = &[
@@ -80,58 +90,83 @@ pub const UI_PROTOCOL_CAPABILITIES: &[UiProtocolCapabilitySpec] = &[
     },
     UiProtocolCapabilitySpec {
         protocol: "a2ui",
-        versions: &["0.9"],
-        implementation_tier: UiProtocolImplementationTier::HybridSubset,
-        spec_track: UiProtocolSpecTrack::Draft,
-        summary: "Core A2UI surface transport with flat-component alignment, metadata-aware client envelopes, and validation-capable renderer behavior.",
+        versions: &["0.9", "0.9.1"],
+        implementation_tier: UiProtocolImplementationTier::NativeSubset,
+        spec_track: UiProtocolSpecTrack::Stable,
+        summary: "A2UI v0.9.1 production + v1.0 actionResponse RPC: versioned JSONL, create/update/delete surface, client action with wantResponse/actionId, actionResponse apply-to-data-model, application/a2ui+json.",
         features: &[
             "jsonl",
+            "versioned_envelopes_v0_9_1",
+            "versioned_envelopes_v1_0",
             "flat_components",
             "createSurface",
             "updateComponents",
             "updateDataModel",
+            "deleteSurface",
+            "client_action_messages",
+            "action_want_response",
+            "action_response",
+            "call_function",
+            "function_response",
+            "validation_failed_errors",
             "client_metadata",
             "validation_feedback",
             "basic_catalog_functions",
             "local_actions",
+            "mime_application_a2ui_json",
+            "optional_bulk_createSurface_fields",
         ],
         limitations: &[
-            "Treat current support as a v0.9-aligned subset while the upstream v0.9 spec remains draft.",
-            "The package now covers the practical metadata, validation, and basic catalog flows used by this repo, but it still does not claim every draft-only renderer/runtime feature.",
+            "A2UI v1.0 multi-catalog mix and full catalog composition constraints are partial; actionResponse/callFunction are implemented end-to-end.",
+            "Dedicated A2A transport bindings remain host-owned; this crate emits protocol JSONL and client action envelopes.",
         ],
         deprecation: None,
     },
     UiProtocolCapabilitySpec {
         protocol: "ag_ui",
         versions: &["0.1"],
-        implementation_tier: UiProtocolImplementationTier::CompatibilitySubset,
+        implementation_tier: UiProtocolImplementationTier::NativeSubset,
         spec_track: UiProtocolSpecTrack::Stable,
-        summary: "Compatibility-oriented AG-UI subset with native run-input ingestion, lifecycle events, custom surface transport, and stable text/tool event ingestion.",
+        summary: "AG-UI native event families: run lifecycle, text/tool streams, state snapshot/delta, activity, reasoning, and ADK surface CUSTOM + ACTIVITY_SNAPSHOT transport.",
         features: &[
             "event_stream",
-            "native_run_input_ingest",
             "run_lifecycle",
-            "custom_surface_event",
+            "run_started_parent_run_id",
+            "native_run_input_ingest",
             "stable_text_events",
+            "text_message_chunk",
             "stable_tool_events",
-            "messages_snapshot_ingest",
+            "tool_call_chunk",
+            "tool_call_result",
+            "state_snapshot",
+            "state_delta",
+            "messages_snapshot",
+            "activity_snapshot",
+            "activity_delta",
+            "reasoning_events",
+            "reasoning_message_chunk",
+            "custom_surface_event",
+            "surface_activity_snapshot",
             "run_error",
+            "raw_events",
         ],
         limitations: &[
-            "The example client now prefers protocol-native AG-UI request input, but the bundled example server still serializes wrapped runtime events rather than a fully native AG-UI SSE envelope.",
-            "Activity snapshots/deltas, reasoning streams, and chunk aggregation are accepted as compatibility inputs but are not yet produced end-to-end by the example server.",
+            "Example hosts may still wrap some ADK runtime events; prefer protocol_native SSE when available from adk-server.",
+            "Full bidirectional shared-state / HITL policy is application-defined on top of these event types.",
         ],
         deprecation: None,
     },
     UiProtocolCapabilitySpec {
         protocol: "mcp_apps",
-        versions: &["sep-1865"],
-        implementation_tier: UiProtocolImplementationTier::CompatibilitySubset,
+        versions: &["sep-1865", "2025-11-21"],
+        implementation_tier: UiProtocolImplementationTier::NativeSubset,
         spec_track: UiProtocolSpecTrack::Stable,
-        summary: "Compatibility-oriented MCP Apps subset with initialize requests, bridge-aware structured tool results, ui:// resources, and inline HTML fallback surfaces.",
+        summary: "MCP Apps (SEP-1865 Final): ui:// resources, text/html;profile=mcp-app, extension id io.modelcontextprotocol/ui, bridge initialize/message/model-context, structured tool results.",
         features: &[
+            "extension_id_io_modelcontextprotocol_ui",
             "ui_resource_uri",
-            "tool_meta",
+            "tool_meta_ui_resource_uri",
+            "html_profile_mcp_app",
             "structured_content",
             "initialize_request",
             "initialize_bridge_endpoint",
@@ -139,20 +174,21 @@ pub const UI_PROTOCOL_CAPABILITIES: &[UiProtocolCapabilitySpec] = &[
             "update_model_context_bridge_endpoint",
             "bridge_host_context",
             "bridge_app_capabilities",
+            "extension_capability_advertisement",
+            "resource_list_changed_capability",
+            "tool_list_changed_capability",
             "inline_html_resource",
+            "sandbox_csp_meta",
         ],
         limitations: &[
-            "The example host/client path now supports initialize, message, and model-context bridge endpoints plus bridge-aware response rendering, but the library still exposes MCP Apps primarily through compatibility adapters rather than a standalone embedded app bridge API.",
-            "Static HTML resource fallback remains part of the public MCP Apps surface while broader host negotiation, resource notifications, and fully app-native bridge semantics are still partial.",
+            "Full browser postMessage host SDK is host-owned; adk-ui provides payloads + HTTP bridge shapes used with adk-server.",
+            "Bridge session durability depends on the host (adk-server in-memory by default).",
         ],
         deprecation: None,
     },
 ];
 
 /// AWP protocol capability specification.
-///
-/// Exposed as a standalone constant so downstream crates (adk-server, adk-gateway)
-/// can conditionally include it in their runtime protocol arrays.
 #[cfg(feature = "awp")]
 pub const AWP_PROTOCOL_CAPABILITY: UiProtocolCapabilitySpec = UiProtocolCapabilitySpec {
     protocol: "awp",
@@ -169,6 +205,7 @@ pub const AWP_PROTOCOL_CAPABILITY: UiProtocolCapabilitySpec = UiProtocolCapabili
     limitations: &[
         "HTML renderer produces static markup; interactive behaviors require client-side hydration.",
         "Chart components render as data-attribute placeholders, not visual charts.",
+        "Site-level AWP (discovery, trust, rate limits) lives in adk-awp; this crate supplies UI payload/HTML only.",
     ],
     deprecation: None,
 };
@@ -246,57 +283,29 @@ mod tests {
     }
 
     #[test]
-    fn capability_specs_capture_support_boundaries() {
+    fn modern_protocols_are_native_subset() {
+        for name in ["a2ui", "ag_ui", "mcp_apps"] {
+            let spec = UI_PROTOCOL_CAPABILITIES
+                .iter()
+                .find(|s| s.protocol == name)
+                .unwrap_or_else(|| panic!("missing {name}"));
+            assert_eq!(
+                spec.implementation_tier,
+                UiProtocolImplementationTier::NativeSubset,
+                "{name}"
+            );
+            assert_eq!(spec.spec_track, UiProtocolSpecTrack::Stable, "{name}");
+        }
         let a2ui = UI_PROTOCOL_CAPABILITIES
             .iter()
-            .find(|spec| spec.protocol == "a2ui")
-            .expect("a2ui capability");
-        assert_eq!(
-            a2ui.implementation_tier,
-            UiProtocolImplementationTier::HybridSubset
-        );
-        assert_eq!(a2ui.spec_track, UiProtocolSpecTrack::Draft);
-
-        let ag_ui = UI_PROTOCOL_CAPABILITIES
-            .iter()
-            .find(|spec| spec.protocol == "ag_ui")
-            .expect("ag_ui capability");
-        assert_eq!(
-            ag_ui.implementation_tier,
-            UiProtocolImplementationTier::CompatibilitySubset
-        );
-
-        let mcp_apps = UI_PROTOCOL_CAPABILITIES
-            .iter()
-            .find(|spec| spec.protocol == "mcp_apps")
-            .expect("mcp_apps capability");
-        assert_eq!(
-            mcp_apps.implementation_tier,
-            UiProtocolImplementationTier::CompatibilitySubset
-        );
-        assert_eq!(mcp_apps.spec_track, UiProtocolSpecTrack::Stable);
-        assert!(
-            mcp_apps.features.contains(&"initialize_request"),
-            "mcp_apps feature list should include initialize support"
-        );
+            .find(|s| s.protocol == "a2ui")
+            .unwrap();
+        assert!(a2ui.versions.contains(&"0.9.1"));
     }
 
     #[test]
-    fn capability_specs_serialize_support_metadata_in_camel_case() {
-        let value = serde_json::to_value(UI_PROTOCOL_CAPABILITIES).expect("serialize capabilities");
-        let protocols = value.as_array().expect("capabilities array");
-        let a2ui = protocols
-            .iter()
-            .find(|spec| spec["protocol"] == "a2ui")
-            .expect("a2ui json capability");
-
-        assert_eq!(a2ui["implementationTier"], "hybrid_subset");
-        assert_eq!(a2ui["specTrack"], "draft");
-        assert!(a2ui["summary"].as_str().is_some());
-        assert!(
-            a2ui["limitations"]
-                .as_array()
-                .is_some_and(|limitations| !limitations.is_empty())
-        );
+    fn preferred_protocol_is_a2ui() {
+        assert_eq!(UI_PREFERRED_PROTOCOL, "a2ui");
+        assert!(normalize_runtime_ui_protocol(UI_PREFERRED_PROTOCOL).is_some());
     }
 }

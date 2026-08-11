@@ -207,6 +207,13 @@ body {
   cursor: pointer;
 }
 
+.capability-actions {
+  display: inline-flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
 .chip-row {
   display: flex;
   flex-wrap: wrap;
@@ -526,6 +533,100 @@ body {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 0.8rem;
   line-height: 1.45;
+}
+
+/* AG-UI reasoning panel */
+.adk-reasoning-panel,
+.reasoning-output {
+  margin-top: 0.8rem;
+  border: 1px solid rgba(21, 34, 56, 0.14);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.78);
+  overflow: hidden;
+}
+
+.adk-reasoning-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border: 0;
+  background: linear-gradient(90deg, rgba(15, 123, 108, 0.12), rgba(102, 179, 255, 0.12));
+  color: inherit;
+  font: inherit;
+  padding: 0.7rem 0.85rem;
+  cursor: pointer;
+  text-align: left;
+}
+
+.adk-reasoning-title {
+  font-weight: 600;
+}
+
+.adk-reasoning-meta {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin-left: auto;
+}
+
+.adk-reasoning-chevron {
+  font-size: 0.9rem;
+  opacity: 0.7;
+}
+
+.adk-reasoning-body {
+  padding: 0.75rem 0.85rem 0.95rem;
+  display: grid;
+  gap: 0.7rem;
+}
+
+.adk-reasoning-item {
+  border: 1px solid rgba(21, 34, 56, 0.1);
+  border-radius: 10px;
+  background: rgba(250, 252, 255, 0.92);
+  padding: 0.6rem 0.7rem;
+}
+
+.adk-reasoning-item.is-streaming {
+  border-color: rgba(15, 123, 108, 0.35);
+  box-shadow: 0 0 0 1px rgba(15, 123, 108, 0.08);
+}
+
+.adk-reasoning-item-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.3rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.adk-reasoning-text {
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.a2ui-action-output {
+  margin-top: 0.8rem;
+  border: 1px dashed rgba(15, 123, 108, 0.4);
+  border-radius: 13px;
+  padding: 0.75rem 0.9rem;
+  background: rgba(15, 123, 108, 0.07);
+}
+
+.a2ui-action-output h3 {
+  margin: 0 0 0.45rem;
+  font-size: 0.9rem;
+}
+
+.a2ui-action-output pre {
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 0.8rem;
 }
 
 .activity-output {

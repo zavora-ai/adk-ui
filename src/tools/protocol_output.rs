@@ -4,8 +4,6 @@ use crate::interop::{
     AgUiEvent, McpAppsRenderOptions, McpAppsSurfacePayload, UiProtocol, UiSurface,
     surface_to_event_stream, surface_to_mcp_apps_payload, validate_mcp_apps_render_options,
 };
-#[cfg(feature = "awp")]
-use crate::interop::UiProtocolAdapter;
 use crate::model::{ToolEnvelope, ToolEnvelopeProtocol};
 use crate::schema::{Component, UiResponse};
 use schemars::JsonSchema;

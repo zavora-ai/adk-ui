@@ -119,6 +119,10 @@ export const StreamingRenderer: React.FC<StreamingRendererProps> = ({ component,
 const ComponentRenderer: React.FC<{ component: Component }> = ({ component }) => {
     const { onAction } = useContext(FormContext);
     const formRef = useRef<HTMLFormElement>(null);
+    const [activeTab, setActiveTab] = React.useState(0);
+    const [sortColumn, setSortColumn] = React.useState<string | null>(null);
+    const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>('asc');
+    const [currentPage, setCurrentPage] = React.useState(0);
 
     const handleButtonClick = (actionId: string) => {
         // Check if button is inside a form (for submit)
@@ -129,9 +133,18 @@ const ComponentRenderer: React.FC<{ component: Component }> = ({ component }) =>
             formData.forEach((value, key) => {
                 data[key] = value;
             });
-            onAction?.({ action: 'form_submit', action_id: actionId, data });
+            onAction?.({
+                action: 'form_submit',
+                action_id: actionId,
+                data,
+                source_component_id: component.id ?? actionId,
+            });
         } else {
-            onAction?.({ action: 'button_click', action_id: actionId });
+            onAction?.({
+                action: 'button_click',
+                action_id: actionId,
+                source_component_id: component.id ?? actionId,
+            });
         }
     };
 
@@ -220,11 +233,12 @@ const ComponentRenderer: React.FC<{ component: Component }> = ({ component }) =>
                 // Find submit button action_id
                 const submitBtn = [...component.content, ...(component.footer || [])].find(
                     c => c.type === 'button'
-                ) as { type: 'button'; action_id: string } | undefined;
+                ) as { type: 'button'; id?: string; action_id: string } | undefined;
                 onAction?.({
                     action: 'form_submit',
                     action_id: submitBtn?.action_id || 'form_submit',
-                    data
+                    data,
+                    source_component_id: submitBtn?.id ?? submitBtn?.action_id ?? component.id ?? 'form_submit',
                 });
             };
 
@@ -515,7 +529,11 @@ const ComponentRenderer: React.FC<{ component: Component }> = ({ component }) =>
                     <span>{component.message}</span>
                     {component.dismissible !== false && (
                         <button
-                            onClick={() => onAction?.({ action: 'button_click', action_id: 'toast_dismiss' })}
+                            onClick={() => onAction?.({
+                                action: 'button_click',
+                                action_id: 'toast_dismiss',
+                                source_component_id: component.id ?? 'toast_dismiss',
+                            })}
                             className="ml-2 text-gray-500 hover:text-gray-700"
                         >
                             <XCircle className="w-4 h-4" />
@@ -538,7 +556,11 @@ const ComponentRenderer: React.FC<{ component: Component }> = ({ component }) =>
                             <h3 className="font-semibold text-lg dark:text-white">{component.title}</h3>
                             {component.closable !== false && (
                                 <button
-                                    onClick={() => onAction?.({ action: 'button_click', action_id: 'modal_close' })}
+                                    onClick={() => onAction?.({
+                                        action: 'button_click',
+                                        action_id: 'modal_close',
+                                        source_component_id: component.id ?? 'modal_close',
+                                    })}
                                     className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                                 >
                                     <XCircle className="w-5 h-5" />
@@ -589,7 +611,6 @@ const ComponentRenderer: React.FC<{ component: Component }> = ({ component }) =>
             );
 
         case 'tabs':
-            const [activeTab, setActiveTab] = React.useState(0);
             return (
                 <div className="mb-4">
                     <div className="border-b border-gray-200">
@@ -621,10 +642,6 @@ const ComponentRenderer: React.FC<{ component: Component }> = ({ component }) =>
 
         case 'table':
             // Table with sorting and pagination support
-            const [sortColumn, setSortColumn] = React.useState<string | null>(null);
-            const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>('asc');
-            const [currentPage, setCurrentPage] = React.useState(0);
-
             const handleSort = (accessorKey: string) => {
                 if (!component.sortable) return;
                 if (sortColumn === accessorKey) {

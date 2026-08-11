@@ -624,10 +624,7 @@ impl UiResponse {
         let json = serde_json::to_vec(&self).unwrap_or_default();
         crate::compat::Content {
             role: "model".to_string(),
-            parts: vec![crate::compat::Part::InlineData {
-                mime_type: MIME_TYPE_UI.to_string(),
-                data: json,
-            }],
+            parts: vec![crate::compat::inline_data_part(MIME_TYPE_UI, json)],
         }
     }
 }
@@ -760,10 +757,7 @@ impl UiUpdate {
         let json = serde_json::to_vec(&self).unwrap_or_default();
         crate::compat::Content {
             role: "model".to_string(),
-            parts: vec![crate::compat::Part::InlineData {
-                mime_type: MIME_TYPE_UI_UPDATE.to_string(),
-                data: json,
-            }],
+            parts: vec![crate::compat::inline_data_part(MIME_TYPE_UI_UPDATE, json)],
         }
     }
 }

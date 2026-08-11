@@ -21,13 +21,18 @@ pub use interop::*;
 pub use kit::{KitArtifacts, KitGenerator, KitSpec};
 pub use model::{ToolEnvelope, ToolEnvelopeProtocol};
 pub use prompts::{UI_AGENT_PROMPT, UI_AGENT_PROMPT_SHORT};
-pub use protocol_capabilities::{
-    ADK_UI_LEGACY_DEPRECATION, SUPPORTED_UI_PROTOCOLS, TOOL_ENVELOPE_VERSION, UI_DEFAULT_PROTOCOL,
-    UI_PROTOCOL_CAPABILITIES, UiProtocolCapabilitySpec, UiProtocolDeprecationSpec,
-    UiProtocolImplementationTier, UiProtocolSpecTrack, normalize_runtime_ui_protocol,
-};
 #[cfg(feature = "awp")]
 pub use protocol_capabilities::AWP_PROTOCOL_CAPABILITY;
+pub use protocol_capabilities::{
+    ADK_UI_LEGACY_DEPRECATION, SUPPORTED_UI_PROTOCOLS, TOOL_ENVELOPE_VERSION, UI_DEFAULT_PROTOCOL,
+    UI_PREFERRED_PROTOCOL, UI_PROTOCOL_CAPABILITIES, UiProtocolCapabilitySpec,
+    UiProtocolDeprecationSpec, UiProtocolImplementationTier, UiProtocolSpecTrack,
+    normalize_runtime_ui_protocol,
+};
+
+// Re-export frequently used protocol constants at the crate root for discoverability.
+pub use a2ui::{A2UI_BASIC_CATALOG_ID, A2UI_MIME_TYPE, A2UI_PROTOCOL_VERSION};
+pub use interop::{MCP_APPS_EXTENSION_ID, MCP_APPS_SEP_STATUS};
 pub use schema::*;
 pub use templates::{StatItem, TemplateData, UiTemplate, UserData, render_template};
 pub use tools::*;

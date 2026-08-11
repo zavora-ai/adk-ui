@@ -5,10 +5,18 @@
   "description": "Describes a JSON payload for an A2UI (Agent to UI) message, which is used to dynamically construct and update user interfaces.",
   "type": "object",
   "oneOf": [
-    { "$ref": "#/$defs/CreateSurfaceMessage" },
-    { "$ref": "#/$defs/UpdateComponentsMessage" },
-    { "$ref": "#/$defs/UpdateDataModelMessage" },
-    { "$ref": "#/$defs/DeleteSurfaceMessage" }
+    {
+      "$ref": "#/$defs/CreateSurfaceMessage"
+    },
+    {
+      "$ref": "#/$defs/UpdateComponentsMessage"
+    },
+    {
+      "$ref": "#/$defs/UpdateDataModelMessage"
+    },
+    {
+      "$ref": "#/$defs/DeleteSurfaceMessage"
+    }
   ],
   "$defs": {
     "CreateSurfaceMessage": {
@@ -34,13 +42,36 @@
             "sendDataModel": {
               "type": "boolean",
               "description": "If true, the client will send the full data model of this surface in the metadata of every A2A message sent to the server that created the surface. Defaults to false."
+            },
+            "components": {
+              "type": "array",
+              "description": "Optional bulk components (v1.0 candidate)",
+              "items": {}
+            },
+            "dataModel": {
+              "description": "Optional initial data model (v1.0 candidate)"
             }
           },
-          "required": ["surfaceId", "catalogId"],
+          "required": [
+            "surfaceId",
+            "catalogId"
+          ],
           "additionalProperties": false
+        },
+        "version": {
+          "type": "string",
+          "description": "A2UI protocol version (e.g. v0.9 or v0.9.1). Optional for v0.9 payloads; recommended as v0.9.1 for current production.",
+          "enum": [
+            "v0.9",
+            "v0.9.1",
+            "0.9",
+            "0.9.1"
+          ]
         }
       },
-      "required": ["createSurface"],
+      "required": [
+        "createSurface"
+      ],
       "additionalProperties": false
     },
     "UpdateComponentsMessage": {
@@ -54,7 +85,6 @@
               "type": "string",
               "description": "The unique identifier for the UI surface to be updated."
             },
-
             "components": {
               "type": "array",
               "description": "A list containing all UI components for the surface.",
@@ -64,11 +94,26 @@
               }
             }
           },
-          "required": ["surfaceId", "components"],
+          "required": [
+            "surfaceId",
+            "components"
+          ],
           "additionalProperties": false
+        },
+        "version": {
+          "type": "string",
+          "description": "A2UI protocol version (e.g. v0.9 or v0.9.1). Optional for v0.9 payloads; recommended as v0.9.1 for current production.",
+          "enum": [
+            "v0.9",
+            "v0.9.1",
+            "0.9",
+            "0.9.1"
+          ]
         }
       },
-      "required": ["updateComponents"],
+      "required": [
+        "updateComponents"
+      ],
       "additionalProperties": false
     },
     "UpdateDataModelMessage": {
@@ -91,11 +136,25 @@
               "additionalProperties": true
             }
           },
-          "required": ["surfaceId"],
+          "required": [
+            "surfaceId"
+          ],
           "additionalProperties": false
+        },
+        "version": {
+          "type": "string",
+          "description": "A2UI protocol version (e.g. v0.9 or v0.9.1). Optional for v0.9 payloads; recommended as v0.9.1 for current production.",
+          "enum": [
+            "v0.9",
+            "v0.9.1",
+            "0.9",
+            "0.9.1"
+          ]
         }
       },
-      "required": ["updateDataModel"],
+      "required": [
+        "updateDataModel"
+      ],
       "additionalProperties": false
     },
     "DeleteSurfaceMessage": {
@@ -110,11 +169,25 @@
               "description": "The unique identifier for the UI surface to be deleted."
             }
           },
-          "required": ["surfaceId"],
+          "required": [
+            "surfaceId"
+          ],
           "additionalProperties": false
+        },
+        "version": {
+          "type": "string",
+          "description": "A2UI protocol version (e.g. v0.9 or v0.9.1). Optional for v0.9 payloads; recommended as v0.9.1 for current production.",
+          "enum": [
+            "v0.9",
+            "v0.9.1",
+            "0.9",
+            "0.9.1"
+          ]
         }
       },
-      "required": ["deleteSurface"],
+      "required": [
+        "deleteSurface"
+      ],
       "additionalProperties": false
     }
   }

@@ -20,8 +20,10 @@ export interface OutboundEventOptions {
 }
 
 const DEFAULT_SURFACE_ID = 'main';
-export const A2UI_PROTOCOL_VERSION = 'v0.9';
+export const A2UI_PROTOCOL_VERSION = 'v0.9.1';
+export const A2UI_PROTOCOL_VERSION_V1 = 'v1.0';
 export const MCP_APPS_PROTOCOL_VERSION = '2025-11-21';
+export const MCP_APPS_EXTENSION_ID = 'io.modelcontextprotocol/ui';
 
 export interface A2uiClientCapabilities {
     supportedCatalogIds: string[];
@@ -40,7 +42,7 @@ export interface A2uiTransportMetadata {
 
 export interface A2uiClientEnvelope {
     protocol: 'a2ui';
-    version: typeof A2UI_PROTOCOL_VERSION;
+    version: string;
     metadata?: A2uiTransportMetadata;
 }
 

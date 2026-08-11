@@ -9,11 +9,22 @@ pub use adk_core::{
     ReadonlyContext, Result, Tool, ToolContext, Toolset,
 };
 
+#[cfg(feature = "adk-core")]
+pub fn inline_data_part(mime_type: impl Into<String>, data: Vec<u8>) -> Part {
+    Part::InlineData {
+        mime_type: mime_type.into(),
+        data,
+        uri: None,
+        annotations: None,
+    }
+}
+
 #[cfg(not(feature = "adk-core"))]
 mod standalone {
     use async_trait::async_trait;
     use serde::{Deserialize, Serialize};
     use serde_json::Value;
+    use std::collections::HashMap;
     use std::fmt;
     use std::sync::Arc;
 
@@ -69,8 +80,17 @@ mod standalone {
     #[derive(Debug, Clone, Serialize, Deserialize)]
     #[serde(untagged)]
     pub enum Part {
-        Text { text: String },
-        InlineData { mime_type: String, data: Vec<u8> },
+        Text {
+            text: String,
+        },
+        InlineData {
+            mime_type: String,
+            data: Vec<u8>,
+            #[serde(default, skip_serializing_if = "Option::is_none")]
+            uri: Option<String>,
+            #[serde(default, skip_serializing_if = "Option::is_none")]
+            annotations: Option<Value>,
+        },
     }
 
     // ── Traits ─────────────────────────────────────────────────────────
@@ -120,6 +140,7 @@ mod standalone {
         }
         fn set_actions(&self, actions: EventActions);
         async fn search_memory(&self, query: &str) -> Result<Vec<MemoryEntry>>;
+        async fn emit_progress(&self, _stream: &str, _chunk: &str) {}
     }
 
     #[async_trait]
@@ -139,11 +160,17 @@ mod standalone {
     #[derive(Debug, Clone, Default, Serialize, Deserialize)]
     pub struct EventActions {
         #[serde(default)]
+        pub state_delta: HashMap<String, Value>,
+        #[serde(default)]
+        pub artifact_delta: HashMap<String, i64>,
+        #[serde(default)]
+        pub skip_summarization: bool,
+        #[serde(default)]
         pub transfer_to_agent: Option<String>,
         #[serde(default)]
-        pub escalate: Option<String>,
-        #[serde(default)]
-        pub requested_auth_configs: Option<Value>,
+        pub escalate: bool,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub route: Option<Vec<String>>,
     }
 
     #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -156,3 +183,13 @@ mod standalone {
 
 #[cfg(not(feature = "adk-core"))]
 pub use standalone::*;
+
+#[cfg(not(feature = "adk-core"))]
+pub fn inline_data_part(mime_type: impl Into<String>, data: Vec<u8>) -> Part {
+    Part::InlineData {
+        mime_type: mime_type.into(),
+        data,
+        uri: None,
+        annotations: None,
+    }
+}

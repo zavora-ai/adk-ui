@@ -5,7 +5,7 @@ use serde_json::{Value, json};
 /// Event name used for surface payload transport via AG-UI custom events.
 pub const ADK_UI_SURFACE_EVENT_NAME: &str = "adk.ui.surface";
 
-/// AG-UI event types from the protocol event model.
+/// AG-UI event types from the protocol event model (current stable + reasoning).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum AgUiEventType {
@@ -29,6 +29,13 @@ pub enum AgUiEventType {
     MessagesSnapshot,
     ActivitySnapshot,
     ActivityDelta,
+    ReasoningStart,
+    ReasoningMessageStart,
+    ReasoningMessageContent,
+    ReasoningMessageEnd,
+    ReasoningMessageChunk,
+    ReasoningEnd,
+    ReasoningEncryptedValue,
     Error,
     Raw,
     Custom,
@@ -41,6 +48,10 @@ pub struct AgUiRunStartedEvent {
     pub event_type: AgUiEventType,
     pub thread_id: String,
     pub run_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub parent_run_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub input: Option<Value>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -59,11 +70,14 @@ pub struct AgUiRunFinishedEvent {
 pub struct AgUiRunErrorEvent {
     #[serde(rename = "type")]
     pub event_type: AgUiEventType,
-    pub thread_id: String,
-    pub run_id: String,
     pub message: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub code: Option<String>,
+    /// Optional lineage fields retained for multi-run hosts.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub thread_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub run_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -84,11 +98,15 @@ pub struct AgUiCustomEvent {
 pub struct AgUiStepEvent {
     #[serde(rename = "type")]
     pub event_type: AgUiEventType,
-    pub thread_id: String,
-    pub run_id: String,
-    pub step_id: String,
+    /// Official AG-UI field (`stepName`).
+    pub step_name: String,
+    /// Optional run lineage for multi-thread hosts (not required by core AG-UI).
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub name: Option<String>,
+    pub thread_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub run_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub step_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -208,9 +226,12 @@ pub struct AgUiToolCallChunkEvent {
 pub struct AgUiStateSnapshotEvent {
     #[serde(rename = "type")]
     pub event_type: AgUiEventType,
-    pub thread_id: String,
-    pub run_id: String,
-    pub state: Value,
+    /// Official AG-UI field name.
+    pub snapshot: Value,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub thread_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub run_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -218,9 +239,12 @@ pub struct AgUiStateSnapshotEvent {
 pub struct AgUiStateDeltaEvent {
     #[serde(rename = "type")]
     pub event_type: AgUiEventType,
-    pub thread_id: String,
-    pub run_id: String,
+    /// JSON Patch operations (RFC 6902).
     pub delta: Value,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub thread_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub run_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -238,13 +262,15 @@ pub struct AgUiMessagesSnapshotEvent {
 pub struct AgUiActivitySnapshotEvent {
     #[serde(rename = "type")]
     pub event_type: AgUiEventType,
-    pub thread_id: String,
-    pub run_id: String,
     pub message_id: String,
     pub activity_type: String,
     pub content: Value,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub replace: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub thread_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub run_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -252,11 +278,76 @@ pub struct AgUiActivitySnapshotEvent {
 pub struct AgUiActivityDeltaEvent {
     #[serde(rename = "type")]
     pub event_type: AgUiEventType,
-    pub thread_id: String,
-    pub run_id: String,
     pub message_id: String,
     pub activity_type: String,
     pub patch: Value,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub thread_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub run_id: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AgUiReasoningStartEvent {
+    #[serde(rename = "type")]
+    pub event_type: AgUiEventType,
+    pub message_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AgUiReasoningMessageStartEvent {
+    #[serde(rename = "type")]
+    pub event_type: AgUiEventType,
+    pub message_id: String,
+    pub role: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AgUiReasoningMessageContentEvent {
+    #[serde(rename = "type")]
+    pub event_type: AgUiEventType,
+    pub message_id: String,
+    pub delta: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AgUiReasoningMessageEndEvent {
+    #[serde(rename = "type")]
+    pub event_type: AgUiEventType,
+    pub message_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AgUiReasoningMessageChunkEvent {
+    #[serde(rename = "type")]
+    pub event_type: AgUiEventType,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub message_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub delta: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AgUiReasoningEndEvent {
+    #[serde(rename = "type")]
+    pub event_type: AgUiEventType,
+    pub message_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AgUiReasoningEncryptedValueEvent {
+    #[serde(rename = "type")]
+    pub event_type: AgUiEventType,
+    pub subtype: String,
+    pub entity_id: String,
+    pub encrypted_value: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -304,10 +395,40 @@ pub enum AgUiEvent {
     MessagesSnapshot(AgUiMessagesSnapshotEvent),
     ActivitySnapshot(AgUiActivitySnapshotEvent),
     ActivityDelta(AgUiActivityDeltaEvent),
+    ReasoningStart(AgUiReasoningStartEvent),
+    ReasoningMessageStart(AgUiReasoningMessageStartEvent),
+    ReasoningMessageContent(AgUiReasoningMessageContentEvent),
+    ReasoningMessageEnd(AgUiReasoningMessageEndEvent),
+    ReasoningMessageChunk(AgUiReasoningMessageChunkEvent),
+    ReasoningEnd(AgUiReasoningEndEvent),
+    ReasoningEncryptedValue(AgUiReasoningEncryptedValueEvent),
     Error(AgUiErrorEvent),
     Raw(AgUiRawEvent),
     Custom(AgUiCustomEvent),
     RunFinished(AgUiRunFinishedEvent),
+}
+
+pub fn run_started_event(thread_id: impl Into<String>, run_id: impl Into<String>) -> AgUiEvent {
+    AgUiEvent::RunStarted(AgUiRunStartedEvent {
+        event_type: AgUiEventType::RunStarted,
+        thread_id: thread_id.into(),
+        run_id: run_id.into(),
+        parent_run_id: None,
+        input: None,
+    })
+}
+
+pub fn run_finished_event(
+    thread_id: impl Into<String>,
+    run_id: impl Into<String>,
+    result: Option<Value>,
+) -> AgUiEvent {
+    AgUiEvent::RunFinished(AgUiRunFinishedEvent {
+        event_type: AgUiEventType::RunFinished,
+        thread_id: thread_id.into(),
+        run_id: run_id.into(),
+        result,
+    })
 }
 
 pub fn step_started_event(
@@ -316,12 +437,14 @@ pub fn step_started_event(
     step_id: impl Into<String>,
     name: Option<String>,
 ) -> AgUiEvent {
+    let step_id = step_id.into();
+    let step_name = name.unwrap_or_else(|| step_id.clone());
     AgUiEvent::StepStarted(AgUiStepEvent {
         event_type: AgUiEventType::StepStarted,
-        thread_id: thread_id.into(),
-        run_id: run_id.into(),
-        step_id: step_id.into(),
-        name,
+        step_name,
+        thread_id: Some(thread_id.into()),
+        run_id: Some(run_id.into()),
+        step_id: Some(step_id),
     })
 }
 
@@ -331,12 +454,14 @@ pub fn step_finished_event(
     step_id: impl Into<String>,
     name: Option<String>,
 ) -> AgUiEvent {
+    let step_id = step_id.into();
+    let step_name = name.unwrap_or_else(|| step_id.clone());
     AgUiEvent::StepFinished(AgUiStepEvent {
         event_type: AgUiEventType::StepFinished,
-        thread_id: thread_id.into(),
-        run_id: run_id.into(),
-        step_id: step_id.into(),
-        name,
+        step_name,
+        thread_id: Some(thread_id.into()),
+        run_id: Some(run_id.into()),
+        step_id: Some(step_id),
     })
 }
 
@@ -479,9 +604,9 @@ pub fn state_snapshot_event(
 ) -> AgUiEvent {
     AgUiEvent::StateSnapshot(AgUiStateSnapshotEvent {
         event_type: AgUiEventType::StateSnapshot,
-        thread_id: thread_id.into(),
-        run_id: run_id.into(),
-        state,
+        snapshot: state,
+        thread_id: Some(thread_id.into()),
+        run_id: Some(run_id.into()),
     })
 }
 
@@ -492,9 +617,9 @@ pub fn state_delta_event(
 ) -> AgUiEvent {
     AgUiEvent::StateDelta(AgUiStateDeltaEvent {
         event_type: AgUiEventType::StateDelta,
-        thread_id: thread_id.into(),
-        run_id: run_id.into(),
         delta,
+        thread_id: Some(thread_id.into()),
+        run_id: Some(run_id.into()),
     })
 }
 
@@ -523,10 +648,10 @@ pub fn run_error_event(
 ) -> AgUiEvent {
     AgUiEvent::RunError(AgUiRunErrorEvent {
         event_type: AgUiEventType::RunError,
-        thread_id: thread_id.into(),
-        run_id: run_id.into(),
         message: message.into(),
         code,
+        thread_id: Some(thread_id.into()),
+        run_id: Some(run_id.into()),
     })
 }
 
@@ -553,12 +678,12 @@ pub fn activity_snapshot_event(
 ) -> AgUiEvent {
     AgUiEvent::ActivitySnapshot(AgUiActivitySnapshotEvent {
         event_type: AgUiEventType::ActivitySnapshot,
-        thread_id: thread_id.into(),
-        run_id: run_id.into(),
         message_id: message_id.into(),
         activity_type: activity_type.into(),
         content,
         replace,
+        thread_id: Some(thread_id.into()),
+        run_id: Some(run_id.into()),
     })
 }
 
@@ -571,11 +696,55 @@ pub fn activity_delta_event(
 ) -> AgUiEvent {
     AgUiEvent::ActivityDelta(AgUiActivityDeltaEvent {
         event_type: AgUiEventType::ActivityDelta,
-        thread_id: thread_id.into(),
-        run_id: run_id.into(),
         message_id: message_id.into(),
         activity_type: activity_type.into(),
         patch,
+        thread_id: Some(thread_id.into()),
+        run_id: Some(run_id.into()),
+    })
+}
+
+/// Emit a full reasoning message triad (start → content → end).
+pub fn reasoning_message_events(
+    message_id: impl Into<String>,
+    delta: impl Into<String>,
+) -> Vec<AgUiEvent> {
+    let message_id = message_id.into();
+    let delta = delta.into();
+    vec![
+        AgUiEvent::ReasoningStart(AgUiReasoningStartEvent {
+            event_type: AgUiEventType::ReasoningStart,
+            message_id: message_id.clone(),
+        }),
+        AgUiEvent::ReasoningMessageStart(AgUiReasoningMessageStartEvent {
+            event_type: AgUiEventType::ReasoningMessageStart,
+            message_id: message_id.clone(),
+            role: "reasoning".to_string(),
+        }),
+        AgUiEvent::ReasoningMessageContent(AgUiReasoningMessageContentEvent {
+            event_type: AgUiEventType::ReasoningMessageContent,
+            message_id: message_id.clone(),
+            delta,
+        }),
+        AgUiEvent::ReasoningMessageEnd(AgUiReasoningMessageEndEvent {
+            event_type: AgUiEventType::ReasoningMessageEnd,
+            message_id: message_id.clone(),
+        }),
+        AgUiEvent::ReasoningEnd(AgUiReasoningEndEvent {
+            event_type: AgUiEventType::ReasoningEnd,
+            message_id,
+        }),
+    ]
+}
+
+pub fn reasoning_message_chunk_event(
+    message_id: Option<String>,
+    delta: Option<String>,
+) -> AgUiEvent {
+    AgUiEvent::ReasoningMessageChunk(AgUiReasoningMessageChunkEvent {
+        event_type: AgUiEventType::ReasoningMessageChunk,
+        message_id,
+        delta,
     })
 }
 
@@ -613,7 +782,21 @@ pub fn surface_to_event_stream(
             event_type: AgUiEventType::RunStarted,
             thread_id: thread_id.clone(),
             run_id: run_id.clone(),
+            parent_run_id: None,
+            input: None,
         }),
+        // Prefer native activity for surface lifecycle; keep CUSTOM for legacy clients.
+        activity_snapshot_event(
+            thread_id.clone(),
+            run_id.clone(),
+            format!("activity-{}", surface.surface_id),
+            "ADK_UI_SURFACE",
+            json!({
+                "format": "adk-ui-surface-v1",
+                "surface": surface,
+            }),
+            Some(true),
+        ),
         AgUiEvent::Custom(surface_to_custom_event(surface)),
         AgUiEvent::RunFinished(AgUiRunFinishedEvent {
             event_type: AgUiEventType::RunFinished,
@@ -650,15 +833,44 @@ mod tests {
             vec![json!({"id":"root","component":{"Column":{"children":[]}}})],
         );
         let stream = surface_to_event_stream(&surface, "thread-1", "run-1");
-        assert_eq!(stream.len(), 3);
+        assert_eq!(stream.len(), 4);
 
         let first = serde_json::to_value(&stream[0]).unwrap();
         let second = serde_json::to_value(&stream[1]).unwrap();
         let third = serde_json::to_value(&stream[2]).unwrap();
+        let fourth = serde_json::to_value(&stream[3]).unwrap();
 
         assert_eq!(first["type"], "RUN_STARTED");
-        assert_eq!(second["type"], "CUSTOM");
-        assert_eq!(third["type"], "RUN_FINISHED");
+        assert_eq!(second["type"], "ACTIVITY_SNAPSHOT");
+        assert_eq!(second["activityType"], "ADK_UI_SURFACE");
+        assert_eq!(third["type"], "CUSTOM");
+        assert_eq!(fourth["type"], "RUN_FINISHED");
+    }
+
+    #[test]
+    fn state_snapshot_uses_official_snapshot_field() {
+        let event = state_snapshot_event("t", "r", json!({"ui": "ok"}));
+        let value = serde_json::to_value(event).unwrap();
+        assert_eq!(value["type"], "STATE_SNAPSHOT");
+        assert_eq!(value["snapshot"]["ui"], "ok");
+        assert!(value.get("state").is_none());
+    }
+
+    #[test]
+    fn reasoning_helpers_emit_official_event_types() {
+        let events = reasoning_message_events("msg-r1", "thinking...");
+        let types: Vec<_> = events
+            .iter()
+            .map(|e| {
+                serde_json::to_value(e).unwrap()["type"]
+                    .as_str()
+                    .unwrap()
+                    .to_string()
+            })
+            .collect();
+        assert!(types.contains(&"REASONING_START".to_string()));
+        assert!(types.contains(&"REASONING_MESSAGE_CONTENT".to_string()));
+        assert!(types.contains(&"REASONING_END".to_string()));
     }
 
     #[test]
@@ -722,7 +934,7 @@ mod tests {
         let error_json = serde_json::to_value(error).unwrap();
 
         assert_eq!(snapshot_json["type"], "STATE_SNAPSHOT");
-        assert_eq!(snapshot_json["state"]["phase"], "planning");
+        assert_eq!(snapshot_json["snapshot"]["phase"], "planning");
         assert_eq!(delta_json["type"], "STATE_DELTA");
         assert_eq!(delta_json["delta"]["phase"], "acting");
         assert_eq!(error_json["type"], "ERROR");

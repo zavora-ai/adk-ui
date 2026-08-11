@@ -43,17 +43,36 @@ export {
     buildActionEvent,
     buildErrorEvent,
     buildValidationFailedEvent,
+    nextActionId,
+    resolveActionResponsePath,
     runLocalAction,
 } from './a2ui/events';
 export type {
     A2uiActionDefinition,
     A2uiActionEventDefinition,
     A2uiActionEventPayload,
+    A2uiActionResponsePayload,
     A2uiClientMessagePayload,
     A2uiGenericErrorPayload,
     A2uiValidationErrorPayload,
     ActionEventOptions,
 } from './a2ui/events';
+export {
+    ReasoningPanel,
+    applyReasoningEvent,
+    createReasoningRuntime,
+} from './ReasoningPanel';
+export type {
+    ReasoningMessage,
+    ReasoningPanelProps,
+    ReasoningRuntime,
+} from './ReasoningPanel';
+export type { PendingAction } from './a2ui/store';
+export { writeJsonPointer } from './a2ui/store';
+export {
+    isActionResponseMessage,
+    isCallFunctionMessage,
+} from './a2ui/parser';
 export { applyUiUpdate, applyUiUpdates } from './updates';
 export {
     applyProtocolPayload,
@@ -71,6 +90,8 @@ export {
 } from './client';
 export {
     A2UI_PROTOCOL_VERSION,
+    A2UI_PROTOCOL_VERSION_V1,
+    MCP_APPS_EXTENSION_ID,
     MCP_APPS_PROTOCOL_VERSION,
     buildMcpAppsInitializeRequest,
     buildMcpAppsInitializedNotification,

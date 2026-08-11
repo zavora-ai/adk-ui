@@ -68,6 +68,47 @@ impl UiEventMapper {
             context,
         }
     }
+
+    /// Map into a versioned client action envelope (A2UI v0.9.1 / v1.0 wire shape).
+    pub fn to_client_action_message(
+        &self,
+        event: &UiEvent,
+        meta: &A2uiActionMetadata,
+        action_id: Option<String>,
+    ) -> crate::a2ui::messages::A2uiClientActionMessage {
+        self.to_client_action_message_v1(event, meta, action_id, false, None)
+    }
+
+    /// Map into a v1.0 client action that may request an `actionResponse`.
+    pub fn to_client_action_message_v1(
+        &self,
+        event: &UiEvent,
+        meta: &A2uiActionMetadata,
+        action_id: Option<String>,
+        want_response: bool,
+        response_path: Option<String>,
+    ) -> crate::a2ui::messages::A2uiClientActionMessage {
+        // responsePath is renderer-local metadata and is not part of the action wire message.
+        let _ = response_path;
+        let action = self.to_a2ui_action(event, meta);
+        let version = if want_response {
+            "v1.0".to_string()
+        } else {
+            crate::a2ui::messages::A2UI_PROTOCOL_VERSION.to_string()
+        };
+        crate::a2ui::messages::A2uiClientActionMessage {
+            version,
+            action: crate::a2ui::messages::A2uiClientAction {
+                name: action.name,
+                surface_id: action.surface_id,
+                source_component_id: action.source_component_id,
+                timestamp: action.timestamp,
+                context: action.context,
+                want_response,
+                action_id,
+            },
+        }
+    }
 }
 
 #[cfg(test)]
