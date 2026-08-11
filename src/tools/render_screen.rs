@@ -313,10 +313,11 @@ mod tests {
 
         assert_eq!(value["protocol"], "ag_ui");
         let events = value["events"].as_array().unwrap();
-        assert_eq!(events.len(), 3);
+        assert_eq!(events.len(), 4);
         assert_eq!(events[0]["type"], "RUN_STARTED");
-        assert_eq!(events[1]["type"], "CUSTOM");
-        assert_eq!(events[2]["type"], "RUN_FINISHED");
+        assert_eq!(events[1]["type"], "ACTIVITY_SNAPSHOT");
+        assert_eq!(events[2]["type"], "CUSTOM");
+        assert_eq!(events[3]["type"], "RUN_FINISHED");
     }
 
     #[tokio::test]

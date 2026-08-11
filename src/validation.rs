@@ -84,13 +84,13 @@ impl Validate for TextInput {
                 message: "TextInput name cannot be empty".to_string(),
             });
         }
-        if let (Some(min), Some(max)) = (self.min_length, self.max_length) {
-            if min > max {
-                errors.push(ValidationError {
-                    path: format!("{}.min_length", path),
-                    message: "min_length cannot be greater than max_length".to_string(),
-                });
-            }
+        if let (Some(min), Some(max)) = (self.min_length, self.max_length)
+            && min > max
+        {
+            errors.push(ValidationError {
+                path: format!("{}.min_length", path),
+                message: "min_length cannot be greater than max_length".to_string(),
+            });
         }
         errors
     }
@@ -105,13 +105,13 @@ impl Validate for NumberInput {
                 message: "NumberInput name cannot be empty".to_string(),
             });
         }
-        if let (Some(min), Some(max)) = (self.min, self.max) {
-            if min > max {
-                errors.push(ValidationError {
-                    path: format!("{}.min", path),
-                    message: "min cannot be greater than max".to_string(),
-                });
-            }
+        if let (Some(min), Some(max)) = (self.min, self.max)
+            && min > max
+        {
+            errors.push(ValidationError {
+                path: format!("{}.min", path),
+                message: "min cannot be greater than max".to_string(),
+            });
         }
         errors
     }

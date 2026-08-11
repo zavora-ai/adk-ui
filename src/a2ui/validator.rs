@@ -88,12 +88,15 @@ impl A2uiValidator {
 }
 
 fn schema_v0_9() -> Value {
+    // Lightweight envelope schema (v0.9 family including v0.9.1 version stamp).
+    let version = json!({ "type": "string" });
     json!({
         "type": "object",
         "oneOf": [
             {
                 "required": ["createSurface"],
                 "properties": {
+                    "version": version,
                     "createSurface": {
                         "type": "object",
                         "required": ["surfaceId", "catalogId"],
@@ -101,7 +104,9 @@ fn schema_v0_9() -> Value {
                             "surfaceId": { "type": "string" },
                             "catalogId": { "type": "string" },
                             "theme": { "type": "object" },
-                            "sendDataModel": { "type": "boolean" }
+                            "sendDataModel": { "type": "boolean" },
+                            "components": { "type": "array" },
+                            "dataModel": {}
                         }
                     }
                 }
@@ -109,6 +114,7 @@ fn schema_v0_9() -> Value {
             {
                 "required": ["updateComponents"],
                 "properties": {
+                    "version": version,
                     "updateComponents": {
                         "type": "object",
                         "required": ["surfaceId", "components"],
@@ -139,6 +145,7 @@ fn schema_v0_9() -> Value {
             {
                 "required": ["updateDataModel"],
                 "properties": {
+                    "version": version,
                     "updateDataModel": {
                         "type": "object",
                         "required": ["surfaceId"],
@@ -153,11 +160,49 @@ fn schema_v0_9() -> Value {
             {
                 "required": ["deleteSurface"],
                 "properties": {
+                    "version": version,
                     "deleteSurface": {
                         "type": "object",
                         "required": ["surfaceId"],
                         "properties": {
                             "surfaceId": { "type": "string" }
+                        }
+                    }
+                }
+            },
+            {
+                "required": ["actionId", "actionResponse"],
+                "properties": {
+                    "version": version,
+                    "actionId": { "type": "string" },
+                    "actionResponse": {
+                        "type": "object",
+                        "properties": {
+                            "value": {},
+                            "error": {
+                                "type": "object",
+                                "required": ["code", "message"],
+                                "properties": {
+                                    "code": { "type": "string" },
+                                    "message": { "type": "string" }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                "required": ["functionCallId", "callFunction"],
+                "properties": {
+                    "version": version,
+                    "functionCallId": { "type": "string" },
+                    "wantResponse": { "type": "boolean" },
+                    "callFunction": {
+                        "type": "object",
+                        "required": ["call"],
+                        "properties": {
+                            "call": { "type": "string" },
+                            "args": {}
                         }
                     }
                 }
@@ -277,14 +322,14 @@ mod tests {
     #[test]
     fn validates_struct_message() {
         let validator = A2uiValidator::new().unwrap();
-        let message = A2uiMessage::CreateSurface(CreateSurfaceMessage {
-            create_surface: CreateSurface {
-                surface_id: "main".to_string(),
-                catalog_id: "catalog".to_string(),
-                theme: None,
-                send_data_model: None,
-            },
-        });
+        let message = A2uiMessage::CreateSurface(CreateSurfaceMessage::new(CreateSurface {
+            surface_id: "main".to_string(),
+            catalog_id: "catalog".to_string(),
+            theme: None,
+            send_data_model: None,
+            components: None,
+            data_model: None,
+        }));
         assert!(
             validator
                 .validate_message(&message, A2uiSchemaVersion::V0_9)
@@ -295,8 +340,8 @@ mod tests {
     #[test]
     fn validates_update_components_minimal() {
         let validator = A2uiValidator::new().unwrap();
-        let message = A2uiMessage::UpdateComponents(UpdateComponentsMessage {
-            update_components: UpdateComponents {
+        let message =
+            A2uiMessage::UpdateComponents(UpdateComponentsMessage::new(UpdateComponents {
                 surface_id: "main".to_string(),
                 components: vec![json!({
                     "id": "root",
@@ -306,8 +351,7 @@ mod tests {
                         }
                     }
                 })],
-            },
-        });
+            }));
         assert!(
             validator
                 .validate_message(&message, A2uiSchemaVersion::V0_9)
@@ -318,16 +362,15 @@ mod tests {
     #[test]
     fn validates_update_components_flat_shape() {
         let validator = A2uiValidator::new().unwrap();
-        let message = A2uiMessage::UpdateComponents(UpdateComponentsMessage {
-            update_components: UpdateComponents {
+        let message =
+            A2uiMessage::UpdateComponents(UpdateComponentsMessage::new(UpdateComponents {
                 surface_id: "main".to_string(),
                 components: vec![json!({
                     "id": "root",
                     "component": "Text",
                     "text": "Hello"
                 })],
-            },
-        });
+            }));
         assert!(
             validator
                 .validate_message(&message, A2uiSchemaVersion::V0_9)

@@ -43,7 +43,9 @@ Dynamic UI generation for [ADK-Rust](https://adk-rust.com) agents — render for
 
 ```toml
 [dependencies]
-adk-ui = "1"
+adk-ui = "2"
+# For local development against ADK-Rust 2.0 workspace:
+# adk-ui = { path = "../adk-ui", features = ["adk-core"] }
 ```
 
 ### 2. Register the UI toolset with your agent
@@ -69,13 +71,24 @@ let agent = builder.build()?;
 
 The bundled demo pairs the Rust example server with the React client.
 
+**Default LLM provider is OpenAI.** Switch with `ADK_UI_PROVIDER`.
+
 ```bash
 # Install dependencies from the repo root
 npm install
 
-# Start the Rust example server
-export GOOGLE_API_KEY=...
+# Start the Rust example server (OpenAI default)
+export OPENAI_API_KEY=sk-...
+# optional: export ADK_UI_MODEL=gpt-4o-mini
 cargo run --example ui_server --features adk-core
+
+# Or Gemini:
+# export ADK_UI_PROVIDER=gemini
+# export GOOGLE_API_KEY=...
+# cargo run --example ui_server --features adk-core
+
+# Focused agentic demos (A2UI / AG-UI / MCP Apps only) on port 8081:
+# cargo run --example agentic_ui --features adk-core
 ```
 
 ```bash
@@ -154,7 +167,7 @@ AWP integration is behind an optional Cargo feature flag:
 
 ```toml
 [dependencies]
-adk-ui = { version = "1", features = ["awp"] }
+adk-ui = { version = "2", features = ["awp"] }
 ```
 
 This adds the `AwpAdapter`, HTML renderer with `BandwidthMode`, capability manifest export via `UiToolset::to_capability_entries()`, and `ToolEnvelope` AWP bridge fields. Without the flag, adk-ui compiles without any AWP dependencies.
@@ -177,11 +190,24 @@ This section is deliberately concrete to help integrators understand what is imp
 
 | Protocol | Upstream Target | Tier | What Works Today | Live Validation |
 |----------|----------------|------|------------------|-----------------|
-| `a2ui` | `v0.9` draft-aligned | Hybrid subset | JSONL, flat components, `createSurface`, `updateComponents`, `updateDataModel`, client metadata, validation feedback, local actions | Dashboard render validated in browser |
-| `ag_ui` | Stable `0.1` subset | Compatibility subset | Native run-input ingestion, run lifecycle, stable text/tool event ingestion, message snapshot ingestion, action loop support in React client | Render + confirm action validated in browser |
-| `mcp_apps` | `SEP-1865` subset | Compatibility subset | `ui://` resources, structured tool results, initialize/message/model-context bridge endpoints, host context, inline HTML fallback | Initialize + render + confirm action validated in browser |
-| `adk_ui` | Internal legacy | Legacy | Backward-compatible runtime behavior during migration | Tested in browser |
-| `awp` | AWP v1.0 | Compatibility subset | HTML rendering from typed components, capability manifest export, bandwidth-adaptive mode, ToolEnvelope bridge | Dashboard + form + command center validated in browser |
+| `a2ui` | **v0.9.1** current production | **Native subset** | Versioned JSONL (`v0.9.1`), flat components, create/update/delete surface, client action + `VALIDATION_FAILED` errors, `application/a2ui+json`, optional bulk createSurface fields | Dashboard + agentic support flow |
+| `ag_ui` | Stable event model | **Native subset** | Run lifecycle, text/tool streams + chunks, state snapshot/delta, activity, **reasoning**, surface `ACTIVITY_SNAPSHOT` + `CUSTOM` | Ops command center + confirm |
+| `mcp_apps` | SEP-1865 **Final** (`io.modelcontextprotocol/ui`) | **Native subset** | `ui://` resources, `text/html;profile=mcp-app`, extension capability ad, initialize/message/model-context bridge shapes, structured content | Confirm + form host bridge |
+| `adk_ui` | Internal legacy | Legacy | Backward-compatible runtime during migration (sunset 2026-12-31) | Tested in browser |
+| `awp` | AWP v1.0 | Compatibility subset | HTML rendering, capability export, bandwidth-adaptive mode | Dashboard + form |
+
+> **Preferred profile:** `a2ui`. **Default demo LLM:** OpenAI (`OPENAI_API_KEY`); set `ADK_UI_PROVIDER=gemini` for Gemini.
+
+### A2UI v1.0 actionResponse (demo path)
+
+1. Select protocol **a2ui**, run a prompt that renders a form/confirm.
+2. Click a button or submit the form — the client sends `wantResponse: true` + `actionId`.
+3. The example server emits a correlated `actionResponse` on the SSE stream.
+4. The client writes the value to `/__a2ui/lastActionResponse` and shows it under **A2UI actionResponse**.
+
+### AG-UI reasoning UI
+
+When the stream includes `REASONING_*` events, the client shows a collapsible **Agent reasoning** panel (streaming text updates live).
 
 > **Honesty note:** `adk-ui` does not present AG-UI or MCP Apps as fully native or complete implementations. Runtime capability signals and documentation are intentionally explicit about hybrid and compatibility subsets so downstream clients can make informed decisions.
 

@@ -1,8 +1,8 @@
 [package]
 name = "adk-ui"
-version = "1.0.0"
+version = "2.0.0"
 edition = "2024"
-rust-version = "1.85.0"
+rust-version = "1.95.0"
 license = "Apache-2.0"
 authors = ["James Karanja Maina <james.karanja@zavora.ai>"]
 description = "Dynamic UI generation for ADK-Rust agents - render forms, cards, tables, charts and more"
@@ -18,8 +18,8 @@ serde_json = "1.0"
 thiserror = "2.0"
 schemars = "0.8"
 async-trait = "0.1"
-adk-core = { version = "1", optional = true }
-awp-types = { version = "1", optional = true }
+adk-core = { version = "2", optional = true }
+awp-types = { version = "2", optional = true }
 uuid = { version = "1", features = ["v7"], optional = true }
 jsonschema = "0.29"
 chrono = { version = "0.4", default-features = false, features = ["clock"] }
@@ -38,12 +38,13 @@ optional = true
 tokio = { version = "1.40", features = ["macros", "rt-multi-thread"] }
 anyhow = "1.0"
 dotenvy = "0.15"
-adk-agent = { version = "1" }
-adk-model = { version = "1" }
-adk-cli = { version = "1" }
-adk-runner = { version = "1" }
-adk-server = { version = "1" }
-adk-session = { version = "1" }
+adk-agent = "2"
+# OpenAI + Gemini so demos default to OpenAI and users can switch providers.
+adk-model = { version = "2", features = ["openai", "gemini"] }
+adk-cli = "2"
+adk-runner = "2"
+adk-server = "2"
+adk-session = "2"
 axum = "0.8"
 base64 = "0.22"
 futures = "0.3"
@@ -53,4 +54,9 @@ tracing = "0.1"
 [[example]]
 name = "ui_server"
 path = "examples/ui_server/main.rs"
+required-features = ["adk-core"]
+
+[[example]]
+name = "agentic_ui"
+path = "examples/agentic_ui/main.rs"
 required-features = ["adk-core"]

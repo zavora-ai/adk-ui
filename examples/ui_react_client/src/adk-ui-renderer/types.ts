@@ -84,8 +84,8 @@ export interface UiResponse {
 // --- User Events (UI → Agent) ---
 
 export type UiEvent =
-    | { action: 'form_submit'; action_id: string; data: Record<string, unknown> }
-    | { action: 'button_click'; action_id: string }
+    | { action: 'form_submit'; action_id: string; data: Record<string, unknown>; source_component_id?: string }
+    | { action: 'button_click'; action_id: string; source_component_id?: string }
     | { action: 'input_change'; name: string; value: unknown }
     | { action: 'tab_change'; index: number };
 

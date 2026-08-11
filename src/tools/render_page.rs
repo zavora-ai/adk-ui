@@ -404,7 +404,10 @@ mod tests {
         let value = tool.execute(ctx, args).await.unwrap();
         assert_eq!(value["protocol"], "ag_ui");
         let events = value["events"].as_array().unwrap();
-        assert_eq!(events[1]["type"], "CUSTOM");
+        assert_eq!(events[0]["type"], "RUN_STARTED");
+        assert_eq!(events[1]["type"], "ACTIVITY_SNAPSHOT");
+        assert_eq!(events[2]["type"], "CUSTOM");
+        assert_eq!(events[3]["type"], "RUN_FINISHED");
     }
 
     #[tokio::test]

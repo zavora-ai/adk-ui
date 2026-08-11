@@ -49,13 +49,11 @@ impl UpdateDataModelBuilder {
     }
 
     pub fn build(self) -> A2uiMessage {
-        A2uiMessage::UpdateDataModel(UpdateDataModelMessage {
-            update_data_model: UpdateDataModel {
-                surface_id: self.surface_id,
-                path: self.path,
-                value: self.value,
-            },
-        })
+        A2uiMessage::UpdateDataModel(UpdateDataModelMessage::new(UpdateDataModel {
+            surface_id: self.surface_id,
+            path: self.path,
+            value: self.value,
+        }))
     }
 }
 

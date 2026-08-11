@@ -59,10 +59,7 @@ fn cls(prefix: &Option<String>, name: &str) -> String {
 }
 
 /// Render a single Component to an HTML fragment.
-fn render_component_html(
-    component: &Component,
-    options: &HtmlRenderOptions,
-) -> String {
+fn render_component_html(component: &Component, options: &HtmlRenderOptions) -> String {
     let mode = options.bandwidth_mode;
     let prefix = &options.class_prefix;
 
@@ -106,11 +103,7 @@ fn render_component_html(
                 return String::new();
             }
             let src = escape_html(&image.src);
-            let alt = image
-                .alt
-                .as_deref()
-                .map(escape_html)
-                .unwrap_or_default();
+            let alt = image.alt.as_deref().map(escape_html).unwrap_or_default();
             format!("<img src=\"{}\" alt=\"{}\">", src, alt)
         }
 
@@ -325,18 +318,12 @@ fn render_component_html(
                 html.push_str(&format!("<p>{}</p>", escape_html(desc)));
             }
             if !card.content.is_empty() {
-                html.push_str(&format!(
-                    "<div class=\"{}\">",
-                    cls(prefix, "card-content")
-                ));
+                html.push_str(&format!("<div class=\"{}\">", cls(prefix, "card-content")));
                 html.push_str(&render_children(&card.content, options));
                 html.push_str("</div>");
             }
             if let Some(footer) = &card.footer {
-                html.push_str(&format!(
-                    "<div class=\"{}\">",
-                    cls(prefix, "card-footer")
-                ));
+                html.push_str(&format!("<div class=\"{}\">", cls(prefix, "card-footer")));
                 html.push_str(&render_children(footer, options));
                 html.push_str("</div>");
             }
@@ -364,10 +351,7 @@ fn render_component_html(
         Component::Tabs(tabs) => {
             let mut html = format!("<div class=\"{}\">", cls(prefix, "tabs"));
             // Tab buttons
-            html.push_str(&format!(
-                "<div class=\"{}\">",
-                cls(prefix, "tab-buttons")
-            ));
+            html.push_str(&format!("<div class=\"{}\">", cls(prefix, "tab-buttons")));
             for (i, tab) in tabs.tabs.iter().enumerate() {
                 html.push_str(&format!(
                     "<button class=\"{}\" data-tab-index=\"{}\">{}</button>",
@@ -461,9 +445,7 @@ fn render_component_html(
             if mode == BandwidthMode::Low {
                 return String::new();
             }
-            let chart_json = escape_html(
-                &serde_json::to_string(chart).unwrap_or_default(),
-            );
+            let chart_json = escape_html(&serde_json::to_string(chart).unwrap_or_default());
             let title_html = chart
                 .title
                 .as_deref()
@@ -521,10 +503,7 @@ fn render_component_html(
             html.push_str(&format!("<h2>{}</h2>", escape_html(&modal.title)));
             html.push_str(&render_children(&modal.content, options));
             if let Some(footer) = &modal.footer {
-                html.push_str(&format!(
-                    "<div class=\"{}\">",
-                    cls(prefix, "modal-footer")
-                ));
+                html.push_str(&format!("<div class=\"{}\">", cls(prefix, "modal-footer")));
                 html.push_str(&render_children(footer, options));
                 html.push_str("</div>");
             }
@@ -695,16 +674,15 @@ pub fn render_surface_html(surface: &UiSurface, options: &HtmlRenderOptions) -> 
     let body: String = surface
         .components
         .iter()
-        .map(|value| {
-            match serde_json::from_value::<Component>(value.clone()) {
+        .map(
+            |value| match serde_json::from_value::<Component>(value.clone()) {
                 Ok(component) => render_component_html(&component, options),
                 Err(_) => "<!-- unknown component -->".to_string(),
-            }
-        })
+            },
+        )
         .collect();
     wrap_in_shell(&body, options)
 }
-
 
 #[cfg(test)]
 mod tests {

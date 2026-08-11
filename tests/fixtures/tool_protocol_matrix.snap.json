@@ -221,6 +221,7 @@
     "jsonl_line_count": null,
     "event_types": [
       "RUN_STARTED",
+      "ACTIVITY_SNAPSHOT",
       "CUSTOM",
       "RUN_FINISHED"
     ],
@@ -239,6 +240,7 @@
     "jsonl_line_count": null,
     "event_types": [
       "RUN_STARTED",
+      "ACTIVITY_SNAPSHOT",
       "CUSTOM",
       "RUN_FINISHED"
     ],
@@ -272,6 +274,7 @@
     "jsonl_line_count": null,
     "event_types": [
       "RUN_STARTED",
+      "ACTIVITY_SNAPSHOT",
       "CUSTOM",
       "RUN_FINISHED"
     ],
@@ -291,6 +294,7 @@
     "jsonl_line_count": null,
     "event_types": [
       "RUN_STARTED",
+      "ACTIVITY_SNAPSHOT",
       "CUSTOM",
       "RUN_FINISHED"
     ],
@@ -310,6 +314,7 @@
     "jsonl_line_count": null,
     "event_types": [
       "RUN_STARTED",
+      "ACTIVITY_SNAPSHOT",
       "CUSTOM",
       "RUN_FINISHED"
     ],
@@ -329,6 +334,7 @@
     "jsonl_line_count": null,
     "event_types": [
       "RUN_STARTED",
+      "ACTIVITY_SNAPSHOT",
       "CUSTOM",
       "RUN_FINISHED"
     ],
@@ -348,6 +354,7 @@
     "jsonl_line_count": null,
     "event_types": [
       "RUN_STARTED",
+      "ACTIVITY_SNAPSHOT",
       "CUSTOM",
       "RUN_FINISHED"
     ],
@@ -367,6 +374,7 @@
     "jsonl_line_count": null,
     "event_types": [
       "RUN_STARTED",
+      "ACTIVITY_SNAPSHOT",
       "CUSTOM",
       "RUN_FINISHED"
     ],
@@ -386,6 +394,7 @@
     "jsonl_line_count": null,
     "event_types": [
       "RUN_STARTED",
+      "ACTIVITY_SNAPSHOT",
       "CUSTOM",
       "RUN_FINISHED"
     ],
@@ -405,6 +414,7 @@
     "jsonl_line_count": null,
     "event_types": [
       "RUN_STARTED",
+      "ACTIVITY_SNAPSHOT",
       "CUSTOM",
       "RUN_FINISHED"
     ],
@@ -424,6 +434,7 @@
     "jsonl_line_count": null,
     "event_types": [
       "RUN_STARTED",
+      "ACTIVITY_SNAPSHOT",
       "CUSTOM",
       "RUN_FINISHED"
     ],
@@ -443,6 +454,7 @@
     "jsonl_line_count": null,
     "event_types": [
       "RUN_STARTED",
+      "ACTIVITY_SNAPSHOT",
       "CUSTOM",
       "RUN_FINISHED"
     ],

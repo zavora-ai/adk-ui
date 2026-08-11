@@ -39,37 +39,36 @@ mod tests {
 
     #[test]
     fn encodes_single_line_with_newline() {
-        let message = A2uiMessage::CreateSurface(CreateSurfaceMessage {
-            create_surface: CreateSurface {
-                surface_id: "main".to_string(),
-                catalog_id: "catalog".to_string(),
-                theme: None,
-                send_data_model: None,
-            },
-        });
+        let message = A2uiMessage::CreateSurface(CreateSurfaceMessage::new(CreateSurface {
+            surface_id: "main".to_string(),
+            catalog_id: "catalog".to_string(),
+            theme: None,
+            send_data_model: None,
+            components: None,
+            data_model: None,
+        }));
 
         let line = encode_message_line(&message).unwrap();
         assert!(line.ends_with('\n'));
 
         let value: serde_json::Value = serde_json::from_str(line.trim()).unwrap();
         assert_eq!(value["createSurface"]["surfaceId"], "main");
+        assert_eq!(value["version"], "v0.9.1");
     }
 
     #[test]
     fn encodes_multiple_messages_as_jsonl() {
-        let create = A2uiMessage::CreateSurface(CreateSurfaceMessage {
-            create_surface: CreateSurface {
-                surface_id: "main".to_string(),
-                catalog_id: "catalog".to_string(),
-                theme: None,
-                send_data_model: None,
-            },
-        });
-        let delete = A2uiMessage::DeleteSurface(DeleteSurfaceMessage {
-            delete_surface: DeleteSurface {
-                surface_id: "main".to_string(),
-            },
-        });
+        let create = A2uiMessage::CreateSurface(CreateSurfaceMessage::new(CreateSurface {
+            surface_id: "main".to_string(),
+            catalog_id: "catalog".to_string(),
+            theme: None,
+            send_data_model: None,
+            components: None,
+            data_model: None,
+        }));
+        let delete = A2uiMessage::DeleteSurface(DeleteSurfaceMessage::new(DeleteSurface {
+            surface_id: "main".to_string(),
+        }));
 
         let jsonl = encode_jsonl(vec![create, delete]).unwrap();
         let lines: Vec<&str> = jsonl.trim_end().split('\n').collect();

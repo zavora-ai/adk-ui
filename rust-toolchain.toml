@@ -1,0 +1,4 @@
+[toolchain]
+# Match ADK-Rust 2.0 MSRV so path-dep builds use the same rustc as the framework.
+channel = "1.95.0"
+components = ["rustc", "cargo", "clippy", "rustfmt"]

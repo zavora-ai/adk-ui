@@ -64,31 +64,33 @@ impl UiSurface {
     }
 
     pub fn to_a2ui_messages(&self) -> Vec<A2uiMessage> {
-        let mut messages = vec![A2uiMessage::CreateSurface(CreateSurfaceMessage {
-            create_surface: CreateSurface {
+        let mut messages = vec![A2uiMessage::CreateSurface(CreateSurfaceMessage::new(
+            CreateSurface {
                 surface_id: self.surface_id.clone(),
                 catalog_id: self.catalog_id.clone(),
                 theme: self.theme.clone(),
                 send_data_model: Some(self.send_data_model),
+                components: None,
+                data_model: None,
             },
-        })];
+        ))];
 
         if let Some(data_model) = self.data_model.clone() {
-            messages.push(A2uiMessage::UpdateDataModel(UpdateDataModelMessage {
-                update_data_model: UpdateDataModel {
+            messages.push(A2uiMessage::UpdateDataModel(UpdateDataModelMessage::new(
+                UpdateDataModel {
                     surface_id: self.surface_id.clone(),
                     path: Some("/".to_string()),
                     value: Some(data_model),
                 },
-            }));
+            )));
         }
 
-        messages.push(A2uiMessage::UpdateComponents(UpdateComponentsMessage {
-            update_components: UpdateComponents {
+        messages.push(A2uiMessage::UpdateComponents(UpdateComponentsMessage::new(
+            UpdateComponents {
                 surface_id: self.surface_id.clone(),
                 components: self.components.clone(),
             },
-        }));
+        )));
 
         messages
     }

@@ -2,8 +2,14 @@ use super::surface::UiSurface;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
+/// Official MCP Apps HTML resource profile (SEP-1865 Final / ext-apps).
 pub const MCP_APPS_HTML_MIME_TYPE: &str = "text/html;profile=mcp-app";
+/// Extension identifier for capability negotiation.
+pub const MCP_APPS_EXTENSION_ID: &str = "io.modelcontextprotocol/ui";
+/// Protocol version string advertised on initialize (SEP create date lineage).
 pub const MCP_APPS_PROTOCOL_VERSION: &str = "2025-11-21";
+/// Human-readable status of the upstream SEP.
+pub const MCP_APPS_SEP_STATUS: &str = "final";
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
@@ -242,13 +248,13 @@ fn validate_domain_list(
 pub fn validate_mcp_apps_render_options(
     options: &McpAppsRenderOptions,
 ) -> Result<(), crate::compat::AdkError> {
-    if let Some(domain) = options.domain.as_deref() {
-        if !is_allowed_domain(domain) {
-            return Err(crate::compat::AdkError::tool(format!(
-                "Invalid mcp_apps option 'domain': unsupported domain '{}'",
-                domain
-            )));
-        }
+    if let Some(domain) = options.domain.as_deref()
+        && !is_allowed_domain(domain)
+    {
+        return Err(crate::compat::AdkError::tool(format!(
+            "Invalid mcp_apps option 'domain': unsupported domain '{}'",
+            domain
+        )));
     }
 
     if let Some(csp) = &options.csp {
@@ -322,6 +328,12 @@ pub fn default_mcp_apps_host_info() -> McpAppsPartyInfo {
 
 pub fn default_mcp_apps_host_capabilities() -> Value {
     json!({
+        "extensions": {
+            (MCP_APPS_EXTENSION_ID): {
+                "mimeTypes": [MCP_APPS_HTML_MIME_TYPE],
+                "sepStatus": MCP_APPS_SEP_STATUS,
+            }
+        },
         "message": {
             "text": {},
             "structuredContent": {},
@@ -329,12 +341,9 @@ pub fn default_mcp_apps_host_capabilities() -> Value {
             "resourceLink": {},
         },
         "openLinks": {},
-        "sandbox": {},
-        "serverResources": {
-            "listChanged": false,
-        },
-        "serverTools": {
-            "listChanged": false,
+        "sandbox": {
+            "csp": {},
+            "permissions": {},
         },
         "updateModelContext": {
             "text": {},
@@ -412,8 +421,17 @@ fn build_bridge_metadata(
             "tools": {
                 "listChanged": false,
             },
+            "extensions": {
+                (MCP_APPS_EXTENSION_ID): {
+                    "mimeTypes": [MCP_APPS_HTML_MIME_TYPE],
+                }
+            }
         })),
-        app_info: None,
+        app_info: Some(json!({
+            "name": "adk-ui",
+            "version": env!("CARGO_PKG_VERSION"),
+            "title": "ADK UI MCP App",
+        })),
         initialized: None,
     }
 }

@@ -5,6 +5,10 @@ import { sanitizeUrl } from '../security';
 export type A2uiActionEventDefinition = {
     name: string;
     context?: Record<string, unknown>;
+    /** When true, renderer expects an actionResponse (A2UI v1.0). */
+    wantResponse?: boolean;
+    /** JSON Pointer path to write the response value into the local data model. */
+    responsePath?: string;
 };
 
 export type A2uiActionDefinition = {
@@ -13,12 +17,27 @@ export type A2uiActionDefinition = {
 };
 
 export type A2uiActionEventPayload = {
+    version?: string;
     action: {
         name: string;
         surfaceId: string;
         sourceComponentId: string;
         timestamp: string;
         context: Record<string, unknown>;
+        wantResponse?: boolean;
+        actionId?: string;
+    };
+};
+
+export type A2uiActionResponsePayload = {
+    version?: string;
+    actionId: string;
+    actionResponse: {
+        value?: unknown;
+        error?: {
+            code: string;
+            message: string;
+        };
     };
 };
 
@@ -49,6 +68,31 @@ export interface ActionEventOptions {
     scope?: Record<string, unknown>;
     functions?: FunctionRegistry;
     timestamp?: Date;
+    /** Force wantResponse even if the action definition omits it. */
+    wantResponse?: boolean;
+    responsePath?: string;
+    actionId?: string;
+}
+
+let actionIdCounter = 0;
+
+export function nextActionId(prefix = 'action'): string {
+    actionIdCounter += 1;
+    return `${prefix}_${Date.now().toString(36)}_${actionIdCounter}`;
+}
+
+/** Resolve the client-local destination for a correlated action response. */
+export function resolveActionResponsePath(
+    action: A2uiActionDefinition | undefined,
+    options: Pick<ActionEventOptions, 'wantResponse' | 'responsePath'> = {},
+): string | undefined {
+    const wantResponse = Boolean(options.wantResponse ?? action?.event?.wantResponse);
+    if (!wantResponse) {
+        return undefined;
+    }
+    return options.responsePath
+        ?? action?.event?.responsePath
+        ?? '/__a2ui/lastActionResponse';
 }
 
 export function buildActionEvent(
@@ -61,13 +105,23 @@ export function buildActionEvent(
         return null;
     }
     const context = resolveActionContext(action.event.context ?? {}, options);
+    const wantResponse = Boolean(
+        options.wantResponse ?? action.event.wantResponse,
+    );
+    const actionId = wantResponse
+        ? (options.actionId ?? nextActionId(action.event.name))
+        : options.actionId;
+
     return {
+        version: wantResponse ? 'v1.0' : 'v0.9.1',
         action: {
             name: action.event.name,
             surfaceId,
             sourceComponentId,
             timestamp: (options.timestamp ?? new Date()).toISOString(),
             context,
+            ...(wantResponse ? { wantResponse: true } : {}),
+            ...(actionId ? { actionId } : {}),
         },
     };
 }

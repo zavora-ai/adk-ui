@@ -5,19 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.0] - 2026-05-14
+## [2.0.0] - 2026-08-09
+
+### Breaking
+
+- Bumped crate to **2.0.0** for ADK-Rust 2.0 lockstep.
+- MSRV raised from **1.85** to **1.95** (matches ADK-Rust 2.0).
+- Dependencies target the published `adk-*` / `awp-types` **2.x** crates from crates.io.
+- Standalone `compat` `Part::InlineData` gains optional `uri` / `annotations` fields for parity with adk-core 2.0.
+- Example `ui_server` updated for adk-core 2.0 `Part` fields and `RunnerConfig` intra-compaction slots.
+- **AG-UI wire shapes** align with the current protocol: `STATE_SNAPSHOT.snapshot`, step `stepName`, run-error optional lineage, surface streams emit `ACTIVITY_SNAPSHOT` before `CUSTOM`.
 
 ### Changed
 
-- Upgraded all `adk-*` and `awp-types` dependencies to 1.0.0 — stable release.
-- Bumped `adk-ui` to 1.0.0 to match the ADK-Rust ecosystem stable release.
+- **A2UI**: every envelope stamps `version: "v0.9.1"`; MIME `application/a2ui+json`; client action + `VALIDATION_FAILED` envelopes; catalog schema accepts version + optional bulk createSurface fields.
+- **AG-UI**: full reasoning event family (`REASONING_*`), activity/state official field names, `run_started` / `run_finished` helpers; tier **NativeSubset**.
+- **MCP Apps**: extension id `io.modelcontextprotocol/ui`, SEP Final status, and capability advertisement limited to implemented bridge behavior; tier **NativeSubset**.
+- **React package**: Recharts 3.10 and React Markdown 10, React 18+ peer contract, and a direct esbuild 0.28 build path with CommonJS/ESM/declaration output.
+- Demo default LLM provider is **OpenAI** (`OPENAI_API_KEY`); switch with `ADK_UI_PROVIDER=gemini` (+ `GOOGLE_API_KEY`).
+- Added `UI_PREFERRED_PROTOCOL` (`a2ui`) for new integrations while keeping legacy default `adk_ui` until the 2026-12-31 sunset.
+- Added repo `rust-toolchain.toml` pinning **1.95.0**.
 
-## [1.0.0] - 2026-05-14
+### Added
 
-### Changed
-
-- Upgraded all `adk-*` and `awp-types` dependencies to 1.0.0 — stable release aligned with the ADK-Rust 1.0 ecosystem.
-- Bumped `adk-ui` to version 1.0.0 marking the first stable release.
+- `compat::inline_data_part()` helper for constructing `Part::InlineData` under both standalone and `adk-core` feature paths.
+- **Agentic examples**: `examples/agentic_ui` (A2UI / AG-UI / MCP Apps apps) and three agentic agents on `ui_server`.
+- Shared multi-provider factory (OpenAI default) under `examples/common/provider.rs`.
+- **A2UI v1.0 actionResponse** end-to-end: Rust `ActionResponseMessage` / client `wantResponse`+`actionId`, React pending-action tracking, example server correlated response, data-model write via `responsePath`.
+- **AG-UI reasoning UI**: `ReasoningPanel` + `applyReasoningEvent` in `@zavora-ai/adk-ui-react`, wired in the example client event stream.
 
 ## [1.0.0] - 2026-05-15
 

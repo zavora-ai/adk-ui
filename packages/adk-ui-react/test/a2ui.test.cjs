@@ -48,6 +48,32 @@ describe('A2uiStore', () => {
 
         assert.equal(store.getSurface('main'), undefined);
     });
+
+    it('applies only correlated action responses', () => {
+        const store = new A2uiStore();
+        store.ensureSurface('form');
+        store.trackPendingAction({
+            actionId: 'act-1',
+            surfaceId: 'form',
+            name: 'submit',
+            responsePath: '/result',
+            createdAt: '2026-08-11T00:00:00Z',
+        });
+
+        const matched = store.applyActionResponse({
+            actionId: 'act-1',
+            actionResponse: { value: { received: true } },
+        });
+        assert.equal(matched.actionId, 'act-1');
+        assert.deepEqual(store.getSurface('form').dataModel.result, { received: true });
+
+        const unmatched = store.applyActionResponse({
+            actionId: 'unknown',
+            actionResponse: { value: { injected: true } },
+        });
+        assert.equal(unmatched, undefined);
+        assert.equal(store.getSurface('main'), undefined);
+    });
 });
 
 describe('A2ui parser', () => {

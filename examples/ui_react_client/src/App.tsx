@@ -1,13 +1,19 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { Renderer as UiRenderer } from './adk-ui-renderer/Renderer';
 import { convertA2UIComponent } from './adk-ui-renderer/a2ui-converter';
 import { uiEventToMessage, type Component, type UiEvent } from './adk-ui-renderer/types';
 import {
   MCP_APPS_PROTOCOL_VERSION,
+  ReasoningPanel,
+  applyReasoningEvent,
   buildMcpAppsInitializeRequest,
   buildOutboundEvent,
+  createReasoningRuntime,
   extractProtocolSurface,
+  isActionResponseMessage,
+  writeJsonPointer,
   type ProtocolSurfaceSnapshot as SharedProtocolSurfaceSnapshot,
+  type ReasoningMessage,
 } from '../../../packages/adk-ui-react/src/index.ts';
 import './App.css';
 
@@ -22,6 +28,13 @@ interface SurfaceSnapshot {
   bridge?: SharedProtocolSurfaceSnapshot['bridge'];
   /** AWP-rendered HTML for iframe display */
   html?: string;
+}
+
+interface PendingA2uiAction {
+  actionId: string;
+  surfaceId: string;
+  name: string;
+  responsePath: string;
 }
 
 interface StreamLogEvent {
@@ -97,6 +110,35 @@ type TableColumnDef = {
 };
 
 const EXAMPLES: ExampleTarget[] = [
+  {
+    id: 'agentic_a2ui_support',
+    name: 'Agentic A2UI Support',
+    description: 'Multi-step A2UI intake → confirm → toast (v1.0 actionResponse)',
+    port: 8080,
+    prompts: [
+      'My payroll export failed in production and finance needs it today. Open a high-severity ticket and confirm before escalating.',
+      'Render a support intake form with severity, environment, and deadline, then ask me to confirm escalation.',
+    ],
+  },
+  {
+    id: 'agentic_ag_ui_ops',
+    name: 'Agentic AG-UI Ops',
+    description: 'Ops dashboard + confirm with AG-UI events / reasoning panel',
+    port: 8080,
+    prompts: [
+      'Show cluster health for us-east and let me approve a failover if node-3 is degraded. Think step by step.',
+      'Build an operations command center with alerts, node table, traffic chart, and a risky failover confirm.',
+    ],
+  },
+  {
+    id: 'agentic_mcp_apps_confirm',
+    name: 'Agentic MCP Apps',
+    description: 'MCP Apps ui:// confirm → form host bridge flow',
+    port: 8080,
+    prompts: [
+      'I need to revoke API keys for the staging project. Confirm first, then collect reason and ticket ID.',
+    ],
+  },
   {
     id: 'ui_demo',
     name: 'UI Demo',
@@ -195,6 +237,16 @@ const PROTOCOLS: Array<{ id: UiProtocol; label: string; hint: string }> = [
 
 const MAX_EVENT_LOG = 120;
 const DEFAULT_USER_ID = 'user1';
+let streamEventSequence = 0;
+
+function nextStreamEventId(): number {
+  streamEventSequence += 1;
+  return streamEventSequence;
+}
+
+function readClockMs(): number {
+  return performance.now();
+}
 
 function nowLabel(): string {
   return new Date().toLocaleTimeString('en-US', { hour12: false });
@@ -2819,6 +2871,9 @@ function App() {
   const [promptInput, setPromptInput] = useState('');
   const [assistantText, setAssistantText] = useState('');
   const [activityMessages, setActivityMessages] = useState<AgUiActivityMessage[]>([]);
+  const [reasoningMessages, setReasoningMessages] = useState<ReasoningMessage[]>([]);
+  const [pendingA2uiActions, setPendingA2uiActions] = useState<PendingA2uiAction[]>([]);
+  const [lastActionResponse, setLastActionResponse] = useState<unknown>(null);
   const [eventLog, setEventLog] = useState<StreamLogEvent[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
@@ -2838,6 +2893,8 @@ function App() {
     toolCallNames: new Map(),
     toolCallArgs: new Map(),
   });
+  const reasoningRuntimeRef = useRef(createReasoningRuntime());
+  const pendingA2uiActionsRef = useRef<Map<string, PendingA2uiAction>>(new Map());
   const mcpAppsBridgeRef = useRef<McpAppsBridgeSessionState>({});
 
   const selectedProtocolMeta = useMemo(
@@ -2853,7 +2910,7 @@ function App() {
 
   function appendEvent(kind: string, protocol: UiProtocol, payload: unknown, preview?: string) {
     const entry: StreamLogEvent = {
-      id: Date.now() + Math.floor(Math.random() * 1000),
+      id: nextStreamEventId(),
       at: nowLabel(),
       protocol,
       kind,
@@ -2926,14 +2983,56 @@ function App() {
         setSessionId(activeSessionId);
       }
 
+      const surfaceId = surface?.surfaceId ?? 'main';
+      const actionName = action.action === 'form_submit' || action.action === 'button_click'
+        ? action.action_id
+        : action.action;
+      const sourceComponentId = action.action === 'form_submit' || action.action === 'button_click'
+        ? action.source_component_id ?? action.action_id
+        : actionName;
+      // A2UI v1.0: confirm/submit clicks request a correlated actionResponse.
+      const wantsA2uiResponse =
+        selectedProtocol === 'a2ui'
+        && (action.action === 'button_click' || action.action === 'form_submit');
+      const a2uiActionId = wantsA2uiResponse
+        ? `action_${actionName}_${Date.now().toString(36)}`
+        : undefined;
+      const a2uiResponsePath = wantsA2uiResponse ? '/__a2ui/lastActionResponse' : undefined;
+      if (wantsA2uiResponse && a2uiActionId) {
+        const pending: PendingA2uiAction = {
+          actionId: a2uiActionId,
+          surfaceId,
+          name: actionName,
+          responsePath: a2uiResponsePath!,
+        };
+        pendingA2uiActionsRef.current.set(a2uiActionId, pending);
+        setPendingA2uiActions(Array.from(pendingA2uiActionsRef.current.values()));
+      }
+
       const bridge = buildActionRequestBridge(selectedProtocol, action, {
         appName: selectedExample.id,
         userId: DEFAULT_USER_ID,
         sessionId: activeSessionId,
-        surfaceId: surface?.surfaceId ?? 'main',
+        surfaceId,
         threadId: agUiContextRef.current.threadId,
         parentRunId: agUiContextRef.current.lastRunId,
       });
+
+      if (wantsA2uiResponse && a2uiActionId) {
+        bridge.requestBody.a2uiAction = {
+          version: 'v1.0',
+          action: {
+            name: actionName,
+            surfaceId,
+            sourceComponentId,
+            timestamp: new Date().toISOString(),
+            context: action.action === 'form_submit' ? action.data : {},
+            wantResponse: true,
+            actionId: a2uiActionId,
+          },
+        };
+        bridge.requestBody.uiProtocol = 'a2ui';
+      }
 
       try {
         if (selectedProtocol === 'mcp_apps') {
@@ -2954,21 +3053,29 @@ function App() {
           }
         }
 
-        await runPrompt(bridge.textMessage, {
-          activeSessionId,
-          skipPromptAugmentation: true,
-          requestBody: bridge.requestBody,
-          allowRetry: false,
-          clearSurfaceOnStart: false,
-          requestEventKind: 'ui_action_request',
-          requestEventPayload: {
-            action,
-            outbound: bridge.outbound,
-            message: bridge.textMessage,
-          },
-          requestPreview: `${bridge.preview}: ${action.action}`,
-          initialStatusText: 'Submitting UI action...',
-        });
+        try {
+          await runPrompt(bridge.textMessage, {
+            activeSessionId,
+            skipPromptAugmentation: true,
+            requestBody: bridge.requestBody,
+            allowRetry: false,
+            clearSurfaceOnStart: false,
+            requestEventKind: 'ui_action_request',
+            requestEventPayload: {
+              action,
+              outbound: bridge.outbound,
+              message: bridge.textMessage,
+            },
+            requestPreview: `${bridge.preview}: ${action.action}`,
+            initialStatusText: 'Submitting UI action...',
+          });
+        } catch (error) {
+          if (wantsA2uiResponse && a2uiActionId) {
+            pendingA2uiActionsRef.current.delete(a2uiActionId);
+            setPendingA2uiActions(Array.from(pendingA2uiActionsRef.current.values()));
+          }
+          throw error;
+        }
       } catch (error) {
         const endpoint = bridge.bridgeRequest?.endpoint ?? '/api/ui/message';
         const message = normalizeRequestError(error, baseUrl, endpoint, selectedExample.port);
@@ -3039,6 +3146,9 @@ function App() {
       setEventLog([]);
       if (options?.clearSurfaceOnStart !== false) {
         setSurface(null);
+        setReasoningMessages([]);
+        reasoningRuntimeRef.current = createReasoningRuntime();
+        setLastActionResponse(null);
       }
       setToolHitCount(0);
     }
@@ -3055,7 +3165,7 @@ function App() {
     let latestSurface: SurfaceSnapshot | null = null;
     let lastRuntimeEventSeen: Record<string, unknown> | null = null;
     let lastToolResponseSeen: unknown | null = null;
-    const startedAt = performance.now();
+    const startedAt = readClockMs();
     const endpoint = '/api/run_sse';
     const requestPayload: Record<string, unknown> = {
       appName: selectedExample.id,
@@ -3266,6 +3376,76 @@ function App() {
             );
           }
 
+          // AG-UI closes active reasoning when the next non-reasoning event arrives.
+          if (runtimeProtocol === 'ag_ui') {
+            const next = applyReasoningEvent(reasoningRuntimeRef.current, runtimeEvent);
+            setReasoningMessages(next);
+            if (
+              runtimeEventType.startsWith('REASONING_')
+              || runtimeEventType.startsWith('THINKING_')
+            ) {
+              appendEvent(
+                `reasoning:${runtimeEventType.toLowerCase()}`,
+                runtimeProtocol,
+                runtimeEvent,
+                toReadablePreview(pickField(runtimeEvent, 'delta', 'content') ?? runtimeEvent, 160),
+              );
+            }
+          }
+
+          // A2UI v1.0 actionResponse (direct envelope or nested in tool payload)
+          const actionResponseCandidates: unknown[] = [runtimeEvent];
+          if (isRecord(runtimeEvent)) {
+            const nested = pickField(runtimeEvent, 'payload', 'data', 'a2ui', 'message');
+            if (nested !== undefined) {
+              actionResponseCandidates.push(nested);
+            }
+          }
+          for (const candidate of actionResponseCandidates) {
+            if (!isRecord(candidate) || !isActionResponseMessage(candidate as never)) {
+              continue;
+            }
+            const actionId = String(pickField(candidate, 'actionId', 'action_id') ?? '');
+            const actionResponse = pickField(candidate, 'actionResponse', 'action_response');
+            if (!actionId || !isRecord(actionResponse)) {
+              continue;
+            }
+            const pending = pendingA2uiActionsRef.current.get(actionId);
+            if (!pending) {
+              appendEvent(
+                'a2ui:action_response_ignored',
+                runtimeProtocol,
+                candidate,
+                `ignored unmatched actionResponse for ${actionId}`,
+              );
+              continue;
+            }
+            const path = pending.responsePath;
+            const value = pickField(actionResponse, 'value');
+            const error = pickField(actionResponse, 'error');
+            const applied = error ?? value ?? actionResponse;
+            setLastActionResponse(applied);
+            pendingA2uiActionsRef.current.delete(actionId);
+            setPendingA2uiActions(Array.from(pendingA2uiActionsRef.current.values()));
+            setSurface((current) => {
+              if (!current) {
+                return current;
+              }
+              return {
+                ...current,
+                dataModel: writeJsonPointer(current.dataModel ?? {}, path, applied),
+              };
+            });
+            appendEvent(
+              `a2ui:action_response`,
+              runtimeProtocol,
+              candidate,
+              error
+                ? `actionResponse error for ${actionId}`
+                : `actionResponse for ${actionId}`,
+            );
+          }
+
           const responseToolResponses = toolResponses.filter((entry) => entry.source === 'response');
           const responseSurfaceByTool = collectResponseSurfacesByTool(toolResponses);
           if (responseToolResponses.length > 0) {
@@ -3452,7 +3632,7 @@ function App() {
 
       setRunCount((value) => value + 1);
       setStatusText('Completed');
-      setLastLatencyMs(Math.round(performance.now() - startedAt));
+      setLastLatencyMs(Math.round(readClockMs() - startedAt));
     } catch (error) {
       const message = normalizeRequestError(error, baseUrl, endpoint, selectedExample.port);
       setStatusText('Failed');
@@ -3466,13 +3646,18 @@ function App() {
     }
   }
 
-  useEffect(() => {
+  const resetForServerChange = useEffectEvent(() => {
     agUiContextRef.current = { toolCallNames: new Map(), toolCallArgs: new Map() };
     mcpAppsBridgeRef.current = {};
+    reasoningRuntimeRef.current = createReasoningRuntime();
+    pendingA2uiActionsRef.current = new Map();
     setSessionId(null);
     setSurface(null);
     setAssistantText('');
     setActivityMessages([]);
+    setReasoningMessages([]);
+    setPendingA2uiActions([]);
+    setLastActionResponse(null);
     setErrorText(null);
     setIsRetrying(false);
     setStatusText('Idle');
@@ -3481,7 +3666,118 @@ function App() {
     setLastLatencyMs(null);
     setEventLog([]);
     void loadCapabilities();
+  });
+
+  useEffect(() => {
+    const timer = window.setTimeout(resetForServerChange, 0);
+    return () => window.clearTimeout(timer);
   }, [baseUrl]);
+
+  /** Offline showcase for reasoning UI + A2UI actionResponse (no LLM required). */
+  function loadLocalFeatureDemo() {
+    setSelectedProtocol('a2ui');
+    setErrorText(null);
+    setStatusText('Local feature demo loaded');
+    setAssistantText(
+      'Feature demo: support intake surface + sample reasoning stream.\nStart the example server, then click "Confirm escalation" to exercise a correlated A2UI v1.0 actionResponse.',
+    );
+
+    const runtime = createReasoningRuntime();
+    applyReasoningEvent(runtime, { type: 'REASONING_START', messageId: 'demo-r1' });
+    applyReasoningEvent(runtime, {
+      type: 'REASONING_MESSAGE_CONTENT',
+      messageId: 'demo-r1',
+      delta: 'User reported a production payroll failure with a same-day finance deadline.\n',
+    });
+    applyReasoningEvent(runtime, {
+      type: 'REASONING_MESSAGE_CONTENT',
+      messageId: 'demo-r1',
+      delta: 'I will collect severity/environment, then request explicit confirmation before escalation.\n',
+    });
+    const messages = applyReasoningEvent(runtime, {
+      type: 'REASONING_END',
+      messageId: 'demo-r1',
+    });
+    reasoningRuntimeRef.current = runtime;
+    setReasoningMessages(messages);
+
+    setActivityMessages([
+      {
+        messageId: 'demo-activity-1',
+        activityType: 'PLAN',
+        content: {
+          steps: ['Collect ticket details', 'Confirm escalation', 'Notify on-call'],
+          status: 'ready',
+        },
+        replace: true,
+      },
+    ]);
+
+    setSurface({
+      protocol: 'a2ui',
+      source: 'a2ui_surface',
+      surfaceId: 'feature-demo',
+      dataModel: {
+        ticket: {
+          title: 'Payroll export failed',
+          severity: 'high',
+          environment: 'production',
+        },
+      },
+      components: [
+        {
+          type: 'stack',
+          direction: 'vertical',
+          gap: 12,
+          children: [
+            {
+              type: 'alert',
+              title: 'Feature demo surface',
+              description:
+                'A2UI confirm action requests actionResponse. Reasoning panel is populated above.',
+              variant: 'info',
+            },
+            {
+              type: 'card',
+              title: 'Support intake summary',
+              description: 'High severity · production · finance deadline today',
+              content: [
+                {
+                  type: 'key_value',
+                  pairs: [
+                    { key: 'Title', value: 'Payroll export failed' },
+                    { key: 'Severity', value: 'high' },
+                    { key: 'Environment', value: 'production' },
+                  ],
+                },
+              ],
+              footer: [
+                {
+                  type: 'button',
+                  label: 'Confirm escalation',
+                  action_id: 'confirm_escalation',
+                  variant: 'primary',
+                },
+                {
+                  type: 'button',
+                  label: 'Cancel',
+                  action_id: 'cancel_escalation',
+                  variant: 'ghost',
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    appendEvent(
+      'local_feature_demo',
+      'a2ui',
+      { reasoning: true, actionResponse: true },
+      'Loaded local reasoning + A2UI actionResponse demo',
+    );
+  }
 
   const surfaceSourceLabel = surface?.source ? formatCapabilityToken(surface.source) : null;
   const surfaceDisplayMode =
@@ -3585,9 +3881,14 @@ function App() {
         <div className="capability-group">
           <div className="capability-title">
             <span>Server Capability Signal</span>
-            <button type="button" onClick={() => void loadCapabilities()}>
-              Refresh
-            </button>
+            <div className="capability-actions">
+              <button type="button" onClick={() => loadLocalFeatureDemo()} data-testid="load-feature-demo">
+                Load feature demo
+              </button>
+              <button type="button" onClick={() => void loadCapabilities()}>
+                Refresh
+              </button>
+            </div>
           </div>
           {capabilityForSelectedProtocol ? (
             <>
@@ -3758,6 +4059,26 @@ function App() {
             <h3>Assistant Text Output</h3>
             <pre>{assistantText || 'No text output captured yet.'}</pre>
           </div>
+
+          <ReasoningPanel
+            messages={reasoningMessages}
+            className="reasoning-output"
+            title="Agent reasoning"
+          />
+
+          {pendingA2uiActions.length > 0 || lastActionResponse !== null ? (
+            <div className="a2ui-action-output">
+              <h3>A2UI actionResponse</h3>
+              {pendingA2uiActions.length > 0 ? (
+                <p className="activity-empty">
+                  Waiting for response ({pendingA2uiActions.map((item) => item.actionId).join(', ')})
+                </p>
+              ) : null}
+              {lastActionResponse !== null ? (
+                <pre>{JSON.stringify(lastActionResponse, null, 2)}</pre>
+              ) : null}
+            </div>
+          ) : null}
 
           {selectedProtocol === 'ag_ui' ? (
             <div className="activity-output">

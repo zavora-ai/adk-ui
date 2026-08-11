@@ -1,17 +1,20 @@
 import type { A2uiComponent, A2uiStore } from './store';
+import type { A2uiActionResponsePayload } from './events';
 
-export type A2uiProtocolVersion = 'v0.9';
+export type A2uiProtocolVersion = 'v0.9' | 'v0.9.1' | 'v1.0';
 
 export interface A2uiMessageBase {
-    version?: A2uiProtocolVersion;
+    version?: A2uiProtocolVersion | string;
 }
 
 export type CreateSurfaceMessage = A2uiMessageBase & {
     createSurface: {
         surfaceId: string;
-        catalogId: string;
+        catalogId?: string;
         theme?: Record<string, unknown>;
         sendDataModel?: boolean;
+        components?: A2uiComponent[];
+        dataModel?: Record<string, unknown>;
     };
 };
 
@@ -36,15 +39,47 @@ export type DeleteSurfaceMessage = A2uiMessageBase & {
     };
 };
 
+export type ActionResponseMessage = A2uiMessageBase & A2uiActionResponsePayload;
+
+export type CallFunctionMessage = A2uiMessageBase & {
+    functionCallId: string;
+    wantResponse?: boolean;
+    callFunction: {
+        call: string;
+        args?: Record<string, unknown>;
+    };
+};
+
 export type A2uiMessage =
     | CreateSurfaceMessage
     | UpdateComponentsMessage
     | UpdateDataModelMessage
-    | DeleteSurfaceMessage;
+    | DeleteSurfaceMessage
+    | ActionResponseMessage
+    | CallFunctionMessage;
 
 export interface ParsedA2uiMessage {
     message: A2uiMessage;
     raw: string;
+}
+
+export function isActionResponseMessage(
+    message: A2uiMessage,
+): message is ActionResponseMessage {
+    return (
+        'actionId' in message
+        && 'actionResponse' in message
+        && typeof (message as ActionResponseMessage).actionId === 'string'
+    );
+}
+
+export function isCallFunctionMessage(
+    message: A2uiMessage,
+): message is CallFunctionMessage {
+    return (
+        'functionCallId' in message
+        && 'callFunction' in message
+    );
 }
 
 export function parseJsonl(payload: string): ParsedA2uiMessage[] {
@@ -68,6 +103,19 @@ export function applyParsedMessages(store: A2uiStore, parsed: ParsedA2uiMessage[
                 theme: message.createSurface.theme,
                 sendDataModel: message.createSurface.sendDataModel,
             });
+            if (message.createSurface.components?.length) {
+                store.applyUpdateComponents(
+                    message.createSurface.surfaceId,
+                    message.createSurface.components,
+                );
+            }
+            if (message.createSurface.dataModel) {
+                store.applyUpdateDataModel(
+                    message.createSurface.surfaceId,
+                    '/',
+                    message.createSurface.dataModel,
+                );
+            }
         } else if ('updateComponents' in message) {
             store.applyUpdateComponents(
                 message.updateComponents.surfaceId,
@@ -81,6 +129,10 @@ export function applyParsedMessages(store: A2uiStore, parsed: ParsedA2uiMessage[
             );
         } else if ('deleteSurface' in message) {
             store.removeSurface(message.deleteSurface.surfaceId);
+        } else if (isActionResponseMessage(message)) {
+            store.applyActionResponse(message);
+        } else if (isCallFunctionMessage(message)) {
+            store.recordCallFunction(message);
         }
     }
 }

@@ -1,6 +1,11 @@
+#[path = "../common/provider.rs"]
+mod provider;
+
 use adk_agent::LlmAgentBuilder;
-use adk_core::{Agent, Content, Event, FunctionResponseData, MultiAgentLoader, Part, SessionId, Tool, UserId};
-use adk_model::gemini::GeminiModel;
+use adk_core::{
+    Agent, Content, Event, FunctionResponseData, Llm, MultiAgentLoader, Part, SessionId, Tool,
+    UserId,
+};
 use adk_runner::{Runner, RunnerConfig};
 use adk_server::{ServerConfig, create_app, shutdown_signal};
 use adk_session::{CreateRequest, GetRequest, InMemorySessionService, SessionService};
@@ -23,6 +28,7 @@ use axum::{
 };
 use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64_STANDARD};
 use futures::{StreamExt, stream};
+use provider::{LlmProvider, build_default_model, require_any_provider_env};
 use serde_json::{Value, json};
 use std::{
     collections::HashMap,
@@ -223,14 +229,13 @@ fn build_ui_agent(
     name: &str,
     description: &str,
     instruction: &str,
-    api_key: &str,
-    model_name: &str,
+    model: Arc<dyn Llm>,
     ui_tools: &[Arc<dyn Tool>],
 ) -> Result<Arc<dyn Agent>> {
     let mut builder = LlmAgentBuilder::new(name)
         .description(description)
         .instruction(full_instruction(instruction))
-        .model(Arc::new(GeminiModel::new(api_key, model_name)?));
+        .model(model);
 
     for tool in ui_tools.iter().cloned() {
         builder = builder.tool(tool);
@@ -499,6 +504,8 @@ fn parse_inline_data(part: &Value) -> Result<Option<Part>, RuntimeError> {
     Ok(Some(Part::InlineData {
         mime_type,
         data: decoded,
+        uri: None,
+        annotations: None,
     }))
 }
 
@@ -550,6 +557,7 @@ fn parse_function_response_part(part: &Value) -> Result<Option<Part>, RuntimeErr
             inline_data: vec![],
         },
         id: pick_string(function_response, &["id"]),
+        annotations: None,
     }))
 }
 
@@ -604,13 +612,18 @@ fn extract_text_snippets(value: &Value) -> Vec<String> {
     }
 }
 
-fn ag_ui_input_value<'a>(body: &'a Value) -> Option<&'a Value> {
+fn ag_ui_input_value(body: &Value) -> Option<&Value> {
     pick_value(body, &["input", "agUiInput", "ag_ui_input"])
 }
 
 fn ag_ui_activity_id(message: &Value, index: usize) -> String {
-    pick_string(message, &["id"])
-        .unwrap_or_else(|| format!("activity-{}-{}", chrono::Utc::now().timestamp_millis(), index))
+    pick_string(message, &["id"]).unwrap_or_else(|| {
+        format!(
+            "activity-{}-{}",
+            chrono::Utc::now().timestamp_millis(),
+            index
+        )
+    })
 }
 
 fn ag_ui_activity_type(message: &Value) -> String {
@@ -664,7 +677,9 @@ fn ag_ui_activity_events(body: &Value) -> Vec<Value> {
                     "timestamp": timestamp,
                 })
             } else {
-                let content = pick_value(message, &["content"]).cloned().unwrap_or_else(|| json!({}));
+                let content = pick_value(message, &["content"])
+                    .cloned()
+                    .unwrap_or_else(|| json!({}));
                 let content = match content {
                     Value::Object(object) => Value::Object(object),
                     other => json!({ "value": other }),
@@ -677,10 +692,10 @@ fn ag_ui_activity_events(body: &Value) -> Vec<Value> {
                     "content": content,
                     "timestamp": timestamp,
                 });
-                if let Some(replace) = pick_value(message, &["replace"]).and_then(Value::as_bool) {
-                    if let Some(object) = event.as_object_mut() {
-                        object.insert("replace".to_string(), Value::Bool(replace));
-                    }
+                if let Some(replace) = pick_value(message, &["replace"]).and_then(Value::as_bool)
+                    && let Some(object) = event.as_object_mut()
+                {
+                    object.insert("replace".to_string(), Value::Bool(replace));
                 }
                 event
             }
@@ -688,15 +703,46 @@ fn ag_ui_activity_events(body: &Value) -> Vec<Value> {
         .collect()
 }
 
+/// Acknowledge receipt of a correlated A2UI action without claiming domain approval.
+fn a2ui_action_receipt_event(body: &Value) -> Option<String> {
+    let a2ui_action = pick_value(body, &["a2uiAction", "a2ui_action", "protocolEvent"])?;
+    let action = pick_value(a2ui_action, &["action"]).unwrap_or(a2ui_action);
+    let want_response = pick_value(action, &["wantResponse", "want_response"])
+        .and_then(Value::as_bool)
+        .unwrap_or(false);
+    if !want_response {
+        return None;
+    }
+    let action_id = pick_string(action, &["actionId", "action_id"])?;
+    let name = pick_string(action, &["name"]).unwrap_or_else(|| "action".to_string());
+    let context = pick_value(action, &["context"])
+        .cloned()
+        .unwrap_or(json!({}));
+    let response = adk_ui::ActionResponseMessage::success(
+        action_id,
+        json!({
+            "received": true,
+            "status": "accepted_for_processing",
+            "authoritative": false,
+            "action": name,
+            "echoContext": context,
+            "server": "adk-ui-example",
+            "protocol": "a2ui",
+            "version": "v1.0",
+        }),
+    );
+    serde_json::to_string(&response).ok()
+}
+
 fn ag_ui_startup_events(body: &Value, session_id: &str) -> Vec<String> {
     let Some(ag_ui_input) = ag_ui_input_value(body) else {
         return Vec::new();
     };
 
-    let thread_id =
-        pick_string(ag_ui_input, &["threadId", "thread_id"]).unwrap_or_else(|| format!("thread-{}", session_id));
-    let run_id =
-        pick_string(ag_ui_input, &["runId", "run_id"]).unwrap_or_else(|| format!("run-{}", session_id));
+    let thread_id = pick_string(ag_ui_input, &["threadId", "thread_id"])
+        .unwrap_or_else(|| format!("thread-{}", session_id));
+    let run_id = pick_string(ag_ui_input, &["runId", "run_id"])
+        .unwrap_or_else(|| format!("run-{}", session_id));
 
     let mut events = vec![json!({
         "type": "RUN_STARTED",
@@ -704,16 +750,16 @@ fn ag_ui_startup_events(body: &Value, session_id: &str) -> Vec<String> {
         "runId": run_id,
     })];
 
-    if let Some(parent_run_id) = pick_string(ag_ui_input, &["parentRunId", "parent_run_id"]) {
-        if let Some(object) = events[0].as_object_mut() {
-            object.insert("parentRunId".to_string(), Value::String(parent_run_id));
-        }
+    if let Some(parent_run_id) = pick_string(ag_ui_input, &["parentRunId", "parent_run_id"])
+        && let Some(object) = events[0].as_object_mut()
+    {
+        object.insert("parentRunId".to_string(), Value::String(parent_run_id));
     }
 
-    if let Ok(value) = serde_json::to_value(ag_ui_input) {
-        if let Some(object) = events[0].as_object_mut() {
-            object.insert("input".to_string(), value);
-        }
+    if let Ok(value) = serde_json::to_value(ag_ui_input)
+        && let Some(object) = events[0].as_object_mut()
+    {
+        object.insert("input".to_string(), value);
     }
 
     if let Some(snapshot) = pick_value(ag_ui_input, &["state"]) {
@@ -732,7 +778,10 @@ fn ag_ui_startup_events(body: &Value, session_id: &str) -> Vec<String> {
 
     events.extend(ag_ui_activity_events(body));
 
-    events.into_iter().filter_map(|event| serde_json::to_string(&event).ok()).collect()
+    events
+        .into_iter()
+        .filter_map(|event| serde_json::to_string(&event).ok())
+        .collect()
 }
 
 fn build_content_from_request(body: &Value) -> Result<Content, RuntimeError> {
@@ -742,54 +791,53 @@ fn build_content_from_request(body: &Value) -> Result<Content, RuntimeError> {
         .unwrap_or_else(|| "user".to_string());
     let mut content = Content::new(role);
 
-    if let Some(parts_value) = new_message.and_then(|value| pick_value(value, &["parts"])) {
-        if let Some(parts) = parts_value.as_array() {
-            let parsed_parts = parse_message_parts(parts)?;
-            if !parsed_parts.is_empty() {
-                content.parts = parsed_parts;
-                return Ok(content);
-            }
+    if let Some(parts_value) = new_message.and_then(|value| pick_value(value, &["parts"]))
+        && let Some(parts) = parts_value.as_array()
+    {
+        let parsed_parts = parse_message_parts(parts)?;
+        if !parsed_parts.is_empty() {
+            content.parts = parsed_parts;
+            return Ok(content);
         }
     }
 
     let mut snippets = Vec::new();
 
-    if let Some(ag_ui_input) = pick_value(body, &["input", "agUiInput", "ag_ui_input"]) {
-        if let Some(messages) = pick_value(ag_ui_input, &["messages"]).and_then(Value::as_array) {
+    if let Some(ag_ui_input) = pick_value(body, &["input", "agUiInput", "ag_ui_input"])
+        && let Some(messages) = pick_value(ag_ui_input, &["messages"]).and_then(Value::as_array)
+    {
+        for message in messages {
+            if pick_string(message, &["role"]).as_deref() == Some("activity") {
+                continue;
+            }
+            if let Some(content_value) = pick_value(message, &["content"]) {
+                snippets.extend(extract_text_snippets(content_value));
+            }
+        }
+    }
+
+    if let Some(mcp_apps_request) = pick_value(body, &["mcpAppsRequest", "mcp_apps_request"])
+        && let Some(params) = pick_value(mcp_apps_request, &["params"])
+        && let Some(content_value) = pick_value(params, &["content"])
+    {
+        snippets.extend(extract_text_snippets(content_value));
+    }
+
+    if let Some(protocol_envelope) = pick_value(body, &["protocolEnvelope", "protocol_envelope"]) {
+        if let Some(input) = pick_value(protocol_envelope, &["input"])
+            && let Some(messages) = pick_value(input, &["messages"]).and_then(Value::as_array)
+        {
             for message in messages {
-                if pick_string(message, &["role"]).as_deref() == Some("activity") {
-                    continue;
-                }
                 if let Some(content_value) = pick_value(message, &["content"]) {
                     snippets.extend(extract_text_snippets(content_value));
                 }
             }
         }
-    }
 
-    if let Some(mcp_apps_request) = pick_value(body, &["mcpAppsRequest", "mcp_apps_request"]) {
-        if let Some(params) = pick_value(mcp_apps_request, &["params"]) {
-            if let Some(content_value) = pick_value(params, &["content"]) {
-                snippets.extend(extract_text_snippets(content_value));
-            }
-        }
-    }
-
-    if let Some(protocol_envelope) = pick_value(body, &["protocolEnvelope", "protocol_envelope"]) {
-        if let Some(input) = pick_value(protocol_envelope, &["input"]) {
-            if let Some(messages) = pick_value(input, &["messages"]).and_then(Value::as_array) {
-                for message in messages {
-                    if let Some(content_value) = pick_value(message, &["content"]) {
-                        snippets.extend(extract_text_snippets(content_value));
-                    }
-                }
-            }
-        }
-
-        if let Some(params) = pick_value(protocol_envelope, &["params"]) {
-            if let Some(content_value) = pick_value(params, &["content"]) {
-                snippets.extend(extract_text_snippets(content_value));
-            }
+        if let Some(params) = pick_value(protocol_envelope, &["params"])
+            && let Some(content_value) = pick_value(params, &["content"])
+        {
+            snippets.extend(extract_text_snippets(content_value));
         }
     }
 
@@ -1055,16 +1103,16 @@ fn json_error_response(status: StatusCode, message: impl Into<String>) -> Respon
 }
 
 fn capabilities_response() -> Response {
+    // `mut` is required when the optional `awp` feature appends a capability.
+    #[allow(unused_mut)]
     let mut protocols: Vec<serde_json::Value> = UI_PROTOCOL_CAPABILITIES
         .iter()
         .map(|spec| serde_json::to_value(spec).unwrap_or_default())
         .collect();
 
     #[cfg(feature = "awp")]
-    {
-        if let Ok(awp_spec) = serde_json::to_value(&adk_ui::AWP_PROTOCOL_CAPABILITY) {
-            protocols.push(awp_spec);
-        }
+    if let Ok(awp_spec) = serde_json::to_value(&adk_ui::AWP_PROTOCOL_CAPABILITY) {
+        protocols.push(awp_spec);
     }
 
     let response = axum::Json(json!({
@@ -1175,10 +1223,10 @@ fn mcp_apps_message_response(body: &Value) -> Result<Response, RuntimeError> {
         "role": pick_string(params, &["role"]).unwrap_or_else(|| "user".to_string()),
         "content": pick_value(params, &["content"]).cloned().unwrap_or_else(|| json!([])),
     });
-    if let Some(metadata) = pick_value(params, &["metadata"]) {
-        if let Some(object) = message.as_object_mut() {
-            object.insert("metadata".to_string(), metadata.clone());
-        }
+    if let Some(metadata) = pick_value(params, &["metadata"])
+        && let Some(object) = message.as_object_mut()
+    {
+        object.insert("metadata".to_string(), metadata.clone());
     }
     session.last_message = Some(message.clone());
 
@@ -1322,6 +1370,8 @@ async fn handle_protocol_native_run_sse(
         cache_capable: state.config.cache_capable.clone(),
         request_context: None,
         cancellation_token: None,
+        intra_compaction_config: None,
+        intra_compaction_summarizer: None,
     })
     .map_err(|error| {
         (
@@ -1332,12 +1382,10 @@ async fn handle_protocol_native_run_sse(
 
     let event_stream = runner
         .run(
-            UserId::try_from(user_id.as_str()).map_err(|e| {
-                (StatusCode::BAD_REQUEST, format!("invalid userId: {}", e))
-            })?,
-            SessionId::try_from(session_id.as_str()).map_err(|e| {
-                (StatusCode::BAD_REQUEST, format!("invalid sessionId: {}", e))
-            })?,
+            UserId::try_from(user_id.as_str())
+                .map_err(|e| (StatusCode::BAD_REQUEST, format!("invalid userId: {}", e)))?,
+            SessionId::try_from(session_id.as_str())
+                .map_err(|e| (StatusCode::BAD_REQUEST, format!("invalid sessionId: {}", e)))?,
             content,
         )
         .await
@@ -1350,16 +1398,19 @@ async fn handle_protocol_native_run_sse(
 
     let selected_profile = ui_profile;
     let mcp_bridge_state = mcp_apps_negotiation.clone();
-    let startup_stream = if selected_profile == UiProfile::AgUi {
-        stream::iter(
-            ag_ui_startup_events(&body, &session_id)
-                .into_iter()
-                .map(|json| Ok::<_, Infallible>(SseEvent::default().data(json))),
-        )
-        .left_stream()
-    } else {
-        stream::empty::<Result<SseEvent, Infallible>>().right_stream()
-    };
+    let mut startup_events: Vec<String> = Vec::new();
+    if selected_profile == UiProfile::AgUi {
+        startup_events.extend(ag_ui_startup_events(&body, &session_id));
+    }
+    // This is a transport receipt only; the agent stream remains authoritative.
+    if let Some(response_json) = a2ui_action_receipt_event(&body) {
+        startup_events.push(response_json);
+    }
+    let startup_stream = stream::iter(
+        startup_events
+            .into_iter()
+            .map(|json| Ok::<_, Infallible>(SseEvent::default().data(json))),
+    );
     let runtime_stream = event_stream.filter_map(move |item| {
         let mcp_bridge_state = mcp_bridge_state.clone();
         async move {
@@ -1480,64 +1531,107 @@ async fn protocol_native_run_sse_middleware(
     }
 }
 
+const AGENTIC_A2UI_INSTRUCTION: &str = r#"
+You are an agentic support intake assistant that emits A2UI.
+
+Always set protocol=a2ui on render tools when the option exists.
+Use render_form then render_confirm then render_toast/alert as a multi-step agent loop:
+1) Collect issue details (title, severity, environment, deadline)
+2) Summarize and ask for confirmation before escalation
+3) After confirm, render success toast/status
+
+Prefer render_screen/render_page with root id "root" and stable component ids.
+Never dump raw JSON for the user — always render UI surfaces.
+"#;
+
+const AGENTIC_AG_UI_INSTRUCTION: &str = r#"
+You are an operations agent for AG-UI clients.
+
+Use protocol=ag_ui on render tools. Emit actionable ops UI:
+- Dashboard (alerts + table + chart)
+- Confirm for failover / risky actions
+- Progress + toast for completion
+
+Think of the UI as the primary channel; chat text is secondary.
+"#;
+
+const AGENTIC_MCP_APPS_INSTRUCTION: &str = r#"
+You are a host-embedded MCP Apps agent.
+
+Use protocol=mcp_apps on render tools so results include ui:// resources and structured content.
+Typical flow: initialize-aware confirm card → form → success surface.
+Keep resource URIs stable (ui://adk-ui/...) and prefer structured confirm/forms over free text.
+"#;
+
 #[tokio::main]
 async fn main() -> Result<()> {
     dotenvy::dotenv().ok();
+    require_any_provider_env()?;
 
-    let api_key = std::env::var("GOOGLE_API_KEY")
-        .or_else(|_| std::env::var("GEMINI_API_KEY"))
-        .expect("GOOGLE_API_KEY or GEMINI_API_KEY must be set");
-    let model_name =
-        std::env::var("UI_DEMO_MODEL").unwrap_or_else(|_| "gemini-2.5-flash".to_string());
-
+    let (model, model_name, provider) = build_default_model()?;
     let ui_tools = UiToolset::all_tools();
 
     let ui_demo = build_ui_agent(
         "ui_demo",
         "General purpose multi-surface demo agent",
         UI_DEMO_INSTRUCTION,
-        &api_key,
-        &model_name,
+        model.clone(),
         &ui_tools,
     )?;
     let ui_working_support = build_ui_agent(
         "ui_working_support",
         "Support intake agent with working UI flows",
         SUPPORT_INSTRUCTION,
-        &api_key,
-        &model_name,
+        model.clone(),
         &ui_tools,
     )?;
     let ui_working_appointment = build_ui_agent(
         "ui_working_appointment",
         "Appointment scheduling agent with working UI flows",
         APPOINTMENT_INSTRUCTION,
-        &api_key,
-        &model_name,
+        model.clone(),
         &ui_tools,
     )?;
     let ui_working_events = build_ui_agent(
         "ui_working_events",
         "Event RSVP agent with working UI flows",
         EVENTS_INSTRUCTION,
-        &api_key,
-        &model_name,
+        model.clone(),
         &ui_tools,
     )?;
     let ui_working_facilities = build_ui_agent(
         "ui_working_facilities",
         "Facilities maintenance agent with working UI flows",
         FACILITIES_INSTRUCTION,
-        &api_key,
-        &model_name,
+        model.clone(),
         &ui_tools,
     )?;
     let ui_working_inventory = build_ui_agent(
         "ui_working_inventory",
         "Inventory restock agent with working UI flows",
         INVENTORY_INSTRUCTION,
-        &api_key,
-        &model_name,
+        model.clone(),
+        &ui_tools,
+    )?;
+    let agentic_a2ui = build_ui_agent(
+        "agentic_a2ui_support",
+        "Agentic A2UI support intake multi-step flow",
+        AGENTIC_A2UI_INSTRUCTION,
+        model.clone(),
+        &ui_tools,
+    )?;
+    let agentic_ag_ui = build_ui_agent(
+        "agentic_ag_ui_ops",
+        "Agentic AG-UI operations command center",
+        AGENTIC_AG_UI_INSTRUCTION,
+        model.clone(),
+        &ui_tools,
+    )?;
+    let agentic_mcp_apps = build_ui_agent(
+        "agentic_mcp_apps_confirm",
+        "Agentic MCP Apps confirm / form host bridge demo",
+        AGENTIC_MCP_APPS_INSTRUCTION,
+        model,
         &ui_tools,
     )?;
 
@@ -1548,6 +1642,9 @@ async fn main() -> Result<()> {
         ui_working_events,
         ui_working_facilities,
         ui_working_inventory,
+        agentic_a2ui,
+        agentic_ag_ui,
+        agentic_mcp_apps,
     ])?);
 
     let port = std::env::var("PORT")
@@ -1565,7 +1662,16 @@ async fn main() -> Result<()> {
 
     println!("=== ADK UI Aggregated Server ===");
     println!("Server running on http://localhost:{}", port);
+    println!(
+        "Provider: {} (set ADK_UI_PROVIDER=openai|gemini)",
+        provider.as_str()
+    );
     println!("Model: {}", model_name);
+    if provider == LlmProvider::OpenAi {
+        println!("Default is OpenAI — use OPENAI_API_KEY / ADK_UI_MODEL");
+    } else {
+        println!("Gemini selected — use GOOGLE_API_KEY / ADK_UI_MODEL");
+    }
     println!();
     println!("Loaded apps:");
     println!("  - ui_demo");
@@ -1574,6 +1680,9 @@ async fn main() -> Result<()> {
     println!("  - ui_working_events");
     println!("  - ui_working_facilities");
     println!("  - ui_working_inventory");
+    println!("  - agentic_a2ui_support      (A2UI multi-step intake)");
+    println!("  - agentic_ag_ui_ops         (AG-UI ops command center)");
+    println!("  - agentic_mcp_apps_confirm  (MCP Apps host bridge)");
     println!();
     println!("React client: http://localhost:5173");
     println!();

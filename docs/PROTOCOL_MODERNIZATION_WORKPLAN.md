@@ -26,6 +26,15 @@ Historical note:
 
 ## Progress Comments
 
+### 2026-08-11 Release Hardening
+
+- Replaced every local `../adk-rust` dependency with the published ADK-Rust `2.0.0` and `awp-types 2.0.0` crates. `cargo package` now verifies the standalone crates.io artifact.
+- Closed the A2UI v1 candidate action-response gaps: response paths remain client-local, responses require pending `actionId` correlation, source component IDs identify the triggering control, and offline/server receipts no longer fabricate domain approval.
+- Closed the AG-UI reasoning lifecycle gaps for empty terminal chunks and implicit non-reasoning boundaries, with React regression tests.
+- Removed unsupported MCP Apps host capability claims and retained only implemented bridge capabilities.
+- Replaced the vulnerable `tsup`/`esbuild 0.27` build path with direct `esbuild 0.28.2`, upgraded the public package to Recharts 3.10 and React Markdown 10, and aligned workspace React/type resolution without narrowing the public React peer range below 18.
+- Verified Rust tests, strict Clippy, React package tests, client lint/typecheck/production build, RustSec, npm audit, Cargo packaging, npm packing, clean consumer installation, and CommonJS/ESM imports. Current advisory count: zero.
+
 ### 2026-03-20
 
 - Workstream 0 is effectively complete in both repos. Capability metadata, docs, and example copy now describe `a2ui`, `ag_ui`, and `mcp_apps` as implemented subsets instead of implying full parity.
