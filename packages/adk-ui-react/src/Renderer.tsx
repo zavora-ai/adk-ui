@@ -652,7 +652,7 @@ const ComponentRenderer: React.FC<{ component: Component }> = ({ component }) =>
                 }
             };
 
-            let tableData = [...component.data];
+            const tableData = [...component.data];
             if (sortColumn) {
                 tableData.sort((a, b) => {
                     const aVal = a[sortColumn] ?? '';

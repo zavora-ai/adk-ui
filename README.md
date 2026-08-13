@@ -16,7 +16,21 @@ Dynamic UI generation for [ADK-Rust](https://adk-rust.com) agents — render for
 - **Keep the loop agentic** — the same system can request input, render results, ask for confirmation, and react to follow-up actions.
 - **Grow without rewriting** — start with high-level tools, then choose the protocol surface that matches your host or client architecture.
 
-## Screenshots
+## Version 2: Agent UI Studio
+
+Version 2 is not just a protocol refresh. The example client is now a usable studio for exploring agent-generated interfaces:
+
+- Start with a scenario or write your own UI goal.
+- Switch between A2UI, AG-UI, MCP Apps, AWP, and the legacy ADK profile from one protocol matrix.
+- Compare desktop and mobile surfaces without leaving the run.
+- Inspect protocol events, assistant output, reasoning, and correlated actions in focused tabs.
+- Try the complete support-escalation flow locally, even when the Rust server or an LLM API key is unavailable.
+
+![ADK UI v2 landing page](docs/screenshots/adk-ui-v2-landing.jpg)
+
+![ADK UI v2 Agent UI Studio](docs/screenshots/adk-ui-v2-studio.jpg)
+
+## Protocol Examples
 
 ### A2UI Dashboard
 
@@ -141,7 +155,7 @@ The agent shows available time slots — collects preferences or missing constra
 
 ## Supported Protocols
 
-`adk-ui` supports three protocol surfaces, each designed for a different integration boundary:
+`adk-ui` supports five runtime profiles, each designed for a different integration boundary:
 
 | Protocol | Best For |
 |----------|----------|

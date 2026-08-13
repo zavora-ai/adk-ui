@@ -26,6 +26,15 @@ Historical note:
 
 ## Progress Comments
 
+### 2026-08-13 Version 2 UX Release
+
+- Replaced the reference client test harness with the responsive Agent UI Studio: scenario-led prompting, protocol cards, a focused live canvas, desktop/mobile previews, and tabbed run diagnostics.
+- Added a v2 landing experience that explains the product value and makes the protocol-native improvements visible before users enter the studio.
+- Made the local feature demo complete without a server or API key, including reasoning and a correlated A2UI action response that finishes in the browser.
+- Added release screenshots and updated the README/changelog to distinguish the user-facing v2 work from the ADK-Rust 2.0 dependency upgrade.
+- Closed the React package's missing ESLint 9 configuration and verified both workspaces with tests, lint, typecheck, and production builds.
+- Re-ran the release security and Rust quality gates: 153 Rust tests, strict Clippy, zero npm audit findings, and zero RustSec findings.
+
 ### 2026-08-11 Release Hardening
 
 - Replaced every local `../adk-rust` dependency with the published ADK-Rust `2.0.0` and `awp-types 2.0.0` crates. `cargo package` now verifies the standalone crates.io artifact.

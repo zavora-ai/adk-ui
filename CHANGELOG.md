@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.0.0] - 2026-08-09
+## [2.0.0] - 2026-08-13
 
 ### Breaking
 
@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Agent UI Studio**: replaced the example client test-harness layout with a scenario-led, responsive workspace that clearly separates goals, live surfaces, and run diagnostics.
+- **Protocol discovery**: added a visual protocol matrix with explicit support tiers and compact server capability signals.
+- **Responsive preview**: added desktop/mobile surface modes and a mobile-first stacked studio layout.
+- **Run inspector**: moved events, assistant output, AG-UI activity, reasoning, and A2UI responses into focused tabs.
 - **A2UI**: every envelope stamps `version: "v0.9.1"`; MIME `application/a2ui+json`; client action + `VALIDATION_FAILED` envelopes; catalog schema accepts version + optional bulk createSurface fields.
 - **AG-UI**: full reasoning event family (`REASONING_*`), activity/state official field names, `run_started` / `run_finished` helpers; tier **NativeSubset**.
 - **MCP Apps**: extension id `io.modelcontextprotocol/ui`, SEP Final status, and capability advertisement limited to implemented bridge behavior; tier **NativeSubset**.
@@ -28,11 +32,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- A zero-setup local feature demo that renders a complete support surface, reasoning trace, and correlated A2UI `actionResponse` without a running server or API key.
+- A v2 landing experience and in-product release narrative explaining the user-facing upgrade.
 - `compat::inline_data_part()` helper for constructing `Part::InlineData` under both standalone and `adk-core` feature paths.
 - **Agentic examples**: `examples/agentic_ui` (A2UI / AG-UI / MCP Apps apps) and three agentic agents on `ui_server`.
 - Shared multi-provider factory (OpenAI default) under `examples/common/provider.rs`.
 - **A2UI v1.0 actionResponse** end-to-end: Rust `ActionResponseMessage` / client `wantResponse`+`actionId`, React pending-action tracking, example server correlated response, data-model write via `responsePath`.
 - **AG-UI reasoning UI**: `ReasoningPanel` + `applyReasoningEvent` in `@zavora-ai/adk-ui-react`, wired in the example client event stream.
+
+### Fixed
+
+- Local feature-demo actions no longer attempt a server request; the client completes and displays the correlated action response in-browser.
 
 ## [1.0.0] - 2026-05-15
 

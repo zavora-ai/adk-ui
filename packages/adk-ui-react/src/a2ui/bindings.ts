@@ -114,7 +114,7 @@ const DEFAULT_FUNCTIONS: FunctionRegistry = {
     openUrl: (args) => stringifyValue(readNamedArgument(args, 'url', 0)),
     and: (args) => flattenBooleanArgs(args).every(Boolean),
     or: (args) => flattenBooleanArgs(args).some(Boolean),
-    not: (args) => !Boolean(readNamedArgument(args, 'value', 0)),
+    not: (args) => !readNamedArgument(args, 'value', 0),
 };
 
 export function isDataBinding(value: unknown): value is DataBinding {

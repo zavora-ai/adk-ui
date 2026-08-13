@@ -207,31 +207,41 @@ const EXAMPLES: ExampleTarget[] = [
   },
 ];
 
-const PROTOCOLS: Array<{ id: UiProtocol; label: string; hint: string }> = [
+const PROTOCOLS: Array<{ id: UiProtocol; label: string; hint: string; mark: string; status: string }> = [
   {
     id: 'adk_ui',
     label: 'Legacy ADK UI',
     hint: 'Backward-compatible internal profile (deprecated).',
+    mark: 'ADK',
+    status: 'Legacy',
   },
   {
     id: 'a2ui',
     label: 'A2UI',
-    hint: 'Core surface subset with draft v0.9 alignment.',
+    hint: 'Production v0.9.1 surfaces with candidate v1 correlated actions.',
+    mark: 'A2',
+    status: 'Preferred',
   },
   {
     id: 'ag_ui',
     label: 'AG-UI',
     hint: 'Hybrid subset with protocol-native runtime transport, AG-UI run input, and stable text/tool event parsing.',
+    mark: 'AG',
+    status: 'Native subset',
   },
   {
     id: 'mcp_apps',
     label: 'MCP Apps',
     hint: 'Compatibility subset with framework bridge endpoints, bridge-aware structured content, ui:// resources, and inline HTML fallback.',
+    mark: 'MCP',
+    status: 'Bridge ready',
   },
   {
     id: 'awp',
     label: 'AWP',
     hint: 'Agentic Web Protocol — dual-user rendering with HTML output, capability manifest export, and bandwidth-adaptive mode.',
+    mark: 'AWP',
+    status: 'Adaptive',
   },
 ];
 
@@ -2884,6 +2894,8 @@ function App() {
   const [errorText, setErrorText] = useState<string | null>(null);
   const [capabilities, setCapabilities] = useState<ProtocolCapability[]>([]);
   const [capabilitiesError, setCapabilitiesError] = useState<string | null>(null);
+  const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>('desktop');
+  const [inspectorTab, setInspectorTab] = useState<'events' | 'output' | 'reasoning'>('events');
   const agUiContextRef = useRef<{
     threadId?: string;
     lastRunId?: string;
@@ -3032,6 +3044,42 @@ function App() {
           },
         };
         bridge.requestBody.uiProtocol = 'a2ui';
+      }
+
+      if (surfaceId === 'feature-demo' && wantsA2uiResponse && a2uiActionId) {
+        const value = actionName === 'confirm_escalation'
+          ? {
+              accepted: true,
+              ticketId: 'SUP-2048',
+              escalation: 'on_call_notified',
+            }
+          : {
+              accepted: false,
+              escalation: 'cancelled',
+            };
+
+        pendingA2uiActionsRef.current.delete(a2uiActionId);
+        setPendingA2uiActions(Array.from(pendingA2uiActionsRef.current.values()));
+        setLastActionResponse({
+          actionId: a2uiActionId,
+          responsePath: a2uiResponsePath,
+          value,
+        });
+        setSurface((current) => current
+          ? {
+              ...current,
+              dataModel: writeJsonPointer(current.dataModel ?? {}, a2uiResponsePath!, value),
+            }
+          : current);
+        setStatusText(actionName === 'confirm_escalation' ? 'Escalation confirmed' : 'Escalation cancelled');
+        setErrorText(null);
+        appendEvent(
+          'a2ui:action_response',
+          'a2ui',
+          { actionId: a2uiActionId, actionResponse: { value } },
+          `Correlated local actionResponse for ${actionName}`,
+        );
+        return;
       }
 
       try {
@@ -3424,7 +3472,11 @@ function App() {
             const value = pickField(actionResponse, 'value');
             const error = pickField(actionResponse, 'error');
             const applied = error ?? value ?? actionResponse;
-            setLastActionResponse(applied);
+            setLastActionResponse({
+              actionId,
+              responsePath: path,
+              value: applied,
+            });
             pendingA2uiActionsRef.current.delete(actionId);
             setPendingA2uiActions(Array.from(pendingA2uiActionsRef.current.values()));
             setSurface((current) => {
@@ -3677,9 +3729,13 @@ function App() {
   function loadLocalFeatureDemo() {
     setSelectedProtocol('a2ui');
     setErrorText(null);
+    setInspectorTab('events');
+    pendingA2uiActionsRef.current = new Map();
+    setPendingA2uiActions([]);
+    setLastActionResponse(null);
     setStatusText('Local feature demo loaded');
     setAssistantText(
-      'Feature demo: support intake surface + sample reasoning stream.\nStart the example server, then click "Confirm escalation" to exercise a correlated A2UI v1.0 actionResponse.',
+      'Feature demo: support intake surface + sample reasoning stream.\nClick "Confirm escalation" to complete a correlated A2UI v1.0 actionResponse entirely in the browser.',
     );
 
     const runtime = createReasoningRuntime();
@@ -3800,339 +3856,433 @@ function App() {
       : null;
 
   return (
-    <div className="showcase-shell">
+    <div id="top" className="v2-shell">
       <div className="ambient-orb ambient-orb-a" />
       <div className="ambient-orb ambient-orb-b" />
       <div className="ambient-grid" />
 
-      <header className="hero-card fade-in-rise">
-        <div>
-          <p className="eyebrow">ADK-RUST UI EXAMPLES</p>
-          <h1>ADK UI</h1>
-          <p className="hero-subtitle">
-            Create dynamic user interfaces with ADK UI, with support for standard protocols such
-            as <strong>A2UI</strong>, <strong>AG-UI</strong>, and <strong>MCP Apps</strong>.
+      <nav className="topbar fade-in-rise" aria-label="Primary navigation">
+        <a className="brand" href="#top" aria-label="ADK UI home">
+          <span className="brand-mark" aria-hidden="true"><i /><i /><i /></span>
+          <span>ADK UI</span>
+        </a>
+        <span className="release-pill"><i /> Version 2.0</span>
+        <div className="topbar-links">
+          <a href="#studio">Studio</a>
+          <a href="#whats-new">What&apos;s new</a>
+          <a href="https://github.com/zavora-ai/adk-ui" target="_blank" rel="noreferrer">
+            GitHub <span aria-hidden="true">↗</span>
+          </a>
+        </div>
+      </nav>
+
+      <header className="v2-hero fade-in-rise">
+        <div className="hero-copy">
+          <div className="release-kicker">
+            <span>ADK-Rust 2.0 native</span>
+            <span className="kicker-divider" />
+            <span>Five UI protocols</span>
+          </div>
+          <h1>One agent.<br /><em>Every interface.</em></h1>
+          <p>
+            Build interactive agent experiences once, then deliver them through A2UI, AG-UI,
+            MCP Apps, AWP, or the classic ADK renderer. V2 makes the protocol visible, testable,
+            and ready for real user actions.
           </p>
+          <div className="hero-actions">
+            <button type="button" className="primary-cta" onClick={loadLocalFeatureDemo} data-testid="load-feature-demo">
+              Explore the live demo <span aria-hidden="true">→</span>
+            </button>
+            <a className="secondary-cta" href="https://github.com/zavora-ai/adk-ui#quick-start" target="_blank" rel="noreferrer">
+              Read the quick start
+            </a>
+          </div>
         </div>
 
-        <div className="hero-metrics">
-          <div className="metric-card">
-            <span>Runs</span>
-            <strong>{runCount}</strong>
+        <div className="hero-proof" aria-label="Version 2 highlights">
+          <div className="proof-orbit" aria-hidden="true">
+            <span className="orbit-core">UI</span>
+            <span className="orbit-node orbit-a">A2</span>
+            <span className="orbit-node orbit-b">AG</span>
+            <span className="orbit-node orbit-c">MCP</span>
+            <span className="orbit-node orbit-d">AWP</span>
           </div>
-          <div className="metric-card">
-            <span>Tool Responses</span>
-            <strong>{toolHitCount}</strong>
-          </div>
-          <div className="metric-card">
-            <span>Last Latency</span>
-            <strong>{lastLatencyMs ? `${lastLatencyMs}ms` : 'n/a'}</strong>
-          </div>
-          <div className="metric-card">
-            <span>Status</span>
-            <strong className={isStreaming ? 'status-live' : ''}>{statusText}</strong>
+          <div className="proof-caption">
+            <span className="live-dot" />
+            Protocol-native surface delivery
           </div>
         </div>
       </header>
 
-      <section className="control-row fade-in-rise delay-1">
-        <div className="select-group">
-          <label htmlFor="example-select">Demo App</label>
-          <select
-            id="example-select"
-            value={selectedExample.id}
-            onChange={(event) => {
-              const next = EXAMPLES.find((example) => example.id === event.target.value);
-              if (next) {
-                setSelectedExample(next);
-              }
-            }}
-          >
-            {EXAMPLES.map((example) => (
-              <option key={example.id} value={example.id}>
-                {example.name} ({example.port})
-              </option>
-            ))}
-          </select>
-          <p>{selectedExample.description}</p>
+      <section className="protocol-section fade-in-rise delay-1" aria-labelledby="protocol-heading">
+        <div className="section-heading-row">
+          <div>
+            <p className="section-kicker">Protocol matrix</p>
+            <h2 id="protocol-heading">Choose how your UI travels</h2>
+          </div>
+          <p>Switch profiles without rebuilding the agent.</p>
         </div>
 
-        <div className="select-group">
-          <label htmlFor="protocol-select">Protocol Profile</label>
-          <select
-            id="protocol-select"
-            value={selectedProtocol}
-            onChange={(event) => {
-              const normalized = normalizeProtocol(event.target.value);
-              if (normalized) {
-                setSelectedProtocol(normalized);
-              }
-            }}
-          >
-            {PROTOCOLS.map((protocol) => (
-              <option key={protocol.id} value={protocol.id}>
-                {protocol.label}
-              </option>
-            ))}
-          </select>
-          <p>{selectedProtocolMeta.hint}</p>
+        <div className="protocol-switcher" role="group" aria-label="UI protocol profiles">
+          {PROTOCOLS.map((protocol) => (
+            <button
+              key={protocol.id}
+              type="button"
+              className={`protocol-card ${selectedProtocol === protocol.id ? 'is-selected' : ''}`}
+              aria-pressed={selectedProtocol === protocol.id}
+              onClick={() => setSelectedProtocol(protocol.id)}
+            >
+              <span className="protocol-mark">{protocol.mark}</span>
+              <span className="protocol-card-copy">
+                <strong>{protocol.label}</strong>
+                <small>{protocol.status}</small>
+              </span>
+              <span className="protocol-check" aria-hidden="true">{selectedProtocol === protocol.id ? '✓' : '→'}</span>
+            </button>
+          ))}
         </div>
 
-        <div className="capability-group">
-          <div className="capability-title">
-            <span>Server Capability Signal</span>
-            <div className="capability-actions">
-              <button type="button" onClick={() => loadLocalFeatureDemo()} data-testid="load-feature-demo">
-                Load feature demo
-              </button>
-              <button type="button" onClick={() => void loadCapabilities()}>
-                Refresh
-              </button>
+        <div className="protocol-signal">
+          <div className="signal-summary">
+            <span className={`signal-light ${capabilityForSelectedProtocol ? 'is-online' : ''}`} />
+            <div>
+              <strong>{selectedProtocolMeta.label}</strong>
+              <p>{capabilityForSelectedProtocol?.summary ?? selectedProtocolMeta.hint}</p>
             </div>
           </div>
-          {capabilityForSelectedProtocol ? (
-            <>
-              <div className="chip-row">
-                {capabilityForSelectedProtocol.versions.map((version) => (
-                  <span className="chip" key={version}>
-                    {version}
-                  </span>
-                ))}
-                {capabilityForSelectedProtocol.implementationTier ? (
-                  <span
-                    className={`chip chip-${capabilityForSelectedProtocol.implementationTier}`}
-                  >
-                    Mode: {formatCapabilityToken(capabilityForSelectedProtocol.implementationTier)}
-                  </span>
-                ) : null}
-                {capabilityForSelectedProtocol.specTrack ? (
-                  <span className={`chip chip-${capabilityForSelectedProtocol.specTrack}`}>
-                    Spec: {formatCapabilityToken(capabilityForSelectedProtocol.specTrack)}
-                  </span>
-                ) : null}
-              </div>
-              {capabilityForSelectedProtocol.summary ? (
-                <p className="capability-summary">{capabilityForSelectedProtocol.summary}</p>
-              ) : null}
-              <div className="feature-list">
-                {capabilityForSelectedProtocol.features.slice(0, 5).map((feature) => (
-                  <span key={feature}>{feature}</span>
-                ))}
-              </div>
-              {capabilityForSelectedProtocol.limitations?.length ? (
-                <div className="capability-limitations">
-                  {capabilityForSelectedProtocol.limitations.slice(0, 2).map((limitation) => (
-                    <span key={limitation}>{limitation}</span>
-                  ))}
-                </div>
-              ) : null}
-              {capabilityForSelectedProtocol.deprecation ? (
-                <div className="deprecation-note">
-                  Legacy window: announced {capabilityForSelectedProtocol.deprecation.announcedOn}
-                  {capabilityForSelectedProtocol.deprecation.sunsetTargetOn
-                    ? `, sunset ${capabilityForSelectedProtocol.deprecation.sunsetTargetOn}`
-                    : ''}
-                </div>
-              ) : null}
-            </>
-          ) : (
-            <p className="capability-fallback">
-              {capabilitiesError
-                ? `Capability endpoint unavailable: ${capabilitiesError}`
-                : 'No capability metadata loaded for selected protocol.'}
-            </p>
-          )}
+          <div className="chip-row">
+            {(capabilityForSelectedProtocol?.versions ?? [selectedProtocolMeta.status]).map((version) => (
+              <span className="chip" key={version}>{version}</span>
+            ))}
+            {capabilityForSelectedProtocol?.implementationTier ? (
+              <span className={`chip chip-${capabilityForSelectedProtocol.implementationTier}`}>
+                {formatCapabilityToken(capabilityForSelectedProtocol.implementationTier)}
+              </span>
+            ) : null}
+            {capabilityForSelectedProtocol?.specTrack ? (
+              <span className={`chip chip-${capabilityForSelectedProtocol.specTrack}`}>
+                {formatCapabilityToken(capabilityForSelectedProtocol.specTrack)}
+              </span>
+            ) : null}
+          </div>
         </div>
       </section>
 
-      <section className="showcase-grid fade-in-rise delay-2">
-        <aside className="panel prompt-panel">
-          <div className="panel-header">
-            <h2>Prompt Launcher</h2>
-            <span>{selectedExample.port}</span>
+      <section id="studio" className="studio-shell fade-in-rise delay-2" aria-labelledby="studio-heading">
+        <div className="studio-topline">
+          <div className="studio-title">
+            <span className="window-dots" aria-hidden="true"><i /><i /><i /></span>
+            <div>
+              <p className="section-kicker">Interactive workspace</p>
+              <h2 id="studio-heading">Agent UI Studio</h2>
+            </div>
           </div>
 
-          <div className="prompt-grid">
-            {selectedExample.prompts.map((prompt) => (
-              <button
-                key={prompt}
-                type="button"
-                className="prompt-button"
-                onClick={() => void runPrompt(prompt)}
-                disabled={isStreaming}
-              >
-                {prompt}
-              </button>
-            ))}
+          <div className="studio-metrics" aria-label="Run metrics">
+            <span><small>Runs</small><strong>{runCount}</strong></span>
+            <span><small>Tools</small><strong>{toolHitCount}</strong></span>
+            <span><small>Latency</small><strong>{lastLatencyMs !== null ? `${lastLatencyMs}ms` : '—'}</strong></span>
+            <span className={isStreaming ? 'is-live' : ''}><small>Status</small><strong>{statusText}</strong></span>
           </div>
+        </div>
 
-          <div className="composer-block">
-            <label htmlFor="prompt-input">Custom Prompt</label>
-            <textarea
-              id="prompt-input"
-              value={promptInput}
-              onChange={(event) => setPromptInput(event.target.value)}
-              placeholder="Describe the UI you want the agent to render..."
-              rows={5}
-              disabled={isStreaming}
-            />
-            <button
-              type="button"
-              className="run-button"
-              disabled={isStreaming || promptInput.trim().length === 0}
-              onClick={() => {
-                const value = promptInput;
-                setPromptInput('');
-                void runPrompt(value);
+        <div className="workspace-bar">
+          <label className="workspace-select" htmlFor="example-select">
+            <span>Demo agent</span>
+            <select
+              id="example-select"
+              value={selectedExample.id}
+              onChange={(event) => {
+                const next = EXAMPLES.find((example) => example.id === event.target.value);
+                if (next) setSelectedExample(next);
               }}
             >
-              {isRetrying ? 'Retrying...' : isStreaming ? 'Streaming...' : 'Run Live Prompt'}
-            </button>
+              {EXAMPLES.map((example) => (
+                <option key={example.id} value={example.id}>{example.name}</option>
+              ))}
+            </select>
+          </label>
+          <div className="workspace-description">
+            <span className="workspace-port">:{selectedExample.port}</span>
+            <p>{selectedExample.description}</p>
           </div>
-        </aside>
+          <button type="button" className="refresh-button" onClick={() => void loadCapabilities()}>
+            Refresh capabilities
+          </button>
+        </div>
 
-        <main className="panel canvas-panel">
-          <div className="panel-header">
-            <h2>Live Render Canvas</h2>
-            <span>{surface ? surface.surfaceId : 'waiting'}</span>
+        {capabilitiesError ? (
+          <div className="offline-notice" role="status">
+            <span className="offline-icon" aria-hidden="true">⌁</span>
+            <div>
+              <strong>Server offline? The studio still works.</strong>
+              <p>Explore a complete local surface, reasoning stream, and correlated action without an API key.</p>
+            </div>
+            <button type="button" onClick={loadLocalFeatureDemo}>Launch offline demo</button>
           </div>
+        ) : null}
 
-          {surfaceSourceLabel ? (
-            <div className="surface-meta-strip">
-              <span>Source: {surfaceSourceLabel}</span>
-              {surfaceDisplayMode ? <span>Mode: {surfaceDisplayMode}</span> : null}
-              {surfaceProtocolVersion ? <span>Protocol: {surfaceProtocolVersion}</span> : null}
-              {surfaceHostLabel ? <span>Host: {surfaceHostLabel}</span> : null}
-              {surfaceBridgeState ? <span>Bridge: {surfaceBridgeState}</span> : null}
+        <div className="studio-grid">
+          <aside className="launcher-panel" aria-labelledby="launcher-heading">
+            <div className="panel-heading">
+              <span className="step-number">01</span>
+              <div>
+                <p className="section-kicker">Give it a goal</p>
+                <h3 id="launcher-heading">Launch a scenario</h3>
+              </div>
             </div>
-          ) : null}
 
-          {surface ? (
-            <div className="render-surface" data-surface={surface.surfaceId}>
-              {surface.html ? (
-                <iframe
-                  srcDoc={surface.html}
-                  title="AWP Rendered Surface"
-                  sandbox="allow-scripts"
-                  style={{
-                    width: '100%',
-                    minHeight: '500px',
-                    border: 'none',
-                    borderRadius: '8px',
-                    background: 'white',
-                  }}
-                />
-              ) : (
-                surface.components.map((component, index) => (
-                  <UiRenderer
-                    key={`${component.id ?? 'component'}-${index}`}
-                    component={component}
-                    onAction={registerUiAction}
-                  />
-                ))
-              )}
+            <div className="scenario-list">
+              {selectedExample.prompts.map((prompt, index) => (
+                <button
+                  key={prompt}
+                  type="button"
+                  className="scenario-card"
+                  onClick={() => void runPrompt(prompt)}
+                  disabled={isStreaming}
+                >
+                  <span className="scenario-index">0{index + 1}</span>
+                  <span>{prompt}</span>
+                  <i aria-hidden="true">↗</i>
+                </button>
+              ))}
             </div>
-          ) : (
-            <div className="empty-state">
-              {isStreaming ? (
-                <h3 className="streaming-title" aria-live="polite">
-                  {isRetrying ? 'Streaming UI (retrying)' : 'Streaming UI'}
-                  <span className="streaming-dots" aria-hidden="true">
-                    <span>.</span>
-                    <span>.</span>
-                    <span>.</span>
-                  </span>
-                </h3>
-              ) : (
-                <h3>No surface rendered yet</h3>
-              )}
-              {!isStreaming ? (
-                <p>
-                  Run a prompt to stream tool output and render a dynamic UI surface for{' '}
-                  <strong>{selectedProtocolMeta.label}</strong>.
-                </p>
-              ) : null}
+
+            <div className="composer-block">
+              <div className="composer-label-row">
+                <label htmlFor="prompt-input">Or describe your own UI</label>
+                <span>{promptInput.length}/1200</span>
+              </div>
+              <textarea
+                id="prompt-input"
+                value={promptInput}
+                maxLength={1200}
+                onChange={(event) => setPromptInput(event.target.value)}
+                placeholder="Example: Build an incident dashboard with a guarded failover action..."
+                rows={5}
+                disabled={isStreaming}
+              />
+              <button
+                type="button"
+                className="run-button"
+                disabled={isStreaming || promptInput.trim().length === 0}
+                onClick={() => {
+                  const value = promptInput;
+                  setPromptInput('');
+                  void runPrompt(value);
+                }}
+              >
+                <span>{isRetrying ? 'Retrying' : isStreaming ? 'Building interface' : 'Build interface'}</span>
+                <span aria-hidden="true">{isStreaming ? '•••' : '→'}</span>
+              </button>
             </div>
-          )}
+          </aside>
 
-          <div className="assistant-output">
-            <h3>Assistant Text Output</h3>
-            <pre>{assistantText || 'No text output captured yet.'}</pre>
-          </div>
-
-          <ReasoningPanel
-            messages={reasoningMessages}
-            className="reasoning-output"
-            title="Agent reasoning"
-          />
-
-          {pendingA2uiActions.length > 0 || lastActionResponse !== null ? (
-            <div className="a2ui-action-output">
-              <h3>A2UI actionResponse</h3>
-              {pendingA2uiActions.length > 0 ? (
-                <p className="activity-empty">
-                  Waiting for response ({pendingA2uiActions.map((item) => item.actionId).join(', ')})
-                </p>
-              ) : null}
-              {lastActionResponse !== null ? (
-                <pre>{JSON.stringify(lastActionResponse, null, 2)}</pre>
-              ) : null}
-            </div>
-          ) : null}
-
-          {selectedProtocol === 'ag_ui' ? (
-            <div className="activity-output">
-              <h3>AG-UI Activity Snapshot</h3>
-              {activityMessages.length === 0 ? (
-                <p className="activity-empty">No activity messages captured yet.</p>
-              ) : (
-                <div className="activity-list">
-                  {activityMessages.map((activity) => (
-                    <article key={activity.messageId} className="activity-item">
-                      <div className="activity-item-header">
-                        <span className="activity-badge">{activity.activityType}</span>
-                        <span className="activity-id">{activity.messageId}</span>
-                      </div>
-                      <pre>{JSON.stringify(activity.content, null, 2)}</pre>
-                    </article>
-                  ))}
+          <main className="canvas-panel" aria-labelledby="canvas-heading">
+            <div className="canvas-toolbar">
+              <div className="panel-heading compact">
+                <span className="step-number">02</span>
+                <div>
+                  <p className="section-kicker">See the result</p>
+                  <h3 id="canvas-heading">Live surface</h3>
                 </div>
-              )}
+              </div>
+              <div className="preview-toggle" aria-label="Preview size">
+                <button type="button" aria-pressed={previewMode === 'desktop'} onClick={() => setPreviewMode('desktop')}>
+                  <span aria-hidden="true">▱</span> Desktop
+                </button>
+                <button type="button" aria-pressed={previewMode === 'mobile'} onClick={() => setPreviewMode('mobile')}>
+                  <span aria-hidden="true">▯</span> Mobile
+                </button>
+              </div>
             </div>
-          ) : null}
-        </main>
 
-        <aside className="panel stream-panel">
-          <div className="panel-header">
-            <h2>Runtime Event Stream</h2>
-            <span>{eventLog.length}</span>
-          </div>
+            <div className="canvas-stage">
+              <div className={`preview-viewport preview-${previewMode}`}>
+                <div className="preview-chrome">
+                  <span><i /><i /><i /></span>
+                  <strong>{surface ? surface.surfaceId : `${selectedProtocol}.surface`}</strong>
+                  <em>{surface ? 'live' : 'ready'}</em>
+                </div>
 
-          {errorText ? <div className="error-banner">Error: {errorText}</div> : null}
+                {surfaceSourceLabel ? (
+                  <div className="surface-meta-strip">
+                    <span>{surfaceSourceLabel}</span>
+                    {surfaceDisplayMode ? <span>{surfaceDisplayMode}</span> : null}
+                    {surfaceProtocolVersion ? <span>{surfaceProtocolVersion}</span> : null}
+                    {surfaceHostLabel ? <span>{surfaceHostLabel}</span> : null}
+                    {surfaceBridgeState ? <span>{surfaceBridgeState}</span> : null}
+                  </div>
+                ) : null}
 
-          <div className="event-list">
-            {eventLog.length === 0 ? (
-              <div className="event-empty">Events will appear here during streaming.</div>
-            ) : (
-              eventLog.map((entry) => (
-                <details key={entry.id} className="event-item">
-                  <summary>
-                    <div>
-                      <span className="event-kind">{entry.kind}</span>
-                      <span className="event-preview">{entry.preview}</span>
+                {surface ? (
+                  <div className="render-surface" data-surface={surface.surfaceId}>
+                    {surface.html ? (
+                      <iframe
+                        srcDoc={surface.html}
+                        title="AWP rendered surface"
+                        sandbox="allow-scripts"
+                      />
+                    ) : (
+                      surface.components.map((component, index) => (
+                        <UiRenderer
+                          key={`${component.id ?? 'component'}-${index}`}
+                          component={component}
+                          onAction={registerUiAction}
+                        />
+                      ))
+                    )}
+                  </div>
+                ) : (
+                  <div className="empty-state">
+                    <div className="empty-illustration" aria-hidden="true">
+                      <span className="empty-card card-one" />
+                      <span className="empty-card card-two" />
+                      <span className="empty-spark">✦</span>
                     </div>
-                    <div className="event-meta">
-                      <span>{entry.protocol}</span>
-                      <span>{entry.at}</span>
+                    {isStreaming ? (
+                      <>
+                        <h4 className="streaming-title" aria-live="polite">
+                          {isRetrying ? 'Refining your surface' : 'Building your surface'}
+                          <span className="streaming-dots" aria-hidden="true"><span>.</span><span>.</span><span>.</span></span>
+                        </h4>
+                        <p>Streaming {selectedProtocolMeta.label} events into the canvas.</p>
+                      </>
+                    ) : (
+                      <>
+                        <h4>Your agent&apos;s interface appears here</h4>
+                        <p>Choose a scenario or explore the zero-setup v2 demo.</p>
+                        <button type="button" onClick={loadLocalFeatureDemo}>Load example surface</button>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </main>
+
+          <aside className="inspector-panel" aria-labelledby="inspector-heading">
+            <div className="panel-heading inspector-heading">
+              <span className="step-number">03</span>
+              <div>
+                <p className="section-kicker">Understand the run</p>
+                <h3 id="inspector-heading">Inspector</h3>
+              </div>
+              <span className="event-count">{eventLog.length}</span>
+            </div>
+
+            <div className="inspector-tabs" role="tablist" aria-label="Run inspector">
+              {(['events', 'output', 'reasoning'] as const).map((tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  role="tab"
+                  aria-selected={inspectorTab === tab}
+                  onClick={() => setInspectorTab(tab)}
+                >
+                  {tab === 'events' ? 'Events' : tab === 'output' ? 'Output' : 'Reasoning'}
+                </button>
+              ))}
+            </div>
+
+            <div className="inspector-content">
+              {inspectorTab === 'events' ? (
+                <>
+                  {errorText ? <div className="error-banner"><strong>Run failed</strong><span>{errorText}</span></div> : null}
+                  <div className="event-list">
+                    {eventLog.length === 0 ? (
+                      <div className="inspector-empty">
+                        <span aria-hidden="true">{'{ }'}</span>
+                        <strong>Waiting for events</strong>
+                        <p>Protocol frames will appear here as the agent runs.</p>
+                      </div>
+                    ) : (
+                      eventLog.map((entry) => (
+                        <details key={entry.id} className="event-item">
+                          <summary>
+                            <div><span className="event-kind">{entry.kind}</span><span className="event-preview">{entry.preview}</span></div>
+                            <div className="event-meta"><span>{entry.protocol}</span><span>{entry.at}</span></div>
+                          </summary>
+                          <pre>{JSON.stringify(entry.raw, null, 2)}</pre>
+                        </details>
+                      ))
+                    )}
+                  </div>
+                </>
+              ) : null}
+
+              {inspectorTab === 'output' ? (
+                <div className="output-stack">
+                  <div className="assistant-output">
+                    <h4>Assistant output</h4>
+                    <pre>{assistantText || 'No text output captured yet.'}</pre>
+                  </div>
+                  {pendingA2uiActions.length > 0 || lastActionResponse !== null ? (
+                    <div className="a2ui-action-output">
+                      <h4>A2UI actionResponse</h4>
+                      {pendingA2uiActions.length > 0 ? <p>Waiting for {pendingA2uiActions.map((item) => item.actionId).join(', ')}</p> : null}
+                      {lastActionResponse !== null ? <pre>{JSON.stringify(lastActionResponse, null, 2)}</pre> : null}
                     </div>
-                  </summary>
-                  <pre>{JSON.stringify(entry.raw, null, 2)}</pre>
-                </details>
-              ))
-            )}
-          </div>
-        </aside>
+                  ) : null}
+                  {selectedProtocol === 'ag_ui' ? (
+                    <div className="activity-output">
+                      <h4>AG-UI activity</h4>
+                      {activityMessages.length === 0 ? <p className="activity-empty">No activity snapshots yet.</p> : (
+                        <div className="activity-list">
+                          {activityMessages.map((activity) => (
+                            <article key={activity.messageId} className="activity-item">
+                              <div className="activity-item-header"><span>{activity.activityType}</span><small>{activity.messageId}</small></div>
+                              <pre>{JSON.stringify(activity.content, null, 2)}</pre>
+                            </article>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {inspectorTab === 'reasoning' ? (
+                <ReasoningPanel messages={reasoningMessages} className="reasoning-output" title="Agent reasoning" />
+              ) : null}
+            </div>
+          </aside>
+        </div>
       </section>
+
+      <section id="whats-new" className="whats-new-section fade-in-rise" aria-labelledby="whats-new-heading">
+        <div className="whats-new-intro">
+          <p className="section-kicker">What changed in v2</p>
+          <h2 id="whats-new-heading">More than a compatibility update.</h2>
+          <p>V2 turns protocol support into a workflow developers can see, test, and trust.</p>
+        </div>
+        <div className="upgrade-grid">
+          <article>
+            <span className="upgrade-number">01</span>
+            <div className="upgrade-icon">⌁</div>
+            <h3>Protocol-native streams</h3>
+            <p>Inspect A2UI actions, AG-UI reasoning, and MCP Apps bridge state without translating everything into one opaque format.</p>
+          </article>
+          <article>
+            <span className="upgrade-number">02</span>
+            <div className="upgrade-icon">✓</div>
+            <h3>Safer user actions</h3>
+            <p>Correlated action responses, real component identity, and no fabricated approval states for high-impact interactions.</p>
+          </article>
+          <article>
+            <span className="upgrade-number">03</span>
+            <div className="upgrade-icon">✦</div>
+            <h3>A studio, not a test page</h3>
+            <p>Scenario-led demos, responsive previews, zero-setup exploration, and diagnostics that stay available without taking over the canvas.</p>
+          </article>
+        </div>
+      </section>
+
+      <footer className="site-footer">
+        <div><span className="brand-mark small" aria-hidden="true"><i /><i /><i /></span><strong>ADK UI v2</strong></div>
+        <p>Open source agent interfaces for the ADK-Rust ecosystem.</p>
+        <a href="https://github.com/zavora-ai/adk-ui" target="_blank" rel="noreferrer">Apache 2.0 · GitHub ↗</a>
+      </footer>
     </div>
   );
 }
