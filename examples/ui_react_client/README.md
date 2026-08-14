@@ -18,6 +18,21 @@ npm run dev -- --host 127.0.0.1
 
 Open http://127.0.0.1:5173 to interact with the agent.
 
+## Independent Showcase Examples
+
+The Showcase does not require the Rust server or an LLM key. Every example is deep-linkable and implemented in a separate source fixture:
+
+```text
+http://127.0.0.1:5173/?example=incident-command
+http://127.0.0.1:5173/?example=support-workflow
+http://127.0.0.1:5173/?example=release-room
+http://127.0.0.1:5173/?example=brand-commerce
+http://127.0.0.1:5173/?example=spatial-logistics
+http://127.0.0.1:5173/?example=streaming-operations
+```
+
+Use these examples to inspect one capability at a time: decision workspaces, guided forms, multi-page applications, brand kits, declarative 3D, and incremental streaming updates. Interactive actions appear in the host event receipt at the bottom of each page.
+
 ## What This Does
 
 This client connects to the ADK UI server via SSE and renders UI components that agents generate through `render_*` tool calls:
@@ -62,6 +77,8 @@ This client connects to the ADK UI server via SSE and renders UI components that
 - `src/adk-ui-renderer/types.ts` - TypeScript types matching Rust schema
 - `src/adk-ui-renderer/Renderer.tsx` - Component renderer (23 components)
 - `src/App.tsx` - Main app with SSE connection and outbound protocol bridge
+- `src/showcase/examples/*.ts` - Standalone, copyable capability fixtures
+- `src/showcase/ShowcasePage.tsx` - Zero-server example host and event inspector
 
 ## Customization
 

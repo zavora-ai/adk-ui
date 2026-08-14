@@ -16,7 +16,7 @@ Dynamic UI generation for [ADK-Rust](https://adk-rust.com) agents — render for
 - **Keep the loop agentic** — the same system can request input, render results, ask for confirmation, and react to follow-up actions.
 - **Grow without rewriting** — start with high-level tools, then choose the protocol surface that matches your host or client architecture.
 
-## Version 2: Agent UI Studio
+## Version 2.1: Agent UI Studio
 
 Version 2 is not just a protocol refresh. The example client is now a usable studio for exploring agent-generated interfaces:
 
@@ -26,9 +26,26 @@ Version 2 is not just a protocol refresh. The example client is now a usable stu
 - Inspect protocol events, assistant output, reasoning, and correlated actions in focused tabs.
 - Try the complete support-escalation flow locally, even when the Rust server or an LLM API key is unavailable.
 
-![ADK UI v2 landing page](docs/screenshots/adk-ui-v2-landing.jpg)
+![ADK UI v2.1 landing page](docs/screenshots/adk-ui-v2-landing.png)
 
-![ADK UI v2 Agent UI Studio](docs/screenshots/adk-ui-v2-studio.jpg)
+![ADK UI v2.1 Agent UI Studio](docs/screenshots/adk-ui-v2-studio.png)
+
+## Example Showcase
+
+The reference client includes six independent, zero-server examples. Each one has a direct URL, a separate source fixture, responsive preview controls, fullscreen mode, and a visible host event receipt.
+
+![ADK UI independent example showcase](docs/screenshots/adk-ui-showcase.png)
+
+| Example | Capability focus | Direct URL |
+|---------|------------------|------------|
+| Incident command | Decision support, charts, tables, guarded rollback | `/?example=incident-command` |
+| Guided support | Adaptive forms, validation, context preservation | `/?example=support-workflow` |
+| Release room | Multi-page generation, local routing, preserved form state | `/?example=release-room` |
+| Brand concierge | Approved UI kits and semantic design tokens | `/?example=brand-commerce` |
+| Spatial logistics | Declarative 3D, labelled actions, safe fallback | `/?example=spatial-logistics` |
+| Streaming operations | Targeted replace, patch, append, and remove updates | `/?example=streaming-operations` |
+
+Run the React client, then open the Showcase section or navigate directly to any URL above. The fixtures live in [`examples/ui_react_client/src/showcase/examples`](examples/ui_react_client/src/showcase/examples) and render exclusively through `@zavora-ai/adk-ui-react` public APIs.
 
 ## Protocol Examples
 
@@ -93,7 +110,7 @@ npm install
 
 # Start the Rust example server (OpenAI default)
 export OPENAI_API_KEY=sk-...
-# optional: export ADK_UI_MODEL=gpt-4o-mini
+# optional: export ADK_UI_MODEL=gpt-5.6-sol
 cargo run --example ui_server --features adk-core
 
 # Or Gemini:
@@ -197,20 +214,22 @@ This section is deliberately concrete to help integrators understand what is imp
 | Component types | 30 |
 | High-level render tools | 13 |
 | Render tool × protocol combinations tested | 39 / 39 |
-| Runtime profiles smoke-tested in live client | 5 / 5 (as of 2026-04-25) |
-| Runtime capability metadata | Exposed via `/api/ui/capabilities` |
+| Runtime profiles smoke-tested in live client | 5 / 5 (as of 2026-08-14) |
+| Runtime capability metadata | Versioned 2026 contract at `/api/ui/capabilities` |
 
 ### Protocol Support
 
 | Protocol | Upstream Target | Tier | What Works Today | Live Validation |
 |----------|----------------|------|------------------|-----------------|
-| `a2ui` | **v0.9.1** current production | **Native subset** | Versioned JSONL (`v0.9.1`), flat components, create/update/delete surface, client action + `VALIDATION_FAILED` errors, `application/a2ui+json`, optional bulk createSurface fields | Dashboard + agentic support flow |
-| `ag_ui` | Stable event model | **Native subset** | Run lifecycle, text/tool streams + chunks, state snapshot/delta, activity, **reasoning**, surface `ACTIVITY_SNAPSHOT` + `CUSTOM` | Ops command center + confirm |
-| `mcp_apps` | SEP-1865 **Final** (`io.modelcontextprotocol/ui`) | **Native subset** | `ui://` resources, `text/html;profile=mcp-app`, extension capability ad, initialize/message/model-context bridge shapes, structured content | Confirm + form host bridge |
+| `a2ui` | **v0.9.1 stable** + **v1.0 release candidate** | **Native subset** | Versioned catalog capability exchange, JSONL surfaces, validation feedback, and a candidate v1.0 correlated RPC subset | Dashboard + agentic support flow |
+| `ag_ui` | Current stable event and capability model | **Native subset** | Typed baseline capability snapshots, SSE lifecycle, text/tool/state/activity streams, reasoning continuity, and interrupt/resume wire types | Ops command center + confirm |
+| `mcp_apps` | **2026-01-26 stable** (`io.modelcontextprotocol/ui`) | **Native subset** | MIME extension negotiation, `ui://` resources, progressive fallback, initialize/message/model-context flows, and typed tool/lifecycle notifications | Confirm + form host bridge |
 | `adk_ui` | Internal legacy | Legacy | Backward-compatible runtime during migration (sunset 2026-12-31) | Tested in browser |
 | `awp` | AWP v1.0 | Compatibility subset | HTML rendering, capability export, bandwidth-adaptive mode | Dashboard + form |
 
-> **Preferred profile:** `a2ui`. **Default demo LLM:** OpenAI (`OPENAI_API_KEY`); set `ADK_UI_PROVIDER=gemini` for Gemini.
+> **Preferred profile:** `a2ui`. **Default demo LLM:** OpenAI Responses with `gpt-5.6-sol` (`OPENAI_API_KEY`); set `ADK_UI_PROVIDER=gemini` for Gemini.
+
+The capability endpoint is designed for code, not marketing copy. Every protocol includes per-version maturity, negotiation keys, content types, transports, fallback paths, and scoped claims marked `supported`, `partial`, `candidate`, `host_owned`, `planned`, or `legacy`. Protocol-specific details expose A2UI agent/renderer catalogs, the AG-UI agent snapshot, and MCP Apps extension and host capabilities separately.
 
 ### A2UI v1.0 actionResponse (demo path)
 
@@ -223,7 +242,7 @@ This section is deliberately concrete to help integrators understand what is imp
 
 When the stream includes `REASONING_*` events, the client shows a collapsible **Agent reasoning** panel (streaming text updates live).
 
-> **Honesty note:** `adk-ui` does not present AG-UI or MCP Apps as fully native or complete implementations. Runtime capability signals and documentation are intentionally explicit about hybrid and compatibility subsets so downstream clients can make informed decisions.
+> **Honesty note:** typed wire support is not the same as an end-to-end host feature. Durable AG-UI interrupt checkpointing, MCP Apps iframe/CSP enforcement, external links/downloads, and transport-specific A2A policy remain agent- or host-owned and are reported that way.
 
 ## Architecture
 
@@ -248,26 +267,43 @@ This repo includes:
 
 | Tool | Purpose |
 |------|---------|
+| `render_app` | Generate a complete multi-page application graph with routes, page-level composition, state, and optional declarative 3D scenes |
 | `render_screen` | Emit protocol-aware screen surfaces from component definitions |
 | `render_page` | Build multi-section pages with protocol-aware payloads |
-| `render_kit` | Generate A2UI kit/catalog artifacts |
+| `render_kit` | Generate a reviewable brand-kit manifest, real component catalog, semantic tokens, assets, templates, agent constraints, and scoped CSS |
 | `render_form` | Collect structured user input |
 | `render_card` | Display information-rich cards with actions |
 | `render_alert` | Surface status and severity messages |
 | `render_confirm` | Request user approval for risky or important actions |
 | `render_table` | Display sortable tabular data |
 | `render_chart` | Display line, bar, area, and pie charts |
-| `render_layout` | Build dashboard-style layouts |
+| `render_layout` | Build dashboard-style layouts, including embedded form sections for editable proposals |
 | `render_progress` | Show progress and step flows |
 | `render_modal` | Display modal dialogs |
 | `render_toast` | Show temporary notifications |
+
+### Brand-driven generative UI
+
+ADK UI brand kits make approved company tokens, assets, component recipes, and templates the design source of truth. Agents pass an approved `kit_id`; protocol adapters preserve it as the catalog identity; both React renderer paths consume the same scoped kit. Draft kits are rejected by production providers unless preview is explicitly enabled.
+
+See [Brand Kits](docs/BRAND_KITS.md) for import, asset generation, approval, React, protocol, and security guidance.
+
+### Whole applications and spatial UI
+
+Use `render_app` when the requested outcome is a product, portal, site, or multi-route workflow. It emits a validated application graph plus independently addressable page surfaces, so application-aware clients get preserved navigation and older protocol clients still receive usable surface fallbacks.
+
+The `scene_3d` component is declarative rather than executable. Agents choose from bounded primitives or approved `model_3d` assets in the active brand kit; hosts own the renderer, materials, interaction policy, accessibility fallback, and performance budget.
+
+See [Generative Applications and 3D](docs/GENERATIVE_APPLICATIONS_3D.md) for schemas, React integration, protocol behavior, security boundaries, and performance guidance.
 
 ### Core Strengths
 
 - Type-safe Rust schema with TypeScript-friendly rendering surface
 - Server-side validation before bad UI reaches the browser
 - Streaming updates via `UiUpdate`
-- HTML renderer for all 30+ component types with bandwidth-adaptive output
+- HTML renderer for all 30+ component types with bandwidth-adaptive and accessible 3D fallback output
+- Multi-page application rendering with state-preserving navigation and page-level design composition
+- Lazy WebGPU/WebGL 3D rendering without increasing the normal surface startup payload
 - Tested system prompts for reliable tool use
 - Prebuilt templates for common business flows
 - Protocol adapters that reduce per-tool drift
@@ -278,6 +314,7 @@ This repo includes:
 |---------|-------------|---------|
 | `ui_server` | Rust server with SSE and protocol-aware UI tool output | `cargo run --example ui_server --features adk-core` |
 | `ui_react_client` | React reference client with protocol profile selector | `cd examples/ui_react_client && npm run dev -- --host 127.0.0.1` |
+| `ui_react_client?example=<id>` | Independent zero-server capability showcases | Run the React client, then open `/?example=incident-command` |
 
 Protocol coverage and streaming behaviors are exercised through the live React client and the Rust test suite in [`/tests`](tests/).
 
@@ -298,6 +335,7 @@ See [docs/PROTOCOL_MIGRATION.md](docs/PROTOCOL_MIGRATION.md) for detailed guidan
 - [Protocol Migration Guide](docs/PROTOCOL_MIGRATION.md)
 - [Protocol Modernization Workplan](docs/PROTOCOL_MODERNIZATION_WORKPLAN.md)
 - [Framework Continuity Roadmap](docs/FRAMEWORK_CONTINUITY_ROADMAP.md)
+- [Generative Applications and 3D](docs/GENERATIVE_APPLICATIONS_3D.md)
 - [React Client Notes](examples/ui_react_client/README.md)
 
 ## License

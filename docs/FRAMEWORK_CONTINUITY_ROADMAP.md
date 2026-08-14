@@ -13,6 +13,18 @@ Status note:
 - The scoped continuity work needed for the current `adk-ui` modernization pass is complete as of 2026-03-20.
 - The remaining items in this document are future framework hardening and cleanup opportunities, not blockers for the current app integration.
 
+## 2026-08-13 Capability Continuity Update
+
+`adk-ui` now exposes a structured 2026 capability contract, but the framework should become its long-term source of truth. The next framework release should absorb these additive contracts without changing behavior for non-UI agents:
+
+- Centralize the versioned protocol profile schema, per-version maturity, negotiation metadata, and scoped support claims so `adk-server` and downstream clients serialize the same document.
+- Add dynamic AG-UI `AgentCapabilities` production at the loaded-agent boundary. Tool items, multimodal support, sub-agents, execution limits, and HITL fields must be derived from the actual agent/runtime rather than a static server-wide default.
+- Implement durable AG-UI interrupt state, expiry, payload validation, idempotent resume, and checkpoint/replay policy before advertising `humanInTheLoop.interrupts: true` or transport `resumable: true`.
+- Align MCP Apps defaults with the stable `2026-01-26` extension, keeping MCP extension negotiation separate from `ui/initialize` app/host capabilities. Full sandbox/CSP enforcement, links, downloads, display-mode control, and teardown remain host capabilities and must only be advertised when implemented.
+- Support A2UI's versioned renderer/agent catalog exchange for stable v0.9.1 and candidate v1.0, while keeping v1.0-specific RPC and multi-catalog claims explicitly candidate until upstream reaches stable.
+
+All changes should be optional and additive. Existing server users that do not opt into UI protocols must retain the same routes, initialization behavior, and dependency footprint.
+
 ## Current Baseline
 
 What is already landed and should be treated as the active contract:

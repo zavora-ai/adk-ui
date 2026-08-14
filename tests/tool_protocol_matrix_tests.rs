@@ -116,6 +116,29 @@ fn templates_by_tool() -> BTreeMap<&'static str, Value> {
         }),
     );
     templates.insert(
+        "render_app",
+        json!({
+            "application": {
+                "id": "matrix-app",
+                "name": "Matrix Application",
+                "initial_route": "/",
+                "navigation": [{ "label": "Overview", "route": "/" }],
+                "pages": [{
+                    "id": "overview",
+                    "route": "/",
+                    "title": "Overview",
+                    "template": "dashboard",
+                    "regions": [{
+                        "id": "summary",
+                        "layout": "stack",
+                        "columns": 1,
+                        "components": [{ "type": "text", "content": "Application protocol coverage" }]
+                    }]
+                }]
+            }
+        }),
+    );
+    templates.insert(
         "render_page",
         json!({
             "surface_id": "matrix-page",
@@ -384,7 +407,7 @@ async fn collect_matrix_snapshots() -> Vec<MatrixSnapshot> {
     let protocols = ["a2ui", "ag_ui", "mcp_apps"];
     let mut snapshots = Vec::new();
 
-    assert_eq!(tools.len(), 13, "toolset should expose 13 tools");
+    assert_eq!(tools.len(), 14, "toolset should expose 14 tools");
 
     for protocol in protocols {
         for tool in &tools {
@@ -408,7 +431,7 @@ async fn collect_matrix_snapshots() -> Vec<MatrixSnapshot> {
 #[tokio::test]
 async fn tool_protocol_matrix_covers_all_tools_and_protocols() {
     let snapshots = collect_matrix_snapshots().await;
-    assert_eq!(snapshots.len(), 39, "expected 13 tools x 3 protocols");
+    assert_eq!(snapshots.len(), 42, "expected 14 tools x 3 protocols");
 }
 
 #[tokio::test]

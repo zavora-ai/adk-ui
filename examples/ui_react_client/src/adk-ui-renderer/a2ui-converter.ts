@@ -1,4 +1,4 @@
-import type { Component } from './types';
+import type { Component } from '@zavora-ai/adk-ui-react';
 
 /**
  * Converts A2UI v0.9 nested component format to flat format expected by Renderer
@@ -12,11 +12,8 @@ interface A2UIComponent {
   component: Record<string, any>;
 }
 
-let inlineComponentCounter = 0;
-
-function nextInlineId(prefix: string): string {
-  inlineComponentCounter += 1;
-  return `${prefix}-${inlineComponentCounter}`;
+function inlineComponentId(ownerId: string, prefix: string, index: number): string {
+  return `${ownerId}-${prefix}-${index}`;
 }
 
 function extractText(textField: any): string {
@@ -57,18 +54,18 @@ function normalizeGap(gap: any, spacing: any): number | string | undefined {
   return tokenMap[token] ?? spacing;
 }
 
-function normalizeNestedEntries(entries: any): any[] {
+function normalizeNestedEntries(entries: any, ownerId = 'inline'): any[] {
   if (!Array.isArray(entries)) {
     // If it's a single literalString or plain string, wrap as text component
     const text = extractText(entries);
     if (text) {
-      return [{ type: 'text', id: nextInlineId('inline-text'), content: text }];
+      return [{ type: 'text', id: inlineComponentId(ownerId, 'text', 0), content: text }];
     }
     return [];
   }
 
   return entries
-    .map((entry: any) => {
+    .map((entry: any, index: number) => {
       if (typeof entry === 'string') {
         return entry;
       }
@@ -77,12 +74,12 @@ function normalizeNestedEntries(entries: any): any[] {
       if (entry && typeof entry === 'object' && !entry.component && !entry.type) {
         const text = extractText(entry);
         if (text) {
-          return { type: 'text', id: nextInlineId('inline-text'), content: text };
+          return { type: 'text', id: inlineComponentId(ownerId, 'text', index), content: text };
         }
         const nestedEntries = Object.entries(entry);
         if (nestedEntries.length === 1 && typeof nestedEntries[0][0] === 'string') {
           return convertA2UIComponent({
-            id: nextInlineId(`inline-${nestedEntries[0][0].toLowerCase()}`),
+            id: inlineComponentId(ownerId, nestedEntries[0][0].toLowerCase(), index),
             component: entry,
           });
         }
@@ -92,7 +89,7 @@ function normalizeNestedEntries(entries: any): any[] {
     .filter((entry: any) => entry !== null && entry !== undefined);
 }
 
-function normalizeCardContent(props: Record<string, any>): any[] {
+function normalizeCardContent(props: Record<string, any>, ownerId: string): any[] {
   if (typeof props.child === 'string' && props.child.trim().length > 0) {
     return [props.child];
   }
@@ -101,7 +98,7 @@ function normalizeCardContent(props: Record<string, any>): any[] {
     return props.children;
   }
 
-  return normalizeNestedEntries(props.content);
+  return normalizeNestedEntries(props.content, `${ownerId}-content`);
 }
 
 export function convertA2UIComponent(a2ui: A2UIComponent): Component | null {
@@ -303,15 +300,15 @@ export function convertA2UIComponent(a2ui: A2UIComponent): Component | null {
         id,
         title: props.title ? extractText(props.title) : undefined,
         description: props.description ? extractText(props.description) : undefined,
-        content: normalizeCardContent(props) as any,
-        footer: normalizeNestedEntries(props.footer) as any,
+        content: normalizeCardContent(props, id) as any,
+        footer: normalizeNestedEntries(props.footer, `${id}-footer`) as any,
       };
 
     case 'Container':
       return {
         type: 'container',
         id,
-        children: normalizeNestedEntries(props.children) as any,
+        children: normalizeNestedEntries(props.children, `${id}-children`) as any,
         padding: props.padding,
       };
 
@@ -376,6 +373,21 @@ export function convertA2UIComponent(a2ui: A2UIComponent): Component | null {
         colors: props.colors,
       };
 
+    case 'Scene3D':
+      return {
+        type: 'scene_3d',
+        id,
+        title: props.title ? extractText(props.title) : undefined,
+        description: props.description ? extractText(props.description) : undefined,
+        height: props.height,
+        background: props.background,
+        camera: props.camera,
+        objects: Array.isArray(props.objects) ? props.objects : [],
+        auto_rotate: props.autoRotate ?? props.auto_rotate,
+        controls: props.controls,
+        fallback: props.fallback ? extractText(props.fallback) : undefined,
+      };
+
     case 'Alert':
       return {
         type: 'alert',
@@ -408,8 +420,8 @@ export function convertA2UIComponent(a2ui: A2UIComponent): Component | null {
         type: 'modal',
         id,
         title: extractText(props.title),
-        content: normalizeNestedEntries(props.content) as any,
-        footer: normalizeNestedEntries(props.footer) as any,
+        content: normalizeNestedEntries(props.content, `${id}-content`) as any,
+        footer: normalizeNestedEntries(props.footer, `${id}-footer`) as any,
         size: props.size as any,
         closable: props.closable,
       };

@@ -16,6 +16,10 @@ pub const A2UI_MIME_TYPE_LEGACY: &str = "application/json+a2ui";
 pub const A2UI_BASIC_CATALOG_ID: &str =
     "https://a2ui.org/specification/v0_9_1/catalogs/basic/catalog.json";
 
+/// Basic catalog id for the A2UI v1.0 release candidate.
+pub const A2UI_BASIC_CATALOG_ID_V1: &str =
+    "https://a2ui.org/specification/v1_0/catalogs/basic/catalog.json";
+
 fn default_a2ui_version() -> String {
     A2UI_PROTOCOL_VERSION.to_string()
 }

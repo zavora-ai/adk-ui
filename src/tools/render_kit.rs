@@ -20,7 +20,7 @@ pub struct RenderKitParams {
     pub protocol: LegacyProtocolOptions,
 }
 
-/// Tool for generating a UI kit (catalog + tokens + templates + theme).
+/// Tool for generating a reviewable UI kit draft.
 pub struct RenderKitTool;
 
 impl RenderKitTool {
@@ -42,7 +42,7 @@ impl Tool for RenderKitTool {
     }
 
     fn description(&self) -> &str {
-        "Generate a UI kit from a KitSpec. Returns catalog, tokens, templates, and theme CSS."
+        "Generate a versioned brand-kit draft from a KitSpec. Returns a manifest, supported component catalog, semantic tokens, templates, agent constraints, and scoped theme CSS. Drafts must be reviewed before runtime approval."
     }
 
     fn parameters_schema(&self) -> Option<Value> {
@@ -56,6 +56,16 @@ impl Tool for RenderKitTool {
 
         let generator = KitGenerator::new();
         let artifacts = generator.generate(&params.spec);
+        if let Err(errors) = artifacts.manifest.validate() {
+            let details = errors
+                .iter()
+                .map(ToString::to_string)
+                .collect::<Vec<_>>()
+                .join("; ");
+            return Err(crate::compat::AdkError::tool(format!(
+                "Generated kit failed validation: {details}"
+            )));
+        }
         let payload = format_output(&artifacts, params.output.as_deref());
 
         Ok(match params.protocol.protocol {
@@ -76,9 +86,11 @@ fn format_output(artifacts: &KitArtifacts, output: Option<&str>) -> Value {
     match output {
         Some("catalog_only") => artifacts.catalog.clone(),
         _ => json!({
+            "manifest": artifacts.manifest,
             "catalog": artifacts.catalog,
             "tokens": artifacts.tokens,
             "templates": artifacts.templates,
+            "agent_context": artifacts.agent_context,
             "theme_css": artifacts.theme_css,
         }),
     }
@@ -162,13 +174,27 @@ mod tests {
             "brand": { "vibe": "trustworthy", "industry": "fintech" },
             "colors": { "primary": "#2F6BFF" },
             "typography": { "family": "Source Sans 3" },
+            "assets": [{
+                "id": "primary-logo",
+                "kind": "logo",
+                "uri": "/assets/fintech-pro.svg",
+                "mimeType": "image/svg+xml",
+                "alt": "Fintech Pro"
+            }],
+            "provenance": {
+                "source": "imported",
+                "sourceUri": "https://brand.example.com/design-system"
+            },
             "templates": ["auth_login"]
         });
 
         let ctx: Arc<dyn ToolContext> = Arc::new(TestContext::new());
         let value = tool.execute(ctx, args).await.unwrap();
+        assert_eq!(value["manifest"]["status"], "draft");
         assert!(value.get("catalog").is_some());
         assert!(value.get("tokens").is_some());
+        assert!(value["catalog"]["components"]["Card"].is_object());
+        assert_eq!(value["manifest"]["assets"][0]["id"], "primary-logo");
     }
 
     #[tokio::test]

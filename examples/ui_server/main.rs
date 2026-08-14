@@ -4,7 +4,7 @@ mod provider;
 use adk_agent::LlmAgentBuilder;
 use adk_core::{
     Agent, Content, Event, FunctionResponseData, Llm, MultiAgentLoader, Part, SessionId, Tool,
-    UserId,
+    ToolContext, UserId,
 };
 use adk_runner::{Runner, RunnerConfig};
 use adk_server::{ServerConfig, create_app, shutdown_signal};
@@ -12,10 +12,15 @@ use adk_session::{CreateRequest, GetRequest, InMemorySessionService, SessionServ
 use adk_ui::{
     MCP_APPS_PROTOCOL_VERSION, McpAppsAppCapabilities, McpAppsInitializeRequest,
     McpAppsInitializeRequestParams, McpAppsInitializeResult, McpAppsPartyInfo,
-    SUPPORTED_UI_PROTOCOLS, UI_PROTOCOL_CAPABILITIES, UiToolset, a2ui::A2UI_AGENT_PROMPT,
-    build_default_mcp_apps_initialize_result, normalize_runtime_ui_protocol,
+    SUPPORTED_UI_PROTOCOLS, UI_CAPABILITY_SCHEMA_VERSION, UI_DEFAULT_PROTOCOL,
+    UI_PREFERRED_PROTOCOL, UI_PROTOCOL_CAPABILITIES, UiToolset, a2ui::A2UI_AGENT_PROMPT,
+    build_default_mcp_apps_initialize_result, default_a2ui_agent_capabilities,
+    default_a2ui_renderer_capabilities, default_ag_ui_agent_capabilities,
+    default_mcp_apps_extension_capabilities, default_mcp_apps_host_capabilities,
+    normalize_runtime_ui_protocol,
 };
 use anyhow::Result;
+use async_trait::async_trait;
 use axum::{
     body::{Body, to_bytes},
     extract::State,
@@ -33,35 +38,33 @@ use serde_json::{Value, json};
 use std::{
     collections::HashMap,
     convert::Infallible,
-    sync::{Arc, OnceLock, RwLock},
+    sync::{Arc, Mutex, OnceLock, RwLock},
+    time::{Duration, Instant},
 };
 use tracing::{info, warn};
 
 const UI_DEMO_INSTRUCTION: &str = r#"
 You are a general-purpose UI assistant.
 
-Render clear, production-style interfaces for dashboards, forms, tables, charts, alerts, and modals.
-Prefer high-level tools (`render_layout`, `render_table`, `render_chart`, `render_form`, `render_card`) over plain text-only outputs.
-For dashboard prompts, include at minimum:
-- 3 KPI cards
-- 1 table or list
-- 1 chart
-- 1 alert or status badge cluster
-Do not satisfy dashboard prompts using text paragraphs plus buttons only.
-Always return complete surfaces with stable ids and actionable controls.
+Design complete decision surfaces, not component inventories. Preserve user-provided facts and use realistic sample data for prototypes.
+Prefer high-level tools (`render_layout`, `render_table`, `render_chart`, `render_form`, `render_card`) over raw component assembly.
+For dashboards and workspaces, include:
+- at least 3 domain-specific KPIs with useful deltas or status
+- a populated trend chart or comparison table
+- current risks, exceptions, or unresolved decisions
+- one clear next action
+Represent KPIs as a `render_layout` section with type `stats`; do not encode KPIs as `key_value` pairs.
+For intake workflows, provide context, collect only missing information, use specific field labels and options, and end with a review-oriented action instead of a generic Submit button.
+Always return complete, responsive surfaces with stable ids. Require review before consequential actions.
 "#;
 
 const SUPPORT_INSTRUCTION: &str = r#"
 You are a support intake assistant.
 
-When the user starts, immediately render a support ticket form with:
-- Title input
-- Description textarea
-- Priority select (Low, Medium, High)
-- Submit button
-
-Use `render_form` for intake and `render_alert` for success/error feedback.
-Use render_screen with a root Column layout.
+On the first turn, render a focused support form that carries known issue facts into its title and description and collects only missing information. A multi-step intake should normally include four to seven purposeful fields chosen from impact summary, affected users or workflow, environment, severity with meaningful options, first observed/deadline, error evidence, and contact preference.
+Use concrete placeholders and a domain-specific action such as `Review ticket` or `Review escalation`; never use a generic Submit label.
+After form submission, render a review/confirm surface that summarizes the proposed ticket and lets the user cancel. Only after explicit confirmation may you render success with ticket id, SLA, owner, and next step.
+Use `render_form` for intake, `render_confirm` for review, and `render_alert` for success/error feedback. Render one surface per turn.
 "#;
 
 const APPOINTMENT_INSTRUCTION: &str = r#"
@@ -225,6 +228,77 @@ fn full_instruction(extra: &str) -> String {
     format!("{A2UI_AGENT_PROMPT}\n\n{extra}")
 }
 
+/// Keeps the demo's generated UI deterministic without changing framework tool behavior.
+/// A rendered surface is the terminal response for one invocation; the next UI action starts
+/// a fresh invocation and advances the workflow.
+struct SingleSurfaceTurnTool {
+    inner: Arc<dyn Tool>,
+    rendered_invocations: Arc<Mutex<HashMap<String, Instant>>>,
+}
+
+impl SingleSurfaceTurnTool {
+    fn new(
+        inner: Arc<dyn Tool>,
+        rendered_invocations: Arc<Mutex<HashMap<String, Instant>>>,
+    ) -> Self {
+        Self {
+            inner,
+            rendered_invocations,
+        }
+    }
+}
+
+#[async_trait]
+impl Tool for SingleSurfaceTurnTool {
+    fn name(&self) -> &str {
+        self.inner.name()
+    }
+
+    fn description(&self) -> &str {
+        self.inner.description()
+    }
+
+    fn declaration(&self) -> Value {
+        self.inner.declaration()
+    }
+
+    async fn execute(&self, ctx: Arc<dyn ToolContext>, args: Value) -> adk_core::Result<Value> {
+        let invocation_id = ctx.invocation_id().to_string();
+        let already_rendered = {
+            let now = Instant::now();
+            let mut invocations = self
+                .rendered_invocations
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner());
+            invocations
+                .retain(|_, seen_at| now.duration_since(*seen_at) < Duration::from_secs(300));
+            invocations.insert(invocation_id, now).is_some()
+        };
+
+        if already_rendered {
+            return Ok(json!({
+                "status": "ignored",
+                "reason": "A surface was already rendered for this turn.",
+            }));
+        }
+
+        let result = self.inner.execute(ctx.clone(), args).await;
+        if result.is_err() {
+            let mut invocations = self
+                .rendered_invocations
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner());
+            invocations.remove(ctx.invocation_id());
+            return result;
+        }
+
+        let mut actions = ctx.actions();
+        actions.skip_summarization = true;
+        ctx.set_actions(actions);
+        result
+    }
+}
+
 fn build_ui_agent(
     name: &str,
     description: &str,
@@ -236,9 +310,13 @@ fn build_ui_agent(
         .description(description)
         .instruction(full_instruction(instruction))
         .model(model);
+    let rendered_invocations = Arc::new(Mutex::new(HashMap::new()));
 
     for tool in ui_tools.iter().cloned() {
-        builder = builder.tool(tool);
+        builder = builder.tool(Arc::new(SingleSurfaceTurnTool::new(
+            tool,
+            rendered_invocations.clone(),
+        )));
     }
 
     Ok(Arc::new(builder.build()?))
@@ -898,6 +976,9 @@ fn build_state_delta_from_request(body: &Value, profile: UiProfile) -> HashMap<S
         if let Some(parent_run_id) = pick_value(ag_ui_input, &["parentRunId", "parent_run_id"]) {
             state_delta.insert("ag_ui_parent_run_id".to_string(), parent_run_id.clone());
         }
+        if let Some(resume) = pick_value(ag_ui_input, &["resume"]) {
+            state_delta.insert("ag_ui_resume".to_string(), resume.clone());
+        }
     }
 
     if let Some(compatibility_event) = pick_value(
@@ -1107,15 +1188,50 @@ fn capabilities_response() -> Response {
     #[allow(unused_mut)]
     let mut protocols: Vec<serde_json::Value> = UI_PROTOCOL_CAPABILITIES
         .iter()
-        .map(|spec| serde_json::to_value(spec).unwrap_or_default())
+        .map(|spec| {
+            let mut capability = serde_json::to_value(spec).unwrap_or_default();
+            let details = match spec.protocol {
+                "a2ui" => json!({
+                    "agentCapabilities": default_a2ui_agent_capabilities(),
+                    "rendererCapabilities": default_a2ui_renderer_capabilities(),
+                }),
+                "ag_ui" => json!({
+                    "agentCapabilities": default_ag_ui_agent_capabilities(),
+                }),
+                "mcp_apps" => json!({
+                    "protocolVersion": MCP_APPS_PROTOCOL_VERSION,
+                    "extensionCapabilities": default_mcp_apps_extension_capabilities(),
+                    "hostCapabilities": default_mcp_apps_host_capabilities(),
+                }),
+                _ => json!({}),
+            };
+            if let Some(object) = capability.as_object_mut() {
+                object.insert("available".to_string(), Value::Bool(true));
+                object.insert("details".to_string(), details);
+            }
+            capability
+        })
         .collect();
 
     #[cfg(feature = "awp")]
-    if let Ok(awp_spec) = serde_json::to_value(&adk_ui::AWP_PROTOCOL_CAPABILITY) {
+    if let Ok(mut awp_spec) = serde_json::to_value(&adk_ui::AWP_PROTOCOL_CAPABILITY) {
+        if let Some(object) = awp_spec.as_object_mut() {
+            object.insert("available".to_string(), Value::Bool(true));
+            object.insert("details".to_string(), json!({}));
+        }
         protocols.push(awp_spec);
     }
 
+    #[allow(unused_mut)]
+    let mut supported_protocols = SUPPORTED_UI_PROTOCOLS.to_vec();
+    #[cfg(feature = "awp")]
+    supported_protocols.push("awp");
+
     let response = axum::Json(json!({
+        "schemaVersion": UI_CAPABILITY_SCHEMA_VERSION,
+        "defaultProtocol": UI_DEFAULT_PROTOCOL,
+        "preferredProtocol": UI_PREFERRED_PROTOCOL,
+        "supportedProtocols": supported_protocols,
         "protocols": protocols,
     }))
     .into_response();
@@ -1535,10 +1651,14 @@ const AGENTIC_A2UI_INSTRUCTION: &str = r#"
 You are an agentic support intake assistant that emits A2UI.
 
 Always set protocol=a2ui on render tools when the option exists.
-Use render_form then render_confirm then render_toast/alert as a multi-step agent loop:
-1) Collect issue details (title, severity, environment, deadline)
-2) Summarize and ask for confirmation before escalation
-3) After confirm, render success toast/status
+Render exactly one user-facing surface per turn. Never call several render tools in the same turn.
+Choose the surface from the current interaction state:
+1) If required issue details are missing, render_form and stop. Carry known facts into the title and description, then collect four to seven purposeful missing details such as impact, affected users/workflow, environment, severity, deadline, evidence, and contact preference. Use meaningful select options and a review-oriented CTA, never a generic Submit label.
+2) If the issue details are present but escalation is not confirmed, render_confirm and stop.
+3) Only after an explicit confirm UI event, render_toast or render_alert and stop.
+
+Never render a success state before the user confirms. A high-level render tool already returns a complete surface, so do not follow it with a placeholder render_screen call.
+Preserve submitted state in the review and make the escalation scope clear before confirmation.
 
 Prefer render_screen/render_page with root id "root" and stable component ids.
 Never dump raw JSON for the user — always render UI surfaces.
@@ -1547,20 +1667,22 @@ Never dump raw JSON for the user — always render UI surfaces.
 const AGENTIC_AG_UI_INSTRUCTION: &str = r#"
 You are an operations agent for AG-UI clients.
 
-Use protocol=ag_ui on render tools. Emit actionable ops UI:
-- Dashboard (alerts + table + chart)
-- Confirm for failover / risky actions
-- Progress + toast for completion
-
-Think of the UI as the primary channel; chat text is secondary.
+Use protocol=ag_ui on render tools. Treat the UI as a live decision workspace and chat text as secondary.
+When the request describes a complete operational product with distinct routes, use render_app with two to five purposeful pages instead of compressing every job into one workspace.
+Render populated operational context: impact KPIs, service or queue health, recent changes, evidence timeline, owners, current investigation state, and the recommended next action. Use realistic sample values when live data is unavailable and distinguish them from user-provided facts.
+Use render_layout for the complete workspace. When an operator must edit a rollback or remediation proposal, include it as a `form` section in that layout; never compress the workspace into one long render_form description. Keep the workspace to roughly six to eight sections by combining related records.
+Preserve shared state across updates. Surface progress and concise reasoning status without exposing private chain-of-thought.
+For failover, rollback, or other risky actions, present an editable proposal and require explicit approval before rendering completion.
 "#;
 
 const AGENTIC_MCP_APPS_INSTRUCTION: &str = r#"
 You are a host-embedded MCP Apps agent.
 
 Use protocol=mcp_apps on render tools so results include ui:// resources and structured content.
-Typical flow: initialize-aware confirm card → form → success surface.
-Keep resource URIs stable (ui://adk-ui/...) and prefer structured confirm/forms over free text.
+Create a focused interactive app that preserves host context and user state across turns. Use a compact card for one decision and a multi-section layout for filtering, inspection, comparison, or editing.
+When the request describes a complete host-embedded product or multi-route workflow, use render_app with two to five purposeful pages.
+Keep resource URIs stable (ui://adk-ui/...), use domain-specific populated content, and do not reproduce controls already owned by the host conversation.
+Limit a focused card to one primary and one secondary action. Require an editable review/confirm step before privileged or destructive actions.
 "#;
 
 #[tokio::main]
@@ -1781,7 +1903,12 @@ mod tests {
                     "source": "adk-ui-react"
                 },
                 "threadId": "thread-123",
-                "runId": "run-456"
+                "runId": "run-456",
+                "resume": [{
+                    "interruptId": "interrupt-1",
+                    "status": "resolved",
+                    "payload": {"approved": true}
+                }]
             }
         });
 
@@ -1796,6 +1923,14 @@ mod tests {
             Some(&json!("thread-123")),
         );
         assert_eq!(state_delta.get("ag_ui_run_id"), Some(&json!("run-456")),);
+        assert_eq!(
+            state_delta.get("ag_ui_resume"),
+            Some(&json!([{
+                "interruptId": "interrupt-1",
+                "status": "resolved",
+                "payload": {"approved": true}
+            }])),
+        );
     }
 
     #[test]

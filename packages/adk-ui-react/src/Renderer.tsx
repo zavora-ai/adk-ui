@@ -1,15 +1,19 @@
-import React, { createContext, useContext, useMemo, useRef, useState } from 'react';
+import React, { createContext, lazy, Suspense, useContext, useMemo, useRef, useState } from 'react';
 import type { Component, UiEvent, UiUpdate } from './types';
 import { applyUiUpdates } from './updates';
 import { AlertCircle, CheckCircle, Info, XCircle, User, Mail, Calendar } from 'lucide-react';
 import Markdown, { type Components } from 'react-markdown';
 import clsx from 'clsx';
-import {
-    BarChart, LineChart, AreaChart, PieChart,
-    Bar, Line, Area, Pie, Cell,
-    XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
-} from 'recharts';
 import { isExternalNavigationUrl, sanitizeUrl } from './security';
+import {
+    ADK_UI_KIT_CSS,
+    kitStyleVariables,
+    resolveKitAssetSource,
+    useAdkUiKit,
+} from './kit';
+
+const ChartRenderer = lazy(() => import('./ChartRenderer'));
+const Scene3DRenderer = lazy(() => import('./Scene3DRenderer'));
 
 const IconMap: Record<string, React.ComponentType<any>> = {
     'alert-circle': AlertCircle,
@@ -20,6 +24,26 @@ const IconMap: Record<string, React.ComponentType<any>> = {
     'mail': Mail,
     'calendar': Calendar,
 };
+
+function KitMarkdownImage({ node: _node, src, alt, ...props }: React.ComponentProps<'img'> & { node?: unknown }) {
+    const { manifest } = useAdkUiKit();
+    const resolvedSrc = src ? resolveKitAssetSource(manifest, src) : null;
+    const safeSrc = sanitizeUrl(resolvedSrc, 'image');
+    if (!safeSrc) {
+        return null;
+    }
+
+    return (
+        <img
+            {...props}
+            alt={alt ?? ''}
+            className="max-w-full h-auto rounded-lg"
+            loading="lazy"
+            referrerPolicy="no-referrer"
+            src={safeSrc}
+        />
+    );
+}
 
 const markdownComponents: Components = {
     a({ node: _node, href, children, ...props }) {
@@ -40,32 +64,50 @@ const markdownComponents: Components = {
             </a>
         );
     },
-    img({ node: _node, src, alt, ...props }) {
-        const safeSrc = sanitizeUrl(src, 'image');
-        if (!safeSrc) {
-            return null;
-        }
-
-        return (
-            <img
-                {...props}
-                alt={alt ?? ''}
-                className="max-w-full h-auto rounded-lg"
-                loading="lazy"
-                referrerPolicy="no-referrer"
-                src={safeSrc}
-            />
-        );
-    },
+    img: KitMarkdownImage,
 };
 
 function renderBlockedAsset(kind: 'image' | 'video' | 'audio') {
     return <div className="text-sm text-red-600 dark:text-red-400">Blocked unsafe {kind} URL.</div>;
 }
 
+function humanizeActionId(actionId: string): string {
+    const normalized = actionId.replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();
+    return normalized ? normalized.replace(/\b\w/g, (char) => char.toUpperCase()) : 'Run Action';
+}
+
+function resolveGap(gap: number | string | undefined): string {
+    if (typeof gap === 'number') {
+        return `${Math.max(0, gap <= 12 ? gap * 4 : gap)}px`;
+    }
+    return typeof gap === 'string' && gap.trim() ? gap : '16px';
+}
+
+function mapFlexPosition(value: string | undefined): React.CSSProperties['justifyContent'] {
+    const normalized = value?.trim().toLowerCase();
+    if (normalized === 'start' || normalized === 'flex-start') return 'flex-start';
+    if (normalized === 'end' || normalized === 'flex-end') return 'flex-end';
+    if (normalized === 'center') return 'center';
+    if (normalized === 'between' || normalized === 'space-between') return 'space-between';
+    if (normalized === 'around' || normalized === 'space-around') return 'space-around';
+    if (normalized === 'evenly' || normalized === 'space-evenly') return 'space-evenly';
+    return undefined;
+}
+
+function mapFlexAlign(value: string | undefined): React.CSSProperties['alignItems'] {
+    const normalized = value?.trim().toLowerCase();
+    if (normalized === 'start' || normalized === 'flex-start') return 'flex-start';
+    if (normalized === 'end' || normalized === 'flex-end') return 'flex-end';
+    if (normalized === 'center') return 'center';
+    if (normalized === 'stretch') return 'stretch';
+    if (normalized === 'baseline') return 'baseline';
+    return undefined;
+}
+
 // Context for form handling
 interface FormContextValue {
     onAction?: (event: UiEvent) => void;
+    formRef?: React.RefObject<HTMLFormElement | null>;
 }
 
 const FormContext = createContext<FormContextValue>({});
@@ -78,12 +120,18 @@ interface RendererProps {
 }
 
 export const Renderer: React.FC<RendererProps> = ({ component, onAction, theme }) => {
-    // Apply dark class wrapper when theme is explicitly 'dark'
     const isDark = theme === 'dark';
+    const contextValue = useMemo(() => ({ onAction }), [onAction]);
+    const kit = useAdkUiKit();
 
     return (
-        <FormContext.Provider value={{ onAction }}>
-            <div className={isDark ? 'dark' : ''}>
+        <FormContext.Provider value={contextValue}>
+            {!kit.provided && <style data-adk-ui-kit-styles>{ADK_UI_KIT_CSS}</style>}
+            <div
+                className={clsx('adk-ui-kit-surface', isDark && 'dark')}
+                data-adk-ui-kit={kit.manifest.id}
+                style={kitStyleVariables(kit.manifest)}
+            >
                 <ComponentRenderer component={component} />
             </div>
         </FormContext.Provider>
@@ -116,27 +164,70 @@ export const StreamingRenderer: React.FC<StreamingRendererProps> = ({ component,
     return <Renderer component={current} onAction={onAction} theme={theme} />;
 };
 
-const ComponentRenderer: React.FC<{ component: Component }> = ({ component }) => {
-    const { onAction } = useContext(FormContext);
-    const formRef = useRef<HTMLFormElement>(null);
+function componentKey(component: Component, index: number): string {
+    return component.id ?? `${component.type}-${index}`;
+}
+
+function formControlId(component: { id?: string; name: string; type: string }): string {
+    return `adk-ui-${component.id ?? `${component.type}-${component.name}`}`.replace(/[^a-zA-Z0-9_-]/g, '-');
+}
+
+function containsInput(component: Component): boolean {
+    if (['text_input', 'number_input', 'select', 'multi_select', 'switch', 'date_input', 'slider', 'textarea'].includes(component.type)) {
+        return true;
+    }
+    if (component.type === 'stack' || component.type === 'grid' || component.type === 'container') {
+        return component.children.some(containsInput);
+    }
+    if (component.type === 'card' || component.type === 'modal') {
+        return component.content.some(containsInput) || (component.footer?.some(containsInput) ?? false);
+    }
+    if (component.type === 'tabs') {
+        return component.tabs.some((tab) => tab.content.some(containsInput));
+    }
+    return false;
+}
+
+function readFormData(form: HTMLFormElement): Record<string, unknown> {
+    const formData = new FormData(form);
+    const data: Record<string, unknown> = {};
+    for (const key of new Set(formData.keys())) {
+        const values = formData.getAll(key);
+        data[key] = values.length > 1 ? values : values[0];
+    }
+    return data;
+}
+
+const ComponentRenderer: React.FC<{ component: Component }> = React.memo(({ component }) => {
+    const { slots } = useAdkUiKit();
+    const Slot = slots[component.type];
+    if (Slot) {
+        return <Slot component={component} renderDefault={() => <DefaultComponentRenderer component={component} />} />;
+    }
+    return <DefaultComponentRenderer component={component} />;
+});
+
+const DefaultComponentRenderer: React.FC<{ component: Component }> = React.memo(({ component }) => {
+    const { onAction, formRef } = useContext(FormContext);
+    const { manifest } = useAdkUiKit();
+    const cardFormRef = useRef<HTMLFormElement>(null);
     const [activeTab, setActiveTab] = React.useState(0);
     const [sortColumn, setSortColumn] = React.useState<string | null>(null);
     const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>('asc');
     const [currentPage, setCurrentPage] = React.useState(0);
 
-    const handleButtonClick = (actionId: string) => {
-        // Check if button is inside a form (for submit)
-        if (formRef.current) {
-            // Collect all form data
-            const formData = new FormData(formRef.current);
-            const data: Record<string, unknown> = {};
-            formData.forEach((value, key) => {
-                data[key] = value;
-            });
+    const handleButtonClick = (actionId: string, variant?: string) => {
+        const submitsForm = Boolean(formRef?.current)
+            && (variant === undefined || variant === 'primary' || variant === 'danger');
+
+        if (submitsForm && formRef?.current) {
+            if (!formRef.current.reportValidity()) {
+                return;
+            }
             onAction?.({
                 action: 'form_submit',
                 action_id: actionId,
-                data,
+                data: readFormData(formRef.current),
                 source_component_id: component.id ?? actionId,
             });
         } else {
@@ -153,7 +244,7 @@ const ComponentRenderer: React.FC<{ component: Component }> = ({ component }) =>
             // Use Markdown for body text to render formatted content
             if (component.variant === 'body' || !component.variant) {
                 return (
-                    <div className="prose prose-sm dark:prose-invert max-w-none text-gray-700 dark:text-gray-300">
+                    <div className="adk-ui-body prose prose-sm dark:prose-invert max-w-none text-gray-700 dark:text-gray-300">
                         <Markdown components={markdownComponents} skipHtml>{component.content}</Markdown>
                     </div>
                 );
@@ -164,18 +255,24 @@ const ComponentRenderer: React.FC<{ component: Component }> = ({ component }) =>
                         component.variant === 'h4' ? 'h4' :
                             component.variant === 'code' ? 'code' : 'p';
             const classes = clsx({
-                'text-4xl font-bold mb-4 dark:text-white': component.variant === 'h1',
-                'text-3xl font-bold mb-3 dark:text-white': component.variant === 'h2',
-                'text-2xl font-bold mb-2 dark:text-white': component.variant === 'h3',
-                'text-xl font-bold mb-2 dark:text-white': component.variant === 'h4',
+                'text-4xl font-bold tracking-tight mb-4 text-slate-950 dark:text-white': component.variant === 'h1',
+                'text-3xl font-bold tracking-tight mb-3 text-slate-950 dark:text-white': component.variant === 'h2',
+                'text-2xl font-bold tracking-tight mb-2 text-slate-900 dark:text-white': component.variant === 'h3',
+                'text-xl font-semibold tracking-tight mb-2 text-slate-900 dark:text-white': component.variant === 'h4',
                 'font-mono bg-gray-100 dark:bg-gray-800 p-1 rounded dark:text-gray-100': component.variant === 'code',
                 'text-sm text-gray-500 dark:text-gray-400': component.variant === 'caption',
             });
-            return <Tag className={classes}>{component.content}</Tag>;
+            return <Tag className={clsx(classes, component.variant === 'caption' ? 'adk-ui-caption' : 'adk-ui-heading')}>{component.content}</Tag>;
 
         case 'button':
-            const btnClasses = clsx('px-4 py-2 rounded font-medium transition-colors', {
-                'bg-blue-600 text-white hover:bg-blue-700': component.variant === 'primary' || !component.variant,
+            const buttonLabel = component.label?.trim() || humanizeActionId(component.action_id);
+            const btnClasses = clsx('adk-ui-button inline-flex items-center justify-center px-4 py-2.5 rounded-lg font-semibold transition-colors border border-transparent', {
+                'adk-ui-button--primary': component.variant === 'primary' || !component.variant,
+                'adk-ui-button--secondary': component.variant === 'secondary',
+                'adk-ui-button--danger': component.variant === 'danger',
+                'adk-ui-button--ghost': component.variant === 'ghost',
+                'adk-ui-button--outline': component.variant === 'outline',
+                'bg-teal-700 text-white hover:bg-teal-800 shadow-sm': component.variant === 'primary' || !component.variant,
                 'bg-gray-200 text-gray-800 hover:bg-gray-300': component.variant === 'secondary',
                 'bg-red-600 text-white hover:bg-red-700': component.variant === 'danger',
                 'bg-transparent hover:bg-gray-100': component.variant === 'ghost',
@@ -187,9 +284,9 @@ const ComponentRenderer: React.FC<{ component: Component }> = ({ component }) =>
                     type="button"
                     className={btnClasses}
                     disabled={component.disabled}
-                    onClick={() => handleButtonClick(component.action_id)}
+                    onClick={() => handleButtonClick(component.action_id, component.variant)}
                 >
-                    {component.label}
+                    {buttonLabel}
                 </button>
             );
 
@@ -198,7 +295,11 @@ const ComponentRenderer: React.FC<{ component: Component }> = ({ component }) =>
             return <Icon size={component.size || 24} />;
 
         case 'alert':
-            const alertClasses = clsx('p-4 rounded-md border mb-4 flex items-start gap-3', {
+            const alertClasses = clsx('adk-ui-alert p-4 rounded-xl border mb-4 flex items-start gap-3 shadow-sm', {
+                'adk-ui-alert--info': component.variant === 'info' || !component.variant,
+                'adk-ui-alert--success': component.variant === 'success',
+                'adk-ui-alert--warning': component.variant === 'warning',
+                'adk-ui-alert--error': component.variant === 'error',
                 'bg-blue-50 border-blue-200 text-blue-800': component.variant === 'info' || !component.variant,
                 'bg-green-50 border-green-200 text-green-800': component.variant === 'success',
                 'bg-yellow-50 border-yellow-200 text-yellow-800': component.variant === 'warning',
@@ -218,55 +319,35 @@ const ComponentRenderer: React.FC<{ component: Component }> = ({ component }) =>
             );
 
         case 'card':
-            // Cards with inputs become forms
-            const hasInputs = component.content.some(c =>
-                c.type === 'text_input' || c.type === 'number_input' || c.type === 'select' || c.type === 'switch' || c.type === 'textarea'
-            );
-
-            const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-                e.preventDefault();
-                const formData = new FormData(e.currentTarget);
-                const data: Record<string, unknown> = {};
-                formData.forEach((value, key) => {
-                    data[key] = value;
-                });
-                // Find submit button action_id
-                const submitBtn = [...component.content, ...(component.footer || [])].find(
-                    c => c.type === 'button'
-                ) as { type: 'button'; id?: string; action_id: string } | undefined;
-                onAction?.({
-                    action: 'form_submit',
-                    action_id: submitBtn?.action_id || 'form_submit',
-                    data,
-                    source_component_id: submitBtn?.id ?? submitBtn?.action_id ?? component.id ?? 'form_submit',
-                });
-            };
+            const hasInputs = component.content.some(containsInput);
 
             const cardContent = (
                 <>
                     {(component.title || component.description) && (
-                        <div className="p-4 border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-                            {component.title && <h3 className="font-semibold text-lg dark:text-white">{component.title}</h3>}
+                        <div className="adk-ui-card__header px-5 py-4 border-b border-slate-200/80 dark:border-gray-700 bg-slate-50/80 dark:bg-gray-800">
+                            {component.title && <h3 className="adk-ui-heading font-semibold text-lg tracking-tight text-slate-900 dark:text-white">{component.title}</h3>}
                             {component.description && <p className="text-gray-500 dark:text-gray-400 text-sm">{component.description}</p>}
                         </div>
                     )}
-                    <div className="p-4">
-                        {component.content.map((child, i) => <ComponentRenderer key={i} component={child} />)}
+                    <div className="p-5">
+                        {component.content.map((child, i) => <ComponentRenderer key={componentKey(child, i)} component={child} />)}
                     </div>
                     {component.footer && (
-                        <div className="p-4 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex gap-2 justify-end">
-                            {component.footer.map((child, i) => <ComponentRenderer key={i} component={child} />)}
+                        <div className="adk-ui-card__footer px-5 py-4 border-t border-slate-200/80 dark:border-gray-700 bg-slate-50/80 dark:bg-gray-800 flex flex-wrap gap-2 justify-end">
+                            {component.footer.map((child, i) => <ComponentRenderer key={componentKey(child, i)} component={child} />)}
                         </div>
                     )}
                 </>
             );
 
             return hasInputs ? (
-                <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-900 rounded-lg border dark:border-gray-700 shadow-sm overflow-hidden mb-4">
-                    {cardContent}
+                <form ref={cardFormRef} onSubmit={(event) => event.preventDefault()} className="adk-ui-card bg-white dark:bg-gray-900 rounded-xl border border-slate-200 dark:border-gray-700 shadow-sm overflow-hidden mb-4 min-w-0">
+                    <FormContext.Provider value={{ onAction, formRef: cardFormRef }}>
+                        {cardContent}
+                    </FormContext.Provider>
                 </form>
             ) : (
-                <div className="bg-white dark:bg-gray-900 rounded-lg border dark:border-gray-700 shadow-sm overflow-hidden mb-4">
+                <div className="adk-ui-card bg-white dark:bg-gray-900 rounded-xl border border-slate-200 dark:border-gray-700 shadow-sm overflow-hidden mb-4 min-w-0">
                     {cardContent}
                 </div>
             );
@@ -277,17 +358,24 @@ const ComponentRenderer: React.FC<{ component: Component }> = ({ component }) =>
                 'flex-row': component.direction === 'horizontal',
             });
             return (
-                <div className={stackClasses} style={{ gap: (component.gap || 4) * 4 }}>
-                    {component.children.map((child, i) => <ComponentRenderer key={i} component={child} />)}
+                <div className={stackClasses} style={{
+                    gap: resolveGap(component.gap),
+                    justifyContent: mapFlexPosition(component.justify),
+                    alignItems: mapFlexAlign(component.align),
+                    flexWrap: component.wrap ? 'wrap' : undefined,
+                }}>
+                    {component.children.map((child, i) => <ComponentRenderer key={componentKey(child, i)} component={child} />)}
                 </div>
             );
 
         case 'text_input':
             const inputType = component.input_type || 'text';
+            const textInputControlId = formControlId(component);
             return (
                 <div className="mb-3">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{component.label}</label>
+                    <label htmlFor={textInputControlId} className="adk-ui-label block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{component.label}</label>
                     <input
+                        id={textInputControlId}
                         type={inputType}
                         name={component.name}
                         placeholder={component.placeholder}
@@ -298,7 +386,7 @@ const ComponentRenderer: React.FC<{ component: Component }> = ({ component }) =>
                             name: component.name,
                             value: event.currentTarget.value,
                         })}
-                        className={clsx('w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-white', {
+                        className={clsx('adk-ui-control w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-teal-600/25 focus:border-teal-700 outline-none bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-white', {
                             'border-red-500 focus:ring-red-500 focus:border-red-500': component.error,
                         })}
                     />
@@ -309,10 +397,12 @@ const ComponentRenderer: React.FC<{ component: Component }> = ({ component }) =>
             );
 
         case 'number_input':
+            const numberInputControlId = formControlId(component);
             return (
                 <div className="mb-3">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">{component.label}</label>
+                    <label htmlFor={numberInputControlId} className="adk-ui-label block text-sm font-medium text-gray-700 mb-1">{component.label}</label>
                     <input
+                        id={numberInputControlId}
                         type="number"
                         name={component.name}
                         min={component.min}
@@ -327,7 +417,7 @@ const ComponentRenderer: React.FC<{ component: Component }> = ({ component }) =>
                                 value: Number.isNaN(parsed) ? event.currentTarget.value : parsed,
                             });
                         }}
-                        className={clsx('w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none', {
+                        className={clsx('adk-ui-control w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-teal-600/25 focus:border-teal-700 outline-none', {
                             'border-red-500 focus:ring-red-500 focus:border-red-500': component.error,
                         })}
                     />
@@ -338,10 +428,12 @@ const ComponentRenderer: React.FC<{ component: Component }> = ({ component }) =>
             );
 
         case 'select':
+            const selectControlId = formControlId(component);
             return (
                 <div className="mb-3">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">{component.label}</label>
+                    <label htmlFor={selectControlId} className="adk-ui-label block text-sm font-medium text-gray-700 mb-1">{component.label}</label>
                     <select
+                        id={selectControlId}
                         name={component.name}
                         required={component.required}
                         onChange={(event) => onAction?.({
@@ -349,13 +441,13 @@ const ComponentRenderer: React.FC<{ component: Component }> = ({ component }) =>
                             name: component.name,
                             value: event.currentTarget.value,
                         })}
-                        className={clsx('w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none', {
+                        className={clsx('adk-ui-control w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-teal-600/25 focus:border-teal-700 outline-none', {
                             'border-red-500 focus:ring-red-500 focus:border-red-500': component.error,
                         })}
                     >
                         <option value="">Select...</option>
-                        {component.options.map((opt, i) => (
-                            <option key={i} value={opt.value}>{opt.label}</option>
+                        {component.options.map((opt) => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
                         ))}
                     </select>
                     {component.error && (
@@ -365,9 +457,11 @@ const ComponentRenderer: React.FC<{ component: Component }> = ({ component }) =>
             );
 
         case 'switch':
+            const switchControlId = formControlId(component);
             return (
                 <div className="mb-3 flex items-center">
                     <input
+                        id={switchControlId}
                         type="checkbox"
                         name={component.name}
                         defaultChecked={component.default_checked}
@@ -376,17 +470,19 @@ const ComponentRenderer: React.FC<{ component: Component }> = ({ component }) =>
                             name: component.name,
                             value: event.currentTarget.checked,
                         })}
-                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="adk-ui-control h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
-                    <label className="ml-2 text-sm font-medium text-gray-700">{component.label}</label>
+                    <label htmlFor={switchControlId} className="adk-ui-label ml-2 text-sm font-medium text-gray-700">{component.label}</label>
                 </div>
             );
 
         case 'multi_select':
+            const multiSelectControlId = formControlId(component);
             return (
                 <div className="mb-3">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">{component.label}</label>
+                    <label htmlFor={multiSelectControlId} className="adk-ui-label block text-sm font-medium text-gray-700 mb-1">{component.label}</label>
                     <select
+                        id={multiSelectControlId}
                         name={component.name}
                         multiple
                         required={component.required}
@@ -399,7 +495,7 @@ const ComponentRenderer: React.FC<{ component: Component }> = ({ component }) =>
                                 value: selected,
                             });
                         }}
-                        className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                        className="adk-ui-control w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                     >
                         {component.options.map((opt, i) => (
                             <option key={i} value={opt.value}>{opt.label}</option>
@@ -409,10 +505,12 @@ const ComponentRenderer: React.FC<{ component: Component }> = ({ component }) =>
             );
 
         case 'date_input':
+            const dateInputControlId = formControlId(component);
             return (
                 <div className="mb-3">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">{component.label}</label>
+                    <label htmlFor={dateInputControlId} className="adk-ui-label block text-sm font-medium text-gray-700 mb-1">{component.label}</label>
                     <input
+                        id={dateInputControlId}
                         type="date"
                         name={component.name}
                         required={component.required}
@@ -421,16 +519,18 @@ const ComponentRenderer: React.FC<{ component: Component }> = ({ component }) =>
                             name: component.name,
                             value: event.currentTarget.value,
                         })}
-                        className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                        className="adk-ui-control w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                     />
                 </div>
             );
 
         case 'slider':
+            const sliderControlId = formControlId(component);
             return (
                 <div className="mb-3">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">{component.label}</label>
+                    <label htmlFor={sliderControlId} className="adk-ui-label block text-sm font-medium text-gray-700 mb-1">{component.label}</label>
                     <input
+                        id={sliderControlId}
                         type="range"
                         name={component.name}
                         min={component.min}
@@ -445,7 +545,7 @@ const ComponentRenderer: React.FC<{ component: Component }> = ({ component }) =>
                                 value: Number.isNaN(parsed) ? event.currentTarget.value : parsed,
                             });
                         }}
-                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                        className="adk-ui-control w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
                     />
                 </div>
             );
@@ -453,10 +553,10 @@ const ComponentRenderer: React.FC<{ component: Component }> = ({ component }) =>
         case 'progress':
             return (
                 <div className="mb-3">
-                    {component.label && <div className="text-sm text-gray-600 mb-1">{component.label}</div>}
-                    <div className="w-full bg-gray-200 rounded-full h-2.5">
+                    {component.label && <div className="adk-ui-caption text-sm text-gray-600 mb-1">{component.label}</div>}
+                    <div className="adk-ui-progress__track w-full bg-gray-200 rounded-full h-2.5">
                         <div
-                            className="bg-blue-600 h-2.5 rounded-full transition-all"
+                            className="adk-ui-progress__value bg-blue-600 h-2.5 rounded-full transition-all"
                             style={{ width: `${component.value}%` }}
                         />
                     </div>
@@ -464,10 +564,12 @@ const ComponentRenderer: React.FC<{ component: Component }> = ({ component }) =>
             );
 
         case 'textarea':
+            const textareaControlId = formControlId(component);
             return (
                 <div className="mb-3">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{component.label}</label>
+                    <label htmlFor={textareaControlId} className="adk-ui-label block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{component.label}</label>
                     <textarea
+                        id={textareaControlId}
                         name={component.name}
                         placeholder={component.placeholder}
                         rows={component.rows || 4}
@@ -478,7 +580,7 @@ const ComponentRenderer: React.FC<{ component: Component }> = ({ component }) =>
                             name: component.name,
                             value: event.currentTarget.value,
                         })}
-                        className={clsx('w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-white resize-y', {
+                        className={clsx('adk-ui-control w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-teal-600/25 focus:border-teal-700 outline-none bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-white resize-y', {
                             'border-red-500 focus:ring-red-500 focus:border-red-500': component.error,
                         })}
                     />
@@ -551,9 +653,9 @@ const ComponentRenderer: React.FC<{ component: Component }> = ({ component }) =>
             };
             return (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className={clsx('bg-white dark:bg-gray-900 rounded-lg shadow-xl w-full', modalSizes[component.size || 'medium'])}>
+                    <div className={clsx('adk-ui-modal bg-white dark:bg-gray-900 rounded-lg border shadow-xl w-full', modalSizes[component.size || 'medium'])}>
                         <div className="p-4 border-b dark:border-gray-700 flex justify-between items-center">
-                            <h3 className="font-semibold text-lg dark:text-white">{component.title}</h3>
+                            <h3 className="adk-ui-heading font-semibold text-lg dark:text-white">{component.title}</h3>
                             {component.closable !== false && (
                                 <button
                                     onClick={() => onAction?.({
@@ -568,11 +670,11 @@ const ComponentRenderer: React.FC<{ component: Component }> = ({ component }) =>
                             )}
                         </div>
                         <div className="p-4">
-                            {component.content.map((child, i) => <ComponentRenderer key={i} component={child} />)}
+                                {component.content.map((child, i) => <ComponentRenderer key={componentKey(child, i)} component={child} />)}
                         </div>
                         {component.footer && (
                             <div className="p-4 border-t dark:border-gray-700 flex justify-end gap-2">
-                                {component.footer.map((child, i) => <ComponentRenderer key={i} component={child} />)}
+                                {component.footer.map((child, i) => <ComponentRenderer key={componentKey(child, i)} component={child} />)}
                             </div>
                         )}
                     </div>
@@ -583,9 +685,14 @@ const ComponentRenderer: React.FC<{ component: Component }> = ({ component }) =>
             return (
                 <div
                     className="grid gap-4 mb-4"
-                    style={{ gridTemplateColumns: `repeat(${component.columns || 2}, 1fr)` }}
+                    style={{
+                        gridTemplateColumns: component.columns === 1
+                            ? 'minmax(0, 1fr)'
+                            : 'repeat(auto-fit, minmax(min(100%, 11rem), 1fr))',
+                        gap: resolveGap(component.gap),
+                    }}
                 >
-                    {component.children.map((child, i) => <ComponentRenderer key={i} component={child} />)}
+                    {component.children.map((child, i) => <ComponentRenderer key={componentKey(child, i)} component={child} />)}
                 </div>
             );
 
@@ -593,7 +700,7 @@ const ComponentRenderer: React.FC<{ component: Component }> = ({ component }) =>
             return (
                 <ul className="space-y-2 mb-4 list-disc list-inside">
                     {component.items.map((item, i) => (
-                        <li key={i} className="text-gray-700">{item}</li>
+                        <li key={i} className="adk-ui-body text-gray-700">{item}</li>
                     ))}
                 </ul>
             );
@@ -603,8 +710,8 @@ const ComponentRenderer: React.FC<{ component: Component }> = ({ component }) =>
                 <dl className="grid grid-cols-2 gap-x-4 gap-y-2 mb-4">
                     {component.pairs.map((pair, i) => (
                         <React.Fragment key={i}>
-                            <dt className="font-medium text-gray-700">{pair.key}:</dt>
-                            <dd className="text-gray-900">{pair.value}</dd>
+                            <dt className="adk-ui-label font-medium text-gray-700">{pair.key}:</dt>
+                            <dd className="adk-ui-body text-gray-900">{pair.value}</dd>
                         </React.Fragment>
                     ))}
                 </dl>
@@ -613,7 +720,7 @@ const ComponentRenderer: React.FC<{ component: Component }> = ({ component }) =>
         case 'tabs':
             return (
                 <div className="mb-4">
-                    <div className="border-b border-gray-200">
+                    <div className="adk-ui-tabs border-b border-gray-200">
                         <nav className="flex space-x-4">
                             {component.tabs.map((tab, i) => (
                                 <button
@@ -623,7 +730,7 @@ const ComponentRenderer: React.FC<{ component: Component }> = ({ component }) =>
                                         onAction?.({ action: 'tab_change', index: i });
                                     }}
                                     className={clsx('px-4 py-2 border-b-2 font-medium text-sm transition-colors', {
-                                        'border-blue-600 text-blue-600': activeTab === i,
+                                        'adk-ui-tab--active border-blue-600 text-blue-600': activeTab === i,
                                         'border-transparent text-gray-500 hover:text-gray-700': activeTab !== i,
                                     })}
                                 >
@@ -634,7 +741,7 @@ const ComponentRenderer: React.FC<{ component: Component }> = ({ component }) =>
                     </div>
                     <div className="p-4">
                         {component.tabs[activeTab].content.map((child, i) =>
-                            <ComponentRenderer key={i} component={child} />
+                            <ComponentRenderer key={componentKey(child, i)} component={child} />
                         )}
                     </div>
                 </div>
@@ -667,9 +774,9 @@ const ComponentRenderer: React.FC<{ component: Component }> = ({ component }) =>
             const paginatedData = tableData.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
 
             return (
-                <div className="mb-4 overflow-x-auto">
-                    <table className={clsx('min-w-full divide-y divide-gray-200 dark:divide-gray-700 border dark:border-gray-700 rounded-lg overflow-hidden')}>
-                        <thead className="bg-gray-50 dark:bg-gray-800">
+                <div className="adk-ui-table mb-4 overflow-x-auto rounded-xl border border-slate-200 dark:border-gray-700 shadow-sm">
+                    <table className={clsx('min-w-full divide-y divide-gray-200 dark:divide-gray-700 overflow-hidden')}>
+                        <thead className="adk-ui-table__head bg-gray-50 dark:bg-gray-800">
                             <tr>
                                 {component.columns.map((col, i) => (
                                     <th
@@ -730,81 +837,30 @@ const ComponentRenderer: React.FC<{ component: Component }> = ({ component }) =>
             );
 
         case 'chart':
-            const DEFAULT_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4'];
-            const chartColors = component.colors || DEFAULT_COLORS;
-            const chartKind = component.kind || 'bar';
-            const showLegend = component.show_legend !== false;
             return (
-                <div className="mb-4 p-4 bg-white dark:bg-gray-900 border dark:border-gray-700 rounded-lg">
-                    {component.title && <h4 className="font-semibold text-lg mb-4 dark:text-white">{component.title}</h4>}
-                    <ResponsiveContainer width="100%" height={300}>
-                        {chartKind === 'line' ? (
-                            <LineChart data={component.data}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey={component.x_key} label={component.x_label ? { value: component.x_label, position: 'bottom' } : undefined} />
-                                <YAxis label={component.y_label ? { value: component.y_label, angle: -90, position: 'insideLeft' } : undefined} />
-                                <Tooltip />
-                                {showLegend && <Legend />}
-                                {component.y_keys.map((key, i) => (
-                                    <Line key={key} type="monotone" dataKey={key} stroke={chartColors[i % chartColors.length]} strokeWidth={2} />
-                                ))}
-                            </LineChart>
-                        ) : chartKind === 'area' ? (
-                            <AreaChart data={component.data}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey={component.x_key} label={component.x_label ? { value: component.x_label, position: 'bottom' } : undefined} />
-                                <YAxis label={component.y_label ? { value: component.y_label, angle: -90, position: 'insideLeft' } : undefined} />
-                                <Tooltip />
-                                {showLegend && <Legend />}
-                                {component.y_keys.map((key, i) => (
-                                    <Area key={key} type="monotone" dataKey={key} fill={chartColors[i % chartColors.length]} fillOpacity={0.6} stroke={chartColors[i % chartColors.length]} />
-                                ))}
-                            </AreaChart>
-                        ) : chartKind === 'pie' ? (
-                            <PieChart>
-                                <Pie
-                                    data={component.data}
-                                    dataKey={component.y_keys[0]}
-                                    nameKey={component.x_key}
-                                    cx="50%"
-                                    cy="50%"
-                                    outerRadius={100}
-                                    label={({ name, percent }) => `${name}: ${((percent ?? 0) * 100).toFixed(0)}%`}
-                                >
-                                    {component.data.map((_, i) => (
-                                        <Cell key={i} fill={chartColors[i % chartColors.length]} />
-                                    ))}
-                                </Pie>
-                                <Tooltip />
-                                {showLegend && <Legend />}
-                            </PieChart>
-                        ) : (
-                            <BarChart data={component.data}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey={component.x_key} label={component.x_label ? { value: component.x_label, position: 'bottom' } : undefined} />
-                                <YAxis label={component.y_label ? { value: component.y_label, angle: -90, position: 'insideLeft' } : undefined} />
-                                <Tooltip />
-                                {showLegend && <Legend />}
-                                {component.y_keys.map((key, i) => (
-                                    <Bar key={key} dataKey={key} fill={chartColors[i % chartColors.length]} />
-                                ))}
-                            </BarChart>
-                        )}
-                    </ResponsiveContainer>
-                </div>
+                <Suspense fallback={<div className="mb-4 h-[300px] animate-pulse rounded-xl bg-slate-100" aria-label="Loading chart" />}>
+                    <ChartRenderer component={component} />
+                </Suspense>
+            );
+
+        case 'scene_3d':
+            return (
+                <Suspense fallback={<div className="adk-ui-scene-3d__loading" style={{ height: component.height ?? 440 }} aria-label="Loading 3D scene" />}>
+                    <Scene3DRenderer component={component} onAction={onAction} />
+                </Suspense>
             );
 
         case 'code_block':
             return (
                 <div className="mb-4">
-                    <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm">
+                    <pre className="adk-ui-code bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm">
                         <code>{component.code}</code>
                     </pre>
                 </div>
             );
 
         case 'image':
-            const safeImageSrc = sanitizeUrl(component.src, 'image');
+            const safeImageSrc = sanitizeUrl(resolveKitAssetSource(manifest, component.src), 'image');
             if (!safeImageSrc) {
                 return renderBlockedAsset('image');
             }
@@ -821,7 +877,9 @@ const ComponentRenderer: React.FC<{ component: Component }> = ({ component }) =>
             );
 
         case 'badge':
-            const badgeClasses = clsx('inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium', {
+            const badgeClasses = clsx('adk-ui-badge inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium', {
+                'adk-ui-badge--default': component.variant === 'default' || !component.variant,
+                'adk-ui-badge--secondary': component.variant === 'secondary',
                 'bg-gray-100 text-gray-800': component.variant === 'default' || !component.variant,
                 'bg-blue-100 text-blue-800': component.variant === 'info',
                 'bg-green-100 text-green-800': component.variant === 'success',
@@ -833,16 +891,16 @@ const ComponentRenderer: React.FC<{ component: Component }> = ({ component }) =>
             return <span className={badgeClasses}>{component.label}</span>;
 
         case 'divider':
-            return <hr className="my-4 border-gray-200" />;
+            return <hr className="adk-ui-divider my-4 border-gray-200" />;
 
         case 'container':
             return (
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    {component.children.map((child, i) => <ComponentRenderer key={i} component={child} />)}
+                    {component.children.map((child, i) => <ComponentRenderer key={componentKey(child, i)} component={child} />)}
                 </div>
             );
 
         default:
             return <div className="text-red-500 text-sm p-2 border border-red-200 rounded">Unknown component: {(component as any).type}</div>;
     }
-};
+});

@@ -70,6 +70,83 @@ fn default_field_type() -> String {
     "text".to_string()
 }
 
+pub(crate) fn build_form_content(
+    form_id: &str,
+    fields: Vec<FormField>,
+    data_path_prefix: Option<&str>,
+    submit_action: &str,
+    submit_label: &str,
+) -> Vec<Component> {
+    let mut form_content = Vec::new();
+
+    for field in fields {
+        let field_path = field.path.clone().unwrap_or_else(|| {
+            if let Some(prefix) = data_path_prefix {
+                let trimmed = prefix.trim_end_matches('/');
+                format!("{}/{}", trimmed, field.name)
+            } else {
+                field.name.clone()
+            }
+        });
+        let field_id = stable_child_id(form_id, &format!("field:{}", field_path));
+        let component = match field.field_type.as_str() {
+            "number" => Component::NumberInput(NumberInput {
+                id: Some(field_id),
+                name: field_path,
+                label: field.label,
+                min: None,
+                max: None,
+                step: None,
+                required: field.required,
+                default_value: None,
+                error: None,
+            }),
+            "select" => Component::Select(Select {
+                id: Some(field_id),
+                name: field_path,
+                label: field.label,
+                options: field.options,
+                required: field.required,
+                error: None,
+            }),
+            "textarea" => Component::Textarea(Textarea {
+                id: Some(field_id),
+                name: field_path,
+                label: field.label,
+                placeholder: field.placeholder,
+                rows: 4,
+                required: field.required,
+                default_value: None,
+                error: None,
+            }),
+            _ => Component::TextInput(TextInput {
+                id: Some(field_id),
+                name: field_path,
+                label: field.label,
+                input_type: field.field_type,
+                placeholder: field.placeholder,
+                required: field.required,
+                default_value: None,
+                min_length: None,
+                max_length: None,
+                error: None,
+            }),
+        };
+        form_content.push(component);
+    }
+
+    form_content.push(Component::Button(Button {
+        id: Some(stable_child_id(form_id, "submit")),
+        label: submit_label.to_string(),
+        action_id: submit_action.to_string(),
+        variant: ButtonVariant::Primary,
+        disabled: false,
+        icon: None,
+    }));
+
+    form_content
+}
+
 /// Tool for rendering forms to collect user input.
 ///
 /// This tool generates form UI components that allow agents to collect
@@ -141,74 +218,13 @@ Use field types: text, email, password, number, select, textarea. Set required=t
         let protocol_options = params.protocol.clone();
 
         let form_id = stable_id(&format!("form:{}:{}", params.title, params.submit_action));
-        // Build the form UI
-        let mut form_content: Vec<Component> = Vec::new();
-
-        for field in params.fields {
-            let field_path = field.path.clone().unwrap_or_else(|| {
-                if let Some(prefix) = &params.data_path_prefix {
-                    let trimmed = prefix.trim_end_matches('/');
-                    format!("{}/{}", trimmed, field.name)
-                } else {
-                    field.name.clone()
-                }
-            });
-            let field_id = stable_child_id(&form_id, &format!("field:{}", field_path));
-            let component = match field.field_type.as_str() {
-                "number" => Component::NumberInput(NumberInput {
-                    id: Some(field_id),
-                    name: field_path,
-                    label: field.label,
-                    min: None,
-                    max: None,
-                    step: None,
-                    required: field.required,
-                    default_value: None,
-                    error: None,
-                }),
-                "select" => Component::Select(Select {
-                    id: Some(field_id),
-                    name: field_path,
-                    label: field.label,
-                    options: field.options,
-                    required: field.required,
-                    error: None,
-                }),
-                "textarea" => Component::Textarea(Textarea {
-                    id: Some(field_id),
-                    name: field_path,
-                    label: field.label,
-                    placeholder: field.placeholder,
-                    rows: 4,
-                    required: field.required,
-                    default_value: None,
-                    error: None,
-                }),
-                _ => Component::TextInput(TextInput {
-                    id: Some(field_id),
-                    name: field_path,
-                    label: field.label,
-                    input_type: field.field_type.clone(),
-                    placeholder: field.placeholder,
-                    required: field.required,
-                    default_value: None,
-                    min_length: None,
-                    max_length: None,
-                    error: None,
-                }),
-            };
-            form_content.push(component);
-        }
-
-        // Add submit button
-        form_content.push(Component::Button(Button {
-            id: Some(stable_child_id(&form_id, "submit")),
-            label: params.submit_label,
-            action_id: params.submit_action,
-            variant: ButtonVariant::Primary,
-            disabled: false,
-            icon: None,
-        }));
+        let form_content = build_form_content(
+            &form_id,
+            params.fields,
+            params.data_path_prefix.as_deref(),
+            &params.submit_action,
+            &params.submit_label,
+        );
 
         // Wrap in a card
         let mut ui = UiResponse::new(vec![Component::Card(Card {

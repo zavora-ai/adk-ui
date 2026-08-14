@@ -1,4 +1,5 @@
 pub mod a2ui;
+pub mod application;
 #[cfg(feature = "awp")]
 pub mod awp_compat;
 pub mod catalog_registry;
@@ -16,17 +17,20 @@ pub mod toolset;
 pub mod validation;
 
 pub use a2ui::*;
+pub use application::*;
 pub use catalog_registry::{CatalogArtifact, CatalogError, CatalogRegistry, CatalogSource};
 pub use interop::*;
-pub use kit::{KitArtifacts, KitGenerator, KitSpec};
+pub use kit::{BrandKitManifest, KitArtifacts, KitGenerator, KitSpec};
 pub use model::{ToolEnvelope, ToolEnvelopeProtocol};
 pub use prompts::{UI_AGENT_PROMPT, UI_AGENT_PROMPT_SHORT};
 #[cfg(feature = "awp")]
 pub use protocol_capabilities::AWP_PROTOCOL_CAPABILITY;
 pub use protocol_capabilities::{
-    ADK_UI_LEGACY_DEPRECATION, SUPPORTED_UI_PROTOCOLS, TOOL_ENVELOPE_VERSION, UI_DEFAULT_PROTOCOL,
-    UI_PREFERRED_PROTOCOL, UI_PROTOCOL_CAPABILITIES, UiProtocolCapabilitySpec,
-    UiProtocolDeprecationSpec, UiProtocolImplementationTier, UiProtocolSpecTrack,
+    ADK_UI_LEGACY_DEPRECATION, SUPPORTED_UI_PROTOCOLS, TOOL_ENVELOPE_VERSION,
+    UI_CAPABILITY_SCHEMA_VERSION, UI_DEFAULT_PROTOCOL, UI_PREFERRED_PROTOCOL,
+    UI_PROTOCOL_CAPABILITIES, UiCapabilityScope, UiCapabilityStatus, UiProtocolCapabilityClaim,
+    UiProtocolCapabilitySpec, UiProtocolDeprecationSpec, UiProtocolImplementationTier,
+    UiProtocolNegotiationSpec, UiProtocolSpecTrack, UiProtocolVersionSpec,
     normalize_runtime_ui_protocol,
 };
 

@@ -17,15 +17,27 @@ export interface OutboundEventOptions {
     runId?: string;
     parentRunId?: string;
     messageId?: string;
+    resume?: AgUiResumeEntry[];
 }
 
 const DEFAULT_SURFACE_ID = 'main';
 export const A2UI_PROTOCOL_VERSION = 'v0.9.1';
 export const A2UI_PROTOCOL_VERSION_V1 = 'v1.0';
-export const MCP_APPS_PROTOCOL_VERSION = '2025-11-21';
+export const MCP_APPS_PROTOCOL_VERSION = '2026-01-26';
 export const MCP_APPS_EXTENSION_ID = 'io.modelcontextprotocol/ui';
 
+export interface A2uiCatalogCapabilities {
+    supportedCatalogIds: string[];
+    inlineCatalogs?: Array<Record<string, unknown>>;
+}
+
 export interface A2uiClientCapabilities {
+    'v0.9'?: A2uiCatalogCapabilities;
+    'v1.0'?: A2uiCatalogCapabilities;
+}
+
+/** @deprecated Pass versioned A2UI capabilities instead. */
+export interface LegacyA2uiClientCapabilities {
     supportedCatalogIds: string[];
 }
 
@@ -34,7 +46,8 @@ export interface A2uiClientDataModel {
 }
 
 export interface A2uiTransportMetadata {
-    a2uiClientCapabilities?: A2uiClientCapabilities;
+    a2uiClientCapabilities?: { 'v0.9': A2uiCatalogCapabilities };
+    a2uiRendererCapabilities?: { 'v1.0': A2uiCatalogCapabilities };
     inlineCatalogs?: Array<Record<string, unknown>>;
     a2uiClientDataModel?: A2uiClientDataModel;
     [key: string]: unknown;
@@ -50,9 +63,94 @@ export interface BuildA2uiClientEnvelopeOptions {
     store?: A2uiStore;
     surfaceId?: string;
     metadata?: Record<string, unknown>;
-    clientCapabilities?: A2uiClientCapabilities;
+    clientCapabilities?: A2uiClientCapabilities | LegacyA2uiClientCapabilities;
     inlineCatalogs?: Array<Record<string, unknown>>;
     includeDataModel?: boolean;
+}
+
+export interface AgUiInterrupt {
+    id: string;
+    reason: string;
+    message?: string;
+    toolCallId?: string;
+    responseSchema?: Record<string, unknown>;
+    expiresAt?: string;
+    metadata?: Record<string, unknown>;
+}
+
+export interface AgUiResumeEntry {
+    interruptId: string;
+    status: 'resolved' | 'cancelled';
+    payload?: unknown;
+}
+
+export type AgUiRunFinishedOutcome =
+    | { type: 'success' }
+    | { type: 'interrupt'; interrupts: AgUiInterrupt[] };
+
+export interface AgUiAgentCapabilities {
+    identity?: {
+        name?: string;
+        type?: string;
+        description?: string;
+        version?: string;
+        provider?: string;
+        documentationUrl?: string;
+        metadata?: Record<string, unknown>;
+    };
+    transport?: {
+        streaming?: boolean;
+        websocket?: boolean;
+        httpBinary?: boolean;
+        pushNotifications?: boolean;
+        resumable?: boolean;
+    };
+    tools?: {
+        supported?: boolean;
+        items?: Array<Record<string, unknown>>;
+        parallelCalls?: boolean;
+        clientProvided?: boolean;
+    };
+    output?: {
+        structuredOutput?: boolean;
+        supportedMimeTypes?: string[];
+    };
+    state?: {
+        snapshots?: boolean;
+        deltas?: boolean;
+        memory?: boolean;
+        persistentState?: boolean;
+    };
+    multiAgent?: {
+        supported?: boolean;
+        delegation?: boolean;
+        handoffs?: boolean;
+        subAgents?: Array<{ name: string; description?: string }>;
+    };
+    reasoning?: {
+        supported?: boolean;
+        streaming?: boolean;
+        encrypted?: boolean;
+    };
+    multimodal?: {
+        input?: { image?: boolean; audio?: boolean; video?: boolean; pdf?: boolean; file?: boolean };
+        output?: { image?: boolean; audio?: boolean };
+    };
+    execution?: {
+        codeExecution?: boolean;
+        sandboxed?: boolean;
+        maxIterations?: number;
+        maxExecutionTime?: number;
+    };
+    humanInTheLoop?: {
+        supported?: boolean;
+        approvals?: boolean;
+        interventions?: boolean;
+        feedback?: boolean;
+        interrupts?: boolean;
+        approveWithEdits?: boolean;
+    };
+    custom?: Record<string, unknown>;
 }
 
 export interface McpAppsAppInfo {
@@ -85,6 +183,22 @@ export interface McpAppsInitializedNotification {
     params?: Record<string, never>;
 }
 
+export interface McpAppsExtensionCapabilities {
+    extensions: {
+        [MCP_APPS_EXTENSION_ID]: {
+            mimeTypes: string[];
+        };
+    };
+}
+
+export type McpAppsHostNotification =
+    | { method: 'ui/notifications/tool-input'; params: { arguments?: Record<string, unknown> } }
+    | { method: 'ui/notifications/tool-input-partial'; params: { arguments?: Record<string, unknown> } }
+    | { method: 'ui/notifications/tool-result'; params: Record<string, unknown> }
+    | { method: 'ui/notifications/tool-cancelled'; params: { reason?: string } }
+    | { method: 'ui/notifications/host-context-changed'; params: Record<string, unknown> }
+    | { method: 'ui/resource-teardown'; params: Record<string, never> };
+
 export interface BuildMcpAppsInitializeRequestOptions {
     protocolVersion?: string;
     appInfo?: Partial<McpAppsAppInfo>;
@@ -93,6 +207,42 @@ export interface BuildMcpAppsInitializeRequestOptions {
 
 function buildMessageId(surfaceId: string, event: UiEvent, messageId?: string): string {
     return messageId ?? `ui-${surfaceId}-${event.action}-${Date.now()}`;
+}
+
+function normalizeA2uiClientCapabilities(
+    capabilities: A2uiClientCapabilities | LegacyA2uiClientCapabilities,
+    inlineCatalogs?: Array<Record<string, unknown>>,
+): A2uiClientCapabilities {
+    if ('supportedCatalogIds' in capabilities) {
+        return {
+            'v0.9': {
+                supportedCatalogIds: capabilities.supportedCatalogIds,
+                ...(inlineCatalogs?.length ? { inlineCatalogs } : {}),
+            },
+        };
+    }
+
+    if (!inlineCatalogs?.length) return capabilities;
+
+    const version = capabilities['v1.0'] ? 'v1.0' : 'v0.9';
+    return {
+        ...capabilities,
+        [version]: {
+            supportedCatalogIds: capabilities[version]?.supportedCatalogIds ?? [],
+            ...capabilities[version],
+            inlineCatalogs,
+        },
+    };
+}
+
+export function buildMcpAppsExtensionCapabilities(): McpAppsExtensionCapabilities {
+    return {
+        extensions: {
+            [MCP_APPS_EXTENSION_ID]: {
+                mimeTypes: ['text/html;profile=mcp-app'],
+            },
+        },
+    };
 }
 
 function buildCompatibilityAgUiEvent(
@@ -152,7 +302,20 @@ export function buildA2uiClientEnvelope(
     };
 
     if (options.clientCapabilities) {
-        metadata.a2uiClientCapabilities = options.clientCapabilities;
+        const normalizedCapabilities = normalizeA2uiClientCapabilities(
+            options.clientCapabilities,
+            options.inlineCatalogs,
+        );
+        if (normalizedCapabilities['v0.9']) {
+            metadata.a2uiClientCapabilities = {
+                'v0.9': normalizedCapabilities['v0.9'],
+            };
+        }
+        if (normalizedCapabilities['v1.0']) {
+            metadata.a2uiRendererCapabilities = {
+                'v1.0': normalizedCapabilities['v1.0'],
+            };
+        }
     }
 
     if (options.inlineCatalogs && options.inlineCatalogs.length > 0) {
@@ -217,6 +380,7 @@ export function buildOutboundEvent(
                         surfaceId,
                         uiEvent: event,
                     },
+                    ...(options.resume ? { resume: options.resume } : {}),
                 },
                 event: buildCompatibilityAgUiEvent(surfaceId, event, options),
             };

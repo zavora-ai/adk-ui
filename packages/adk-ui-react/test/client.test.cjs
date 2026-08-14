@@ -11,6 +11,7 @@ const {
     buildOutboundEvent,
     buildMcpAppsInitializeRequest,
     buildMcpAppsInitializedNotification,
+    buildMcpAppsExtensionCapabilities,
     createProtocolClient,
 } = require('../dist/index.js');
 
@@ -50,6 +51,7 @@ describe('Protocol client', () => {
 
         const payload = {
             id: 'legacy-1',
+            kit_id: 'zavora.ai:adk-ui/kit/acme@1.0.0',
             components: [
                 {
                     type: 'text',
@@ -62,6 +64,7 @@ describe('Protocol client', () => {
         assert.deepEqual(parsed, []);
         const legacy = client.getStore().getLegacyUiResponse();
         assert.ok(legacy);
+        assert.equal(legacy.kit_id, 'zavora.ai:adk-ui/kit/acme@1.0.0');
         assert.equal(legacy.components[0].type, 'text');
     });
 
@@ -106,7 +109,13 @@ describe('Protocol client', () => {
                 action: 'tab_change',
                 index: 1,
             },
-            { surfaceId: 'page-1', threadId: 'thread-x', runId: 'run-x', messageId: 'msg-1' },
+            {
+                surfaceId: 'page-1',
+                threadId: 'thread-x',
+                runId: 'run-x',
+                messageId: 'msg-1',
+                resume: [{ interruptId: 'interrupt-1', status: 'resolved', payload: { approved: true } }],
+            },
         );
 
         assert.equal(outbound.protocol, 'ag_ui');
@@ -117,6 +126,7 @@ describe('Protocol client', () => {
         assert.equal(outbound.input.state.adkUi.surfaceId, 'page-1');
         assert.equal(outbound.input.state.adkUi.event.action, 'tab_change');
         assert.equal(outbound.input.forwardedProps.uiEvent.index, 1);
+        assert.equal(outbound.input.resume[0].interruptId, 'interrupt-1');
         assert.equal(outbound.event.threadId, 'thread-x');
         assert.equal(outbound.event.runId, 'run-x');
         assert.equal(outbound.event.value.surfaceId, 'page-1');
@@ -132,13 +142,19 @@ describe('Protocol client', () => {
             },
         });
         const initialized = buildMcpAppsInitializedNotification();
+        const extensionCapabilities = buildMcpAppsExtensionCapabilities();
 
         assert.equal(initializeRequest.method, 'ui/initialize');
+        assert.equal(MCP_APPS_PROTOCOL_VERSION, '2026-01-26');
         assert.equal(initializeRequest.params.protocolVersion, MCP_APPS_PROTOCOL_VERSION);
         assert.equal(initializeRequest.params.appInfo.name, 'adk-ui-react-example');
         assert.deepEqual(initializeRequest.params.appCapabilities.availableDisplayModes, ['inline']);
         assert.equal(initialized.method, 'ui/notifications/initialized');
         assert.deepEqual(initialized.params, {});
+        assert.deepEqual(
+            extensionCapabilities.extensions['io.modelcontextprotocol/ui'].mimeTypes,
+            ['text/html;profile=mcp-app'],
+        );
     });
 
     it('builds native A2UI envelopes with metadata and data model snapshots', () => {
@@ -164,12 +180,34 @@ describe('Protocol client', () => {
         assert.equal(envelope.protocol, 'a2ui');
         assert.equal(envelope.version, A2UI_PROTOCOL_VERSION);
         assert.deepEqual(envelope.metadata.a2uiClientCapabilities, {
-            supportedCatalogIds: ['catalog://standard'],
+            'v0.9': {
+                supportedCatalogIds: ['catalog://standard'],
+                inlineCatalogs: [{ id: 'catalog://custom' }],
+            },
         });
         assert.deepEqual(envelope.metadata.inlineCatalogs, [{ id: 'catalog://custom' }]);
         assert.deepEqual(envelope.metadata.a2uiClientDataModel, {
             surfaces: {
                 main: { status: 'ready' },
+            },
+        });
+
+        const v1Envelope = buildA2uiClientEnvelope(
+            buildValidationFailedEvent('main', '/form/email', 'Email is required.'),
+            {
+                clientCapabilities: {
+                    'v1.0': {
+                        supportedCatalogIds: ['catalog://v1'],
+                    },
+                },
+                inlineCatalogs: [{ catalogId: 'catalog://inline-v1' }],
+            },
+        );
+        assert.equal(v1Envelope.metadata.a2uiClientCapabilities, undefined);
+        assert.deepEqual(v1Envelope.metadata.a2uiRendererCapabilities, {
+            'v1.0': {
+                supportedCatalogIds: ['catalog://v1'],
+                inlineCatalogs: [{ catalogId: 'catalog://inline-v1' }],
             },
         });
     });

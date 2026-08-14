@@ -459,6 +459,27 @@ fn render_component_html(component: &Component, options: &HtmlRenderOptions) -> 
             )
         }
 
+        Component::Scene3d(scene) => {
+            let title = scene
+                .title
+                .as_deref()
+                .map(|value| format!("<strong>{}</strong>", escape_html(value)))
+                .unwrap_or_else(|| "<strong>Interactive 3D scene</strong>".to_string());
+            let description = scene
+                .description
+                .as_deref()
+                .or(scene.fallback.as_deref())
+                .map(|value| format!("<p>{}</p>", escape_html(value)))
+                .unwrap_or_default();
+            format!(
+                "<figure class=\"{}\" data-scene-object-count=\"{}\">{}{}</figure>",
+                cls(prefix, "scene-3d-fallback"),
+                scene.objects.len(),
+                title,
+                description
+            )
+        }
+
         // --- Feedback ---
         Component::Alert(alert) => {
             let variant = alert_variant_str(&alert.variant);

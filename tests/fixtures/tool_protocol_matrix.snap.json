@@ -16,6 +16,26 @@
     "has_version": false
   },
   {
+    "tool": "render_app",
+    "protocol": "a2ui",
+    "value_kind": "object",
+    "top_level_keys": [
+      "application",
+      "application_version",
+      "components",
+      "data_model",
+      "jsonl",
+      "protocol",
+      "surface_id",
+      "surfaces",
+      "version"
+    ],
+    "jsonl_line_count": 3,
+    "event_types": [],
+    "resource_uri": null,
+    "has_version": true
+  },
+  {
     "tool": "render_page",
     "protocol": "a2ui",
     "value_kind": "string",
@@ -227,6 +247,29 @@
     ],
     "resource_uri": null,
     "has_version": false
+  },
+  {
+    "tool": "render_app",
+    "protocol": "ag_ui",
+    "value_kind": "object",
+    "top_level_keys": [
+      "application",
+      "application_version",
+      "events",
+      "protocol",
+      "surface_id",
+      "surfaces",
+      "version"
+    ],
+    "jsonl_line_count": null,
+    "event_types": [
+      "RUN_STARTED",
+      "ACTIVITY_SNAPSHOT",
+      "CUSTOM",
+      "RUN_FINISHED"
+    ],
+    "resource_uri": null,
+    "has_version": true
   },
   {
     "tool": "render_page",
@@ -474,6 +517,24 @@
     "event_types": [],
     "resource_uri": "ui://adk-rust/matrix-screen",
     "has_version": false
+  },
+  {
+    "tool": "render_app",
+    "protocol": "mcp_apps",
+    "value_kind": "object",
+    "top_level_keys": [
+      "application",
+      "application_version",
+      "payload",
+      "protocol",
+      "surface_id",
+      "surfaces",
+      "version"
+    ],
+    "jsonl_line_count": null,
+    "event_types": [],
+    "resource_uri": "ui://adk-rust/matrix-app-overview",
+    "has_version": true
   },
   {
     "tool": "render_page",

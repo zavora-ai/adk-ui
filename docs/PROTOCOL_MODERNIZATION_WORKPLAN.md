@@ -26,6 +26,26 @@ Historical note:
 
 ## Progress Comments
 
+### 2026-08-14 Application Generation and Spatial UI
+
+- Added the additive `UiApplication` graph and `render_app` tool. Agents can now emit complete products with bounded routes, navigation, shared state, page templates, hero composition, region layouts, asides, and footers instead of compressing every request into a single generic surface.
+- Preserved protocol compatibility by carrying the application graph alongside independently addressable page surfaces for A2UI, AG-UI, MCP Apps, and optional AWP output. The protocol matrix now covers 14 tools across all three primary transports.
+- Added `ApplicationRenderer` to the public React package with approved-kit resolution, responsive page art direction, in-memory routing, and mounted visited routes so uncontrolled form state survives navigation.
+- Added the declarative `scene_3d` component and `Scene3D` catalog entry. The renderer supports bounded primitives and approved GLB kit assets, semantic brand materials, labelled interactions, WebGPU with WebGL fallback, reduced motion, intersection throttling, capped pixel ratio, responsive sizing, and explicit GPU/resource disposal.
+- Replaced the primary offline showcase with a three-route generated transit operations product spanning editorial briefing, data-dense network control, and an immersive spatial twin. The SSE client now recognizes `render_app` responses directly.
+- Kept 3D out of the initial application payload. The public library emits a 9.6 kB scene adapter chunk and externalizes Three.js; the example app does not preload either Three.js runtime chunk and fetches them only when the 3D route is opened.
+- Verification: 149 Rust unit tests plus 18 integration tests passed; the 14-tool protocol matrix fixture is deterministic; 46 React tests, strict Clippy, client lint, and both production builds pass. Live browser checks covered all three routes, the WebGL/WebGPU canvas path, labelled scene actions, container-aware embedding, the 390 px preview, and accessible form names.
+
+### 2026-08-13 Capability Contract Refresh
+
+- Re-audited the three upstream protocols against their live primary repositories and documentation. A2UI is now v0.9.1 stable with v1.0 at release-candidate maturity; AG-UI capability discovery and interrupt/resume are documented current concepts; MCP Apps has a stable 2026-01-26 extension specification.
+- Replaced flat, ambiguous capability labels with a versioned discovery contract containing per-version maturity, negotiation keys, MIME types, transports, fallbacks, scoped ownership, and claim-level `supported` / `partial` / `candidate` / `host_owned` / `planned` status.
+- Added official versioned A2UI renderer/agent catalog capability types in Rust and normalized legacy flat React inputs into the upstream `v0.9` / `v1.0` wire shape.
+- Added AG-UI's typed agent capability categories, interrupt/outcome/resume Rust and TypeScript types, resume ingestion in the example server, and a truthful baseline capability snapshot that does not claim per-loaded-agent derivation, durable interrupt checkpointing, or resumable streams.
+- Updated MCP Apps to the stable `2026-01-26` version, separated MCP extension negotiation from app and host capabilities, added lifecycle/tool notification types, and removed unsupported sandbox and open-link claims from the example host.
+- Upgraded Agent UI Studio's capability panel to show version maturity, discovery mechanism, transport path, claim ownership, and current gaps directly in the product.
+- Verification: 161 Rust tests passed across the root suites, 40 React package tests passed, the standalone server example compiled with all features, and the Studio passed lint, typecheck, and production build.
+
 ### 2026-08-13 Version 2 UX Release
 
 - Replaced the reference client test harness with the responsive Agent UI Studio: scenario-led prompting, protocol cards, a focused live canvas, desktop/mobile previews, and tabbed run diagnostics.
@@ -595,13 +615,68 @@ This modernization effort should be considered complete only when all of the fol
 - A2UI support has explicit, documented `v0.9` subset coverage with tests.
 - Examples and docs match the shipped architecture.
 
-## Sources Reviewed On 2026-03-19
+## Sources Reviewed On 2026-08-13
 
-- A2UI `v0.9` spec: <https://a2ui.org/specification/v0.9-a2ui/>
-- A2UI `v0.9` evolution guide: <https://a2ui.org/specification/v0.9-evolution-guide/>
+- A2UI current status and repository: <https://github.com/a2ui-project/a2ui>
+- A2UI `v0.9.1` stable spec: <https://a2ui.org/specification/v0.9.1-a2ui/>
+- A2UI `v1.0` release-candidate spec: <https://a2ui.org/specification/v1.0-a2ui/>
 - AG-UI events: <https://docs.ag-ui.com/concepts/events>
 - AG-UI reasoning: <https://docs.ag-ui.com/concepts/reasoning>
-- AG-UI capabilities draft: <https://docs.ag-ui.com/drafts/agent-capabilities>
-- MCP Apps SEP-1865: <https://modelcontextprotocol.io/seps/1865-mcp-apps-interactive-user-interfaces-for-mcp>
-- MCP Apps API overview: <https://apps.extensions.modelcontextprotocol.io/api/documents/Overview.html>
-- MCP Apps patterns: <https://apps.extensions.modelcontextprotocol.io/api/documents/patterns.html>
+- AG-UI capabilities: <https://docs.ag-ui.com/concepts/capabilities>
+- AG-UI interrupts: <https://docs.ag-ui.com/concepts/interrupts>
+- MCP Apps stable specification and API: <https://apps.extensions.modelcontextprotocol.io/>
+- MCP Apps overview and progressive enhancement: <https://modelcontextprotocol.io/extensions/apps/overview>
+
+## Progress Update: 2026-08-14 Generative UI Quality
+
+Completed:
+
+- Replaced component-inventory demo prompts with outcome-first workflows across A2UI, AG-UI, MCP Apps, and the general examples.
+- Reworked the framework and A2UI system prompts around state preservation, domain-specific content, responsive hierarchy, and human approval.
+- Added intent-aware quality retries so sparse forms are repaired as forms and weak decision surfaces are repaired as populated workspaces.
+- Added form quality checks for missing context, generic actions, and insufficient workflow depth.
+- Extended `render_layout` with an embedded `form` section so decision workspaces can combine structured evidence and editable proposals in one surface.
+- Added the durable market and acceptance-criteria brief in `docs/GENERATIVE_UI_MARKET_2026.md`.
+
+Validation completed for this slice:
+
+- The featured A2UI payroll prompt produced a context-rich five-field intake at quality 35 and preserved all submitted evidence in the review step.
+- The featured AG-UI incident prompt rejected an oversized form description, retried through `render_layout`, and produced a populated command workspace with KPIs, alerts, chart, tables, ownership, evidence, and an editable rollback proposal.
+- Rust layout tests, the React package tests, TypeScript/Vite production build, and clippy with warnings denied pass.
+
+## Progress Update: 2026-08-14 Brand-Driven Generative UI
+
+Completed:
+
+- Replaced the empty kit scaffold with a versioned `BrandKitManifest`, lifecycle state, provenance, validated assets, semantic tokens, component recipes, templates, and agent constraints.
+- Made `render_kit` produce a reviewable draft and a real catalog containing every component supported by the renderer.
+- Added additive `kit_id` propagation from legacy tool calls into `UiResponse` and protocol catalog identity.
+- Added `AdkUiKitProvider`, approved-kit selection, scoped semantic variables, typed component slots, and `kit://<asset-id>` resolution to `@zavora-ai/adk-ui-react`.
+- Applied the same kit contract to the legacy component renderer, charts, and the native A2UI surface renderer.
+- Added production safeguards that reject draft/deprecated kits unless preview is explicitly enabled.
+- Added the durable implementation and security guide in `docs/BRAND_KITS.md` and applied an approved studio kit in the reference client.
+
+Validation completed for this slice:
+
+- Rust kit, validation, and cross-protocol kit identity tests pass.
+- The React package test suite passes with semantic-token, asset-resolution, approval-selection, protocol, renderer, and A2UI coverage.
+- The example TypeScript/Vite production build and Rust clippy with warnings denied pass.
+- Live browser inspection confirms the active kit id and computed primary, surface, border, typography, and radius values on the rendered canvas.
+
+## Progress Update: 2026-08-14 Canvas Presentation Controls
+
+Completed:
+
+- Added host-owned desktop and mobile preview sizing alongside maximize/restore workspace controls.
+- Added native browser fullscreen entry and exit for the generated canvas without changing protocol payloads or generated application structure.
+- Synchronized fullscreen state with browser Escape handling and added an Escape path for restoring the expanded workspace.
+- Preserved responsive access to every canvas control on narrow screens.
+
+## Progress Update: 2026-08-14 Independent Capability Showcase
+
+Completed:
+
+- Added six zero-server, deep-linkable examples with separate source fixtures for decision support, adaptive forms, multi-page applications, brand kits, declarative 3D, and streaming component updates.
+- Added a public landing-page gallery that describes each capability without requiring users to operate the protocol Studio first.
+- Added a standalone example host with desktop/mobile preview, native fullscreen, adjacent-example navigation, source links, and visible structured event receipts.
+- Ensured every example renders through public `@zavora-ai/adk-ui-react` APIs and validates application graphs at catalog load time.

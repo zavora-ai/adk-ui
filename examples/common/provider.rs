@@ -1,11 +1,11 @@
 //! Shared multi-provider model factory for ADK-UI examples.
 //!
-//! Default: **OpenAI** (`OPENAI_API_KEY`, model `gpt-4o-mini` or `ADK_UI_MODEL`).
+//! Default: **OpenAI Responses** (`OPENAI_API_KEY`, model `gpt-5.6-sol` or `ADK_UI_MODEL`).
 //! Switch with `ADK_UI_PROVIDER=openai|gemini` (or aliases).
 
 use adk_core::Llm;
 use adk_model::gemini::GeminiModel;
-use adk_model::openai::{OpenAIClient, OpenAIConfig};
+use adk_model::openai::{OpenAIResponsesClient, OpenAIResponsesConfig, ReasoningEffort};
 use anyhow::{Context, Result, bail};
 use std::sync::Arc;
 
@@ -52,9 +52,13 @@ pub fn build_model(provider: LlmProvider) -> Result<(Arc<dyn Llm>, String, LlmPr
             )?;
             let model_name = std::env::var("ADK_UI_MODEL")
                 .or_else(|_| std::env::var("OPENAI_MODEL"))
-                .unwrap_or_else(|_| "gpt-4o-mini".to_string());
-            let client = OpenAIClient::new(OpenAIConfig::new(api_key, &model_name))
-                .context("failed to create OpenAI client")?;
+                .unwrap_or_else(|_| "gpt-5.6-sol".to_string());
+            let mut config = OpenAIResponsesConfig::new(api_key, &model_name);
+            if model_name.starts_with("gpt-5.6") {
+                config = config.with_reasoning_effort(ReasoningEffort::Medium);
+            }
+            let client = OpenAIResponsesClient::new(config)
+                .context("failed to create OpenAI Responses client")?;
             Ok((Arc::new(client), model_name, provider))
         }
         LlmProvider::Gemini => {

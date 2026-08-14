@@ -5,6 +5,314 @@ use serde_json::{Value, json};
 /// Event name used for surface payload transport via AG-UI custom events.
 pub const ADK_UI_SURFACE_EVENT_NAME: &str = "adk.ui.surface";
 
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct AgUiIdentityCapabilities {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
+    pub agent_type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub version: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub provider: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub documentation_url: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<Value>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct AgUiTransportCapabilities {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub streaming: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub websocket: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub http_binary: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub push_notifications: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub resumable: Option<bool>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct AgUiToolsCapabilities {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub supported: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub items: Option<Vec<Value>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub parallel_calls: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub client_provided: Option<bool>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct AgUiOutputCapabilities {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub structured_output: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub supported_mime_types: Option<Vec<String>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct AgUiStateCapabilities {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub snapshots: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub deltas: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub memory: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub persistent_state: Option<bool>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct AgUiSubAgentInfo {
+    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct AgUiMultiAgentCapabilities {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub supported: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub delegation: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub handoffs: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sub_agents: Option<Vec<AgUiSubAgentInfo>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct AgUiReasoningCapabilities {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub supported: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub streaming: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub encrypted: Option<bool>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct AgUiMultimodalInputCapabilities {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub image: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub audio: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub video: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub pdf: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub file: Option<bool>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct AgUiMultimodalOutputCapabilities {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub image: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub audio: Option<bool>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct AgUiMultimodalCapabilities {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub input: Option<AgUiMultimodalInputCapabilities>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub output: Option<AgUiMultimodalOutputCapabilities>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct AgUiExecutionCapabilities {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub code_execution: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sandboxed: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_iterations: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_execution_time: Option<u64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct AgUiHumanInTheLoopCapabilities {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub supported: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub approvals: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub interventions: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub feedback: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub interrupts: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub approve_with_edits: Option<bool>,
+}
+
+/// Current AG-UI capability snapshot. All fields are optional by design:
+/// absence means unknown rather than unsupported.
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct AgUiAgentCapabilities {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub identity: Option<AgUiIdentityCapabilities>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub transport: Option<AgUiTransportCapabilities>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tools: Option<AgUiToolsCapabilities>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub output: Option<AgUiOutputCapabilities>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub state: Option<AgUiStateCapabilities>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub multi_agent: Option<AgUiMultiAgentCapabilities>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reasoning: Option<AgUiReasoningCapabilities>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub multimodal: Option<AgUiMultimodalCapabilities>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub execution: Option<AgUiExecutionCapabilities>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub human_in_the_loop: Option<AgUiHumanInTheLoopCapabilities>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub custom: Option<Value>,
+}
+
+pub fn default_ag_ui_agent_capabilities() -> AgUiAgentCapabilities {
+    AgUiAgentCapabilities {
+        identity: Some(AgUiIdentityCapabilities {
+            name: Some("ADK UI example agent".to_string()),
+            agent_type: Some("adk-rust".to_string()),
+            description: Some("Protocol-aware generative UI agent".to_string()),
+            version: Some(env!("CARGO_PKG_VERSION").to_string()),
+            provider: Some("Zavora AI".to_string()),
+            documentation_url: Some("https://github.com/zavora-ai/adk-ui".to_string()),
+            metadata: None,
+        }),
+        transport: Some(AgUiTransportCapabilities {
+            streaming: Some(true),
+            websocket: Some(false),
+            http_binary: Some(false),
+            push_notifications: Some(false),
+            resumable: Some(false),
+        }),
+        tools: Some(AgUiToolsCapabilities {
+            supported: Some(true),
+            items: None,
+            parallel_calls: None,
+            client_provided: Some(false),
+        }),
+        output: Some(AgUiOutputCapabilities {
+            structured_output: Some(true),
+            supported_mime_types: Some(vec![
+                "text/event-stream".to_string(),
+                "application/json".to_string(),
+            ]),
+        }),
+        state: Some(AgUiStateCapabilities {
+            snapshots: Some(true),
+            deltas: Some(true),
+            memory: None,
+            persistent_state: Some(true),
+        }),
+        reasoning: Some(AgUiReasoningCapabilities {
+            supported: Some(true),
+            streaming: Some(true),
+            encrypted: Some(false),
+        }),
+        human_in_the_loop: Some(AgUiHumanInTheLoopCapabilities {
+            supported: Some(true),
+            approvals: None,
+            interventions: None,
+            feedback: Some(true),
+            interrupts: Some(false),
+            approve_with_edits: Some(false),
+        }),
+        custom: Some(json!({
+            "adkUiSurfaceEvents": ["ACTIVITY_SNAPSHOT", "CUSTOM"],
+            "interruptWireTypes": true,
+            "durableInterruptRuntime": false,
+        })),
+        ..Default::default()
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct AgUiInterrupt {
+    pub id: String,
+    pub reason: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub message: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tool_call_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub response_schema: Option<Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub expires_at: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<Value>,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum AgUiResumeStatus {
+    Resolved,
+    Cancelled,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct AgUiResumeEntry {
+    pub interrupt_id: String,
+    pub status: AgUiResumeStatus,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub payload: Option<Value>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct AgUiRunAgentInput {
+    pub thread_id: String,
+    pub run_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub parent_run_id: Option<String>,
+    pub state: Value,
+    pub messages: Vec<Value>,
+    pub tools: Vec<Value>,
+    pub context: Vec<Value>,
+    pub forwarded_props: Value,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub resume: Option<Vec<AgUiResumeEntry>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(tag = "type", rename_all = "lowercase")]
+pub enum AgUiRunFinishedOutcome {
+    Success,
+    Interrupt { interrupts: Vec<AgUiInterrupt> },
+}
+
 /// AG-UI event types from the protocol event model (current stable + reasoning).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
@@ -63,6 +371,8 @@ pub struct AgUiRunFinishedEvent {
     pub run_id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub result: Option<Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub outcome: Option<AgUiRunFinishedOutcome>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -428,6 +738,21 @@ pub fn run_finished_event(
         thread_id: thread_id.into(),
         run_id: run_id.into(),
         result,
+        outcome: None,
+    })
+}
+
+pub fn run_interrupted_event(
+    thread_id: impl Into<String>,
+    run_id: impl Into<String>,
+    interrupts: Vec<AgUiInterrupt>,
+) -> AgUiEvent {
+    AgUiEvent::RunFinished(AgUiRunFinishedEvent {
+        event_type: AgUiEventType::RunFinished,
+        thread_id: thread_id.into(),
+        run_id: run_id.into(),
+        result: None,
+        outcome: Some(AgUiRunFinishedOutcome::Interrupt { interrupts }),
     })
 }
 
@@ -803,6 +1128,7 @@ pub fn surface_to_event_stream(
             thread_id,
             run_id,
             result: None,
+            outcome: Some(AgUiRunFinishedOutcome::Success),
         }),
     ]
 }
@@ -1001,5 +1327,46 @@ mod tests {
         assert_eq!(activity_snapshot_json["type"], "ACTIVITY_SNAPSHOT");
         assert_eq!(activity_delta_json["type"], "ACTIVITY_DELTA");
         assert_eq!(raw_json["type"], "RAW");
+    }
+
+    #[test]
+    fn capability_snapshot_uses_current_typed_categories() {
+        let capabilities = serde_json::to_value(default_ag_ui_agent_capabilities()).unwrap();
+
+        assert_eq!(capabilities["transport"]["streaming"], true);
+        assert_eq!(capabilities["transport"]["resumable"], false);
+        assert_eq!(capabilities["state"]["snapshots"], true);
+        assert_eq!(capabilities["reasoning"]["encrypted"], false);
+        assert_eq!(capabilities["humanInTheLoop"]["interrupts"], false);
+        assert_eq!(capabilities["custom"]["interruptWireTypes"], true);
+    }
+
+    #[test]
+    fn interrupt_outcome_and_resume_entry_match_ag_ui_wire_shape() {
+        let event = run_interrupted_event(
+            "thread-1",
+            "run-1",
+            vec![AgUiInterrupt {
+                id: "interrupt-1".to_string(),
+                reason: "confirmation".to_string(),
+                message: Some("Continue?".to_string()),
+                tool_call_id: None,
+                response_schema: Some(json!({"type":"boolean"})),
+                expires_at: None,
+                metadata: None,
+            }],
+        );
+        let event_json = serde_json::to_value(event).unwrap();
+        assert_eq!(event_json["type"], "RUN_FINISHED");
+        assert_eq!(event_json["outcome"]["type"], "interrupt");
+        assert_eq!(event_json["outcome"]["interrupts"][0]["id"], "interrupt-1");
+
+        let resume: AgUiResumeEntry = serde_json::from_value(json!({
+            "interruptId": "interrupt-1",
+            "status": "resolved",
+            "payload": {"approved": true}
+        }))
+        .unwrap();
+        assert_eq!(resume.status, AgUiResumeStatus::Resolved);
     }
 }

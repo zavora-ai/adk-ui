@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-08-14
+
+### Added
+
+- Versioned 2026 capability discovery with protocol-specific versions, maturity, negotiation keys, content types, transports, fallbacks, and scoped support claims.
+- A2UI v0.9.1 stable and v1.0 release-candidate capability models, including catalog exchange and correlated RPC support boundaries.
+- Typed AG-UI capability snapshots plus interrupt, resume, and human-in-the-loop wire types.
+- MCP Apps 2026-01-26 extension, host-capability, lifecycle, and progressive-fallback models.
+- Lazy-loaded chart rendering for the shared React package and example client.
+- Versioned brand-kit manifests with provenance, approval state, validated assets, semantic tokens, component recipes, templates, and agent constraints.
+- React brand-kit provider, approved-kit selection, typed component slots, and `kit://` asset resolution for both legacy and native A2UI renderers.
+
+### Changed
+
+- Agent UI Studio now exposes honest per-feature capability status instead of a single coarse compatibility label.
+- OpenAI demos now default to `gpt-5.6-sol` through the Responses API with medium reasoning, while preserving provider and model overrides.
+- Generated layouts use responsive KPI grids, stable component identity, safer nested layouts, and clearer empty/error states.
+- Forms preserve client-side values and submission semantics while generated charts are split into an on-demand bundle.
+- Protocol documentation and migration guidance now distinguish implemented, partial, candidate, host-owned, planned, and legacy behavior.
+- Approved `kit_id` values now propagate through legacy responses and protocol catalog identity so one company design contract drives all rendering paths.
+
+### Fixed
+
+- Corrected A2UI conversion paths that could drop component identity or produce malformed nested layouts.
+- Prevented generated form controls and action flows from losing state during rerenders.
+
 ## [2.0.0] - 2026-08-13
 
 ### Breaking

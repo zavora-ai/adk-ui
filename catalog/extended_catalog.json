@@ -246,6 +246,21 @@
       },
       "required": ["kind", "data", "xKey", "yKeys"]
     },
+    "Scene3D": {
+      "description": "Bounded declarative 3D scene using primitives and approved brand-kit GLB assets",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "height": { "type": "number", "minimum": 240, "maximum": 960 },
+        "background": { "enum": ["transparent", "surface", "muted", "contrast"] },
+        "camera": { "type": "object" },
+        "objects": { "type": "array", "minItems": 1, "maxItems": 64 },
+        "autoRotate": { "type": "boolean" },
+        "controls": { "type": "boolean" },
+        "fallback": { "type": "string" }
+      },
+      "required": ["objects"]
+    },
     "Alert": {
       "description": "Alert message",
       "properties": {

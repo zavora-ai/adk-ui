@@ -226,6 +226,73 @@ impl Validate for Tabs {
     }
 }
 
+impl Validate for Scene3d {
+    fn validate(&self, path: &str) -> Vec<ValidationError> {
+        let mut errors = Vec::new();
+        if self.objects.is_empty() || self.objects.len() > 64 {
+            errors.push(ValidationError {
+                path: format!("{}.objects", path),
+                message: "Scene3d requires between 1 and 64 objects".to_string(),
+            });
+        }
+        if !(240..=960).contains(&self.height) {
+            errors.push(ValidationError {
+                path: format!("{}.height", path),
+                message: "Scene3d height must be between 240 and 960 pixels".to_string(),
+            });
+        }
+        if !(20.0..=90.0).contains(&self.camera.fov) {
+            errors.push(ValidationError {
+                path: format!("{}.camera.fov", path),
+                message: "Scene3d camera fov must be between 20 and 90 degrees".to_string(),
+            });
+        }
+        let model_count = self
+            .objects
+            .iter()
+            .filter(|object| matches!(object, SceneObject::Model(_)))
+            .count();
+        if model_count > 8 {
+            errors.push(ValidationError {
+                path: format!("{}.objects", path),
+                message: "Scene3d supports at most 8 model assets".to_string(),
+            });
+        }
+        for (index, object) in self.objects.iter().enumerate() {
+            let (id, scale) = match object {
+                SceneObject::Primitive(value) => (&value.id, value.scale),
+                SceneObject::Model(value) => {
+                    if value.asset_id.trim().is_empty() || value.asset_id.contains(['/', '\\']) {
+                        errors.push(ValidationError {
+                            path: format!("{}.objects[{}].asset_id", path, index),
+                            message: "model asset_id must reference one approved kit asset"
+                                .to_string(),
+                        });
+                    }
+                    (&value.id, value.scale)
+                }
+            };
+            if id.trim().is_empty() {
+                errors.push(ValidationError {
+                    path: format!("{}.objects[{}].id", path, index),
+                    message: "scene object id must not be empty".to_string(),
+                });
+            }
+            if scale
+                .iter()
+                .any(|value| !value.is_finite() || *value <= 0.0 || *value > 100.0)
+            {
+                errors.push(ValidationError {
+                    path: format!("{}.objects[{}].scale", path, index),
+                    message: "scene object scale values must be finite and between 0 and 100"
+                        .to_string(),
+                });
+            }
+        }
+        errors
+    }
+}
+
 impl Validate for Component {
     fn validate(&self, path: &str) -> Vec<ValidationError> {
         match self {
@@ -236,6 +303,7 @@ impl Validate for Component {
             Component::Select(s) => s.validate(path),
             Component::Table(t) => t.validate(path),
             Component::Chart(c) => c.validate(path),
+            Component::Scene3d(scene) => scene.validate(path),
             Component::Card(c) => c.validate(path),
             Component::Modal(m) => m.validate(path),
             Component::Stack(s) => s.validate(path),
@@ -291,5 +359,24 @@ mod tests {
         })]);
         let result = validate_ui_response(&ui);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_scene_3d_enforces_object_budget_and_height() {
+        let ui = UiResponse::new(vec![Component::Scene3d(Scene3d {
+            id: Some("network".to_string()),
+            title: Some("Network".to_string()),
+            description: None,
+            height: 120,
+            background: SceneBackground::Surface,
+            camera: SceneCamera::default(),
+            objects: vec![],
+            auto_rotate: false,
+            controls: true,
+            fallback: Some("Use the table view.".to_string()),
+        })]);
+        let errors = validate_ui_response(&ui).expect_err("invalid scene should fail");
+        assert!(errors.iter().any(|error| error.path.ends_with(".objects")));
+        assert!(errors.iter().any(|error| error.path.ends_with(".height")));
     }
 }

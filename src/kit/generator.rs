@@ -1,12 +1,20 @@
-use serde_json::{Value, json};
+use std::collections::BTreeMap;
 
-use super::spec::KitSpec;
+use serde_json::{Map, Value, json};
+
+use super::spec::{
+    BRAND_KIT_SCHEMA_VERSION, BrandKitManifest, KitComponentRecipe, KitDensity, KitRadius,
+    KitSemanticColors, KitSemanticTokens, KitSemanticTypography, KitSource, KitSpec, KitStatus,
+    KitTemplate, is_css_color_token,
+};
 
 #[derive(Debug, Clone)]
 pub struct KitArtifacts {
+    pub manifest: BrandKitManifest,
     pub catalog: Value,
     pub tokens: Value,
     pub templates: Value,
+    pub agent_context: Value,
     pub theme_css: String,
 }
 
@@ -18,57 +26,316 @@ impl KitGenerator {
         Self
     }
 
+    /// Generate a draft kit. Approval remains an explicit host-side operation.
     pub fn generate(&self, spec: &KitSpec) -> KitArtifacts {
-        let catalog_id = format!(
-            "zavora.ai:adk-ui/kit/{}@{}",
-            slugify(&spec.name),
-            spec.version
-        );
+        let kit_name = non_empty(&spec.name, "Untitled Kit");
+        let kit_version = non_empty(&spec.version, "0.1.0");
+        let slug = {
+            let value = slugify(kit_name);
+            if value.is_empty() {
+                "untitled-kit".to_string()
+            } else {
+                value
+            }
+        };
+        let catalog_id = format!("zavora.ai:adk-ui/kit/{slug}@{kit_version}");
+        let components = catalog_components();
+        let recipes = component_recipes(&components, spec);
+        let semantic_tokens = semantic_tokens(spec);
+        let templates = spec
+            .templates
+            .iter()
+            .filter(|template| !template.trim().is_empty())
+            .map(|template| KitTemplate {
+                id: template.clone(),
+                description: None,
+                required_components: Vec::new(),
+            })
+            .collect::<Vec<_>>();
+        let mut provenance = spec.provenance.clone();
+        if provenance.generated_by.is_none()
+            && matches!(provenance.source, KitSource::Generated | KitSource::Hybrid)
+        {
+            provenance.generated_by = Some("adk-ui/render_kit".to_string());
+        }
+
+        let manifest = BrandKitManifest {
+            schema_version: BRAND_KIT_SCHEMA_VERSION.to_string(),
+            id: catalog_id.clone(),
+            name: kit_name.to_string(),
+            version: kit_version.to_string(),
+            status: KitStatus::Draft,
+            provenance,
+            brand: spec.brand.clone(),
+            assets: spec.assets.clone(),
+            tokens: semantic_tokens.clone(),
+            components: recipes,
+            templates: templates.clone(),
+        };
 
         let catalog = json!({
             "$schema": "https://json-schema.org/draft/2020-12/schema",
             "$id": catalog_id,
-            "title": format!("ADK-UI Kit: {}", spec.name),
-            "description": format!("Generated UI kit for {}", spec.name),
+            "title": format!("ADK-UI Brand Kit: {kit_name}"),
+            "description": format!("Generated component contract for {kit_name}. Runtime use requires host approval."),
             "catalogId": catalog_id,
-            "components": {},
+            "components": components,
             "theme": {
-                "primaryColor": spec.colors.primary,
-                "agentDisplayName": spec.name
+                "primaryColor": semantic_tokens.colors.primary,
+                "agentDisplayName": kit_name,
+                "kitStatus": "draft"
+            },
+            "x-adkUiBrandKit": {
+                "schemaVersion": BRAND_KIT_SCHEMA_VERSION,
+                "manifestId": catalog_id,
+                "status": "draft"
             }
         });
 
-        let tokens = json!({
-            "colors": {
-                "primary": spec.colors.primary,
-                "accent": spec.colors.accent,
-                "surface": spec.colors.surface,
-                "background": spec.colors.background,
-                "text": spec.colors.text
-            },
-            "typography": {
-                "family": spec.typography.family,
-                "scale": spec.typography.scale
-            },
-            "density": format!("{:?}", spec.density).to_lowercase(),
-            "radius": format!("{:?}", spec.radius).to_lowercase()
+        let tokens = serde_json::to_value(&semantic_tokens).unwrap_or_else(|_| json!({}));
+        let templates_value = json!({ "templates": templates });
+        let allowed_components = catalog
+            .get("components")
+            .and_then(Value::as_object)
+            .map(|value| value.keys().cloned().collect::<Vec<_>>())
+            .unwrap_or_default();
+        let agent_context = json!({
+            "kitId": catalog_id,
+            "status": "draft",
+            "allowedComponents": allowed_components,
+            "assetPolicy": "Reference declared assets with kit://<asset-id>. Do not invent logos, marks, fonts, or brand colors.",
+            "designPolicy": "Use semantic tokens and declared component recipes. Treat the kit as the design source of truth.",
+            "templates": spec.templates,
         });
-
-        let templates = json!({
-            "templates": spec.templates
-        });
-
-        let theme_css = format!(
-            ":root {{\n  --adk-primary: {};\n  --adk-font-family: \"{}\";\n}}\n",
-            spec.colors.primary, spec.typography.family
-        );
+        let theme_css = theme_css(&catalog_id, &semantic_tokens);
 
         KitArtifacts {
+            manifest,
             catalog,
             tokens,
-            templates,
+            templates: templates_value,
+            agent_context,
             theme_css,
         }
+    }
+}
+
+fn catalog_components() -> Map<String, Value> {
+    serde_json::from_str::<Value>(include_str!("../../catalog/extended_catalog.json"))
+        .ok()
+        .and_then(|catalog| {
+            catalog
+                .get("components")
+                .and_then(Value::as_object)
+                .cloned()
+        })
+        .unwrap_or_default()
+}
+
+fn component_recipes(
+    catalog_components: &Map<String, Value>,
+    spec: &KitSpec,
+) -> BTreeMap<String, KitComponentRecipe> {
+    catalog_components
+        .keys()
+        .map(|component| {
+            let variant = match component.as_str() {
+                "Button" => spec
+                    .components
+                    .button
+                    .as_ref()
+                    .and_then(|button| button.variants.first().cloned()),
+                "Card" => spec
+                    .components
+                    .card
+                    .as_ref()
+                    .and_then(|card| card.elevation.clone()),
+                "TextInput" => spec
+                    .components
+                    .input
+                    .as_ref()
+                    .and_then(|input| input.style.clone()),
+                "Table" => spec.components.table.as_ref().and_then(|table| {
+                    table
+                        .striped
+                        .map(|striped| if striped { "striped" } else { "plain" }.to_string())
+                }),
+                _ => None,
+            };
+            (
+                component.clone(),
+                KitComponentRecipe {
+                    component: component.clone(),
+                    variant,
+                    asset_id: None,
+                    slots: BTreeMap::new(),
+                },
+            )
+        })
+        .collect()
+}
+
+fn semantic_tokens(spec: &KitSpec) -> KitSemanticTokens {
+    let primary = color_or(&spec.colors.primary, "#0f766e");
+    let accent = spec
+        .colors
+        .accent
+        .as_deref()
+        .map(|value| color_or(value, &primary))
+        .unwrap_or_else(|| primary.clone());
+    let background = spec
+        .colors
+        .background
+        .as_deref()
+        .map(|value| color_or(value, "#f7f9f8"))
+        .unwrap_or_else(|| "#f7f9f8".to_string());
+    let surface = spec
+        .colors
+        .surface
+        .as_deref()
+        .map(|value| color_or(value, "#ffffff"))
+        .unwrap_or_else(|| "#ffffff".to_string());
+    let foreground = spec
+        .colors
+        .text
+        .as_deref()
+        .map(|value| color_or(value, "#17211f"))
+        .unwrap_or_else(|| "#17211f".to_string());
+    let body_family = non_empty(&spec.typography.family, "Avenir Next, sans-serif").to_string();
+
+    KitSemanticTokens {
+        colors: KitSemanticColors {
+            primary_foreground: contrast_foreground(&primary),
+            primary,
+            secondary_foreground: contrast_foreground(&accent),
+            secondary: accent.clone(),
+            background,
+            foreground: foreground.clone(),
+            surface,
+            surface_foreground: foreground,
+            muted: "#edf2f1".to_string(),
+            muted_foreground: "#5b6b68".to_string(),
+            border: "#d8e1df".to_string(),
+            input: "#c7d3d0".to_string(),
+            ring: accent,
+            destructive: "#b42318".to_string(),
+            destructive_foreground: "#ffffff".to_string(),
+            success: "#18794e".to_string(),
+            warning: "#a15c00".to_string(),
+            info: "#175cd3".to_string(),
+            chart: vec![
+                "#0f766e".to_string(),
+                "#175cd3".to_string(),
+                "#a15c00".to_string(),
+                "#7a5af8".to_string(),
+                "#c4320a".to_string(),
+            ],
+        },
+        typography: KitSemanticTypography {
+            body_family: body_family.clone(),
+            heading_family: body_family,
+            mono_family: "ui-monospace, SFMono-Regular, Menlo, monospace".to_string(),
+            scale: spec.typography.scale.clone(),
+        },
+        density: spec.density.clone(),
+        radius: spec.radius.clone(),
+        spacing: density_spacing(&spec.density),
+        motion_duration: 160,
+    }
+}
+
+fn theme_css(kit_id: &str, tokens: &KitSemanticTokens) -> String {
+    let colors = &tokens.colors;
+    let selector_id = css_string(kit_id);
+    let body_family = css_string(&tokens.typography.body_family);
+    let heading_family = css_string(&tokens.typography.heading_family);
+    let mono_family = css_string(&tokens.typography.mono_family);
+    format!(
+        "[data-adk-ui-kit=\"{selector_id}\"] {{\n  --adk-ui-primary: {};\n  --adk-ui-primary-foreground: {};\n  --adk-ui-secondary: {};\n  --adk-ui-secondary-foreground: {};\n  --adk-ui-background: {};\n  --adk-ui-foreground: {};\n  --adk-ui-surface: {};\n  --adk-ui-surface-foreground: {};\n  --adk-ui-muted: {};\n  --adk-ui-muted-foreground: {};\n  --adk-ui-border: {};\n  --adk-ui-input: {};\n  --adk-ui-ring: {};\n  --adk-ui-destructive: {};\n  --adk-ui-destructive-foreground: {};\n  --adk-ui-success: {};\n  --adk-ui-warning: {};\n  --adk-ui-info: {};\n  --adk-ui-font-body: \"{body_family}\";\n  --adk-ui-font-heading: \"{heading_family}\";\n  --adk-ui-font-mono: \"{mono_family}\";\n  --adk-ui-radius: {};\n  --adk-ui-space: {}px;\n  --adk-ui-motion-duration: {}ms;\n}}\n",
+        colors.primary,
+        colors.primary_foreground,
+        colors.secondary,
+        colors.secondary_foreground,
+        colors.background,
+        colors.foreground,
+        colors.surface,
+        colors.surface_foreground,
+        colors.muted,
+        colors.muted_foreground,
+        colors.border,
+        colors.input,
+        colors.ring,
+        colors.destructive,
+        colors.destructive_foreground,
+        colors.success,
+        colors.warning,
+        colors.info,
+        radius_value(&tokens.radius),
+        tokens.spacing,
+        tokens.motion_duration,
+    )
+}
+
+fn density_spacing(density: &KitDensity) -> u8 {
+    match density {
+        KitDensity::Compact => 3,
+        KitDensity::Comfortable => 4,
+        KitDensity::Spacious => 6,
+    }
+}
+
+fn radius_value(radius: &KitRadius) -> &'static str {
+    match radius {
+        KitRadius::None => "0px",
+        KitRadius::Sm => "4px",
+        KitRadius::Md => "8px",
+        KitRadius::Lg => "12px",
+        KitRadius::Xl => "18px",
+    }
+}
+
+fn contrast_foreground(color: &str) -> String {
+    let Some(hex) = color.strip_prefix('#').filter(|value| value.len() == 6) else {
+        return "#ffffff".to_string();
+    };
+    let Ok(red) = u8::from_str_radix(&hex[0..2], 16) else {
+        return "#ffffff".to_string();
+    };
+    let Ok(green) = u8::from_str_radix(&hex[2..4], 16) else {
+        return "#ffffff".to_string();
+    };
+    let Ok(blue) = u8::from_str_radix(&hex[4..6], 16) else {
+        return "#ffffff".to_string();
+    };
+    let luminance = (u32::from(red) * 299 + u32::from(green) * 587 + u32::from(blue) * 114) / 1000;
+    if luminance > 155 {
+        "#17211f".to_string()
+    } else {
+        "#ffffff".to_string()
+    }
+}
+
+fn color_or(value: &str, fallback: &str) -> String {
+    let value = value.trim();
+    if is_css_color_token(value) {
+        value.to_string()
+    } else {
+        fallback.to_string()
+    }
+}
+
+fn css_string(value: &str) -> String {
+    value
+        .replace('\\', "\\\\")
+        .replace('"', "\\\"")
+        .replace(['\n', '\r'], " ")
+}
+
+fn non_empty<'a>(value: &'a str, fallback: &'a str) -> &'a str {
+    if value.trim().is_empty() {
+        fallback
+    } else {
+        value.trim()
     }
 }
 
@@ -87,11 +354,10 @@ fn slugify(input: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::kit::spec::{KitBrand, KitColors, KitSpec, KitTypography};
+    use crate::kit::spec::{KitBrand, KitColors, KitProvenance, KitSpec, KitTypography};
 
-    #[test]
-    fn generates_catalog_with_expected_id() {
-        let spec = KitSpec {
+    fn spec() -> KitSpec {
+        KitSpec {
             name: "Fintech Pro".to_string(),
             version: "0.1.0".to_string(),
             brand: KitBrand {
@@ -112,14 +378,36 @@ mod tests {
             density: Default::default(),
             radius: Default::default(),
             components: Default::default(),
+            assets: Vec::new(),
+            provenance: KitProvenance::default(),
             templates: vec!["auth_login".to_string()],
-        };
+        }
+    }
 
-        let artifacts = KitGenerator::new().generate(&spec);
+    #[test]
+    fn generates_complete_draft_manifest_and_catalog() {
+        let artifacts = KitGenerator::new().generate(&spec());
         assert_eq!(
             artifacts.catalog["catalogId"],
             "zavora.ai:adk-ui/kit/fintech-pro@0.1.0"
         );
+        assert_eq!(artifacts.manifest.status, KitStatus::Draft);
+        assert!(artifacts.manifest.validate().is_ok());
+        assert!(artifacts.catalog["components"]["Card"].is_object());
         assert!(artifacts.tokens["colors"]["primary"].is_string());
+        assert_eq!(artifacts.agent_context["status"], "draft");
+        assert!(artifacts.theme_css.contains("--adk-ui-primary"));
+    }
+
+    #[test]
+    fn sanitizes_invalid_legacy_css_values() {
+        let mut unsafe_spec = spec();
+        unsafe_spec.colors.primary = "rgb(0, 0, 0); } body { display:none".to_string();
+        unsafe_spec.typography.family = "Bad\"; color:red".to_string();
+
+        let artifacts = KitGenerator::new().generate(&unsafe_spec);
+        assert_eq!(artifacts.tokens["colors"]["primary"], "#0f766e");
+        assert!(!artifacts.theme_css.contains("} body"));
+        assert!(artifacts.theme_css.contains("Bad\\\"; color:red"));
     }
 }

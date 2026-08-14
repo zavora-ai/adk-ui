@@ -18,14 +18,16 @@ Render rich, interactive user interfaces from your AI agents instead of plain te
 
 ## Features
 
-- 28 component types — text, buttons, forms, tables, charts, modals, toasts, and more
+- 30+ component types — text, buttons, forms, tables, charts, declarative 3D scenes, modals, toasts, and more
+- Whole-application renderer — responsive page composition, route navigation, and preserved visited-page state
 - Dark mode — built-in light/dark/system theme support
 - Bidirectional events — forms and buttons emit events back to your agent
 - Streaming updates — replace, patch, append, or remove components in real time
 - A2UI protocol — surface-based rendering with data bindings and dynamic expressions
 - Tri-protocol support — A2UI, AG-UI, and MCP Apps through a unified client
 - TypeScript first — full type definitions included
-- Lightweight — ~34KB packaged
+- Approved brand kits — semantic tokens, company assets, component slots, and protocol kit identity
+- Lazy heavy renderers — charts and 3D are split from the normal interface path
 
 ## Installation
 
@@ -33,7 +35,34 @@ Render rich, interactive user interfaces from your AI agents instead of plain te
 npm install @zavora-ai/adk-ui-react
 ```
 
-Peer dependencies: `react >= 17.0.0` and `react-dom >= 17.0.0`.
+Peer dependencies: `react >= 18.0.0` and `react-dom >= 18.0.0`.
+
+### Complete applications
+
+Render a validated application graph when the agent produces multiple routes:
+
+```tsx
+import { ApplicationRenderer, parseUiApplication } from '@zavora-ai/adk-ui-react';
+
+const application = parseUiApplication(toolResponse);
+
+return application ? (
+  <ApplicationRenderer
+    application={application}
+    kits={approvedCompanyKits}
+    onAction={(event) => sendToAgent(event)}
+    onNavigate={(route) => analytics.track('agent_ui_route', { route })}
+  />
+) : null;
+```
+
+Buttons with an action such as `navigate:/orders/at-risk` route locally. Visited pages remain mounted, so form values and local component state survive navigation. Other actions continue through `onAction`.
+
+### Declarative 3D
+
+`scene_3d` accepts a bounded scene description, not JSX, JavaScript, or shaders. Primitive materials resolve through semantic brand-kit colors. External models must be approved `model_3d` kit assets with the `model/gltf-binary` MIME type.
+
+The renderer loads on demand, prefers WebGPU where available, falls back to WebGL 2, caps device pixel ratio, pauses offscreen work, honors reduced motion, and disposes geometries, textures, materials, controls, and the renderer on unmount.
 
 ## Quick Start
 
@@ -88,6 +117,31 @@ function LiveUI({ component, updates }: { component: Component; updates: UiUpdat
 
 Updates support four operations: `replace`, `patch`, `append`, and `remove` — each targeting a component by `target_id`.
 
+## Brand Kits
+
+Use one approved manifest to control generated UI across the standard renderer and native A2UI renderer:
+
+```tsx
+import {
+  AdkUiKitProvider,
+  Renderer,
+  defaultUiKit,
+  resolveApprovedUiKit,
+} from '@zavora-ai/adk-ui-react';
+
+const activeKit = resolveApprovedUiKit(response.kit_id, companyKits, defaultUiKit);
+
+return (
+  <AdkUiKitProvider kit={activeKit}>
+    {response.components.map((component, index) => (
+      <Renderer key={component.id ?? index} component={component} />
+    ))}
+  </AdkUiKitProvider>
+);
+```
+
+The manifest drives semantic colors, typography, spacing, radius, motion, chart colors, approved `kit://<asset-id>` references, and optional typed component replacement slots. Draft and deprecated kits are rejected unless `allowDraft` is explicitly enabled for preview. See the repository's [Brand Kits guide](https://github.com/zavora-ai/adk-ui/blob/main/docs/BRAND_KITS.md) for the full workflow.
+
 ## A2UI Surface Renderer
 
 For surface-based rendering with data bindings, dynamic expressions, and action events:
@@ -118,7 +172,7 @@ A2UI surfaces support:
 - Data bindings — `{ path: "/users/0/name" }` resolves values from the surface data model
 - Dynamic expressions — `${/path}` interpolation in strings, `${concat(...)}` function calls
 - Built-in catalog functions/checks — `required()`, `regex()`, `length()`, `numeric()`, `email()`, `formatString()`, `formatNumber()`, `formatCurrency()`, `formatDate()`, `pluralize()`, plus helper utilities like `now()`, `concat()`, and `add()`
-- Metadata-aware client envelopes — `buildA2uiClientEnvelope(...)` can attach `a2uiClientCapabilities`, `inlineCatalogs`, and `a2uiClientDataModel`
+- Metadata-aware client envelopes — `buildA2uiClientEnvelope(...)` normalizes catalog support into official `a2uiClientCapabilities.v0.9` / `a2uiRendererCapabilities.v1.0` keys and can attach inline catalogs and data-model snapshots
 - Validation feedback — input components with `checks` now surface local errors and can emit `VALIDATION_FAILED` payloads through `onClientMessage`
 - Local actions — button `functionCall` actions can execute client-side helpers such as `openUrl`
 - Custom function registries — pass your own functions via the `functions` prop
@@ -150,8 +204,8 @@ const surface = store.getA2uiStore().getSurface('main');
 | Protocol | Payload shape |
 |----------|--------------|
 | A2UI | JSONL string or `{ protocol: "a2ui", jsonl, ... }` |
-| AG-UI | `{ protocol: "ag_ui", events: [...] }` with `adk.ui.surface` custom events |
-| MCP Apps | `{ protocol: "mcp_apps", payload: { resourceReadResponse: { contents: [...] } } }` |
+| AG-UI | `{ protocol: "ag_ui", events: [...] }` with native activity/tool events and the compatibility `adk.ui.surface` event |
+| MCP Apps | `{ protocol: "mcp_apps", payload: { structuredContent, resourceReadResponse, ... } }` |
 | Legacy ADK-UI | `{ components: [...] }` — auto-detected, stored as legacy response |
 
 ### Outbound events
@@ -170,12 +224,16 @@ const event = buildOutboundEvent('ag_ui', {
 //      input: { threadId, runId, messages, state, forwardedProps, ... },
 //      event: { type: "CUSTOM", name: "adk.ui.event", ... } // compatibility during migration
 //    }
+```
+
+Pass `resume: [{ interruptId, status, payload }]` in the third argument when continuing an AG-UI interrupt on the same thread. The package also exports the current `AgUiAgentCapabilities`, interrupt, outcome, and resume types.
 
 For `mcp_apps`, `buildOutboundEvent(...)` now emits native View -> Host requests:
 
 - `ui/message` for user-triggered follow-ups such as button clicks and form submissions
 - `ui/update-model-context` for non-submitting context updates such as `input_change`
-```
+
+`MCP_APPS_PROTOCOL_VERSION` is `2026-01-26`, and `buildMcpAppsExtensionCapabilities()` creates the required `io.modelcontextprotocol/ui` MIME capability fragment for MCP initialization.
 
 ### Runtime negotiation pattern
 
@@ -222,6 +280,8 @@ Text (with Markdown), Image, Icon, Row, Column, List, Card, Divider, Tabs, Modal
 // Renderers
 export { Renderer, StreamingRenderer } from './Renderer';
 export { A2uiSurfaceRenderer } from './a2ui/renderer';
+export { AdkUiKitProvider, defaultUiKit, resolveApprovedUiKit } from './kit';
+export type { UiKitManifest, UiKitSlots } from './kit';
 
 // Types
 export type { Component, UiResponse, UiEvent, TableColumn } from './types';
@@ -280,8 +340,8 @@ Your agent calls `render_form`, `render_table`, `render_chart`, and other tools 
 
 ## Requirements
 
-- React 17.0.0+
-- react-dom 17.0.0+
+- React 18.0.0+
+- react-dom 18.0.0+
 
 ## License
 

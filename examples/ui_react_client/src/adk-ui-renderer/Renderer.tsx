@@ -1,14 +1,11 @@
-import React, { createContext, useContext, useRef } from 'react';
+import React, { createContext, lazy, Suspense, useContext, useRef } from 'react';
 import type { Component, UiEvent } from './types';
 import { AlertCircle, CheckCircle, Info, XCircle, User, Mail, Calendar } from 'lucide-react';
 import Markdown, { type Components } from 'react-markdown';
 import clsx from 'clsx';
-import {
-    BarChart, LineChart, AreaChart, PieChart,
-    Bar, Line, Area, Pie, Cell,
-    XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
-} from 'recharts';
 import { isExternalNavigationUrl, sanitizeUrl } from './security';
+
+const ChartRenderer = lazy(() => import('./ChartRenderer'));
 
 const IconMap: Record<string, React.ComponentType<any>> = {
     'alert-circle': AlertCircle,
@@ -110,6 +107,7 @@ function mapFlexAlign(value: string | undefined): React.CSSProperties['alignItem
 // Context for form handling
 interface FormContextValue {
     onAction?: (event: UiEvent) => void;
+    formRef?: React.RefObject<HTMLFormElement | null>;
 }
 
 const FormContext = createContext<FormContextValue>({});
@@ -122,11 +120,11 @@ interface RendererProps {
 }
 
 export const Renderer: React.FC<RendererProps> = ({ component, onAction, theme }) => {
-    // Apply dark class wrapper when theme is explicitly 'dark'
     const isDark = theme === 'dark';
+    const contextValue = React.useMemo(() => ({ onAction }), [onAction]);
 
     return (
-        <FormContext.Provider value={{ onAction }}>
+        <FormContext.Provider value={contextValue}>
             <div className={isDark ? 'dark' : ''}>
                 <ComponentRenderer component={component} />
             </div>
@@ -134,27 +132,56 @@ export const Renderer: React.FC<RendererProps> = ({ component, onAction, theme }
     );
 };
 
-const ComponentRenderer: React.FC<{ component: Component }> = ({ component }) => {
-    const { onAction } = useContext(FormContext);
-    const formRef = useRef<HTMLFormElement>(null);
+function componentKey(component: Component, index: number): string {
+    return component.id ?? `${component.type}-${index}`;
+}
+
+function containsInput(component: Component): boolean {
+    if (['text_input', 'number_input', 'select', 'multi_select', 'switch', 'date_input', 'slider', 'textarea'].includes(component.type)) {
+        return true;
+    }
+    if (component.type === 'stack' || component.type === 'grid' || component.type === 'container') {
+        return component.children.some(containsInput);
+    }
+    if (component.type === 'card' || component.type === 'modal') {
+        return component.content.some(containsInput) || (component.footer?.some(containsInput) ?? false);
+    }
+    if (component.type === 'tabs') {
+        return component.tabs.some((tab) => tab.content.some(containsInput));
+    }
+    return false;
+}
+
+function readFormData(form: HTMLFormElement): Record<string, unknown> {
+    const formData = new FormData(form);
+    const data: Record<string, unknown> = {};
+    for (const key of new Set(formData.keys())) {
+        const values = formData.getAll(key);
+        data[key] = values.length > 1 ? values : values[0];
+    }
+    return data;
+}
+
+const ComponentRenderer: React.FC<{ component: Component }> = React.memo(({ component }) => {
+    const { onAction, formRef } = useContext(FormContext);
+    const cardFormRef = useRef<HTMLFormElement>(null);
     const [activeTab, setActiveTab] = React.useState(0);
     const [sortColumn, setSortColumn] = React.useState<string | null>(null);
     const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>('asc');
     const [currentPage, setCurrentPage] = React.useState(0);
 
-    const handleButtonClick = (actionId: string) => {
-        // Check if button is inside a form (for submit)
-        if (formRef.current) {
-            // Collect all form data
-            const formData = new FormData(formRef.current);
-            const data: Record<string, unknown> = {};
-            formData.forEach((value, key) => {
-                data[key] = value;
-            });
+    const handleButtonClick = (actionId: string, variant?: string) => {
+        const submitsForm = Boolean(formRef?.current)
+            && (variant === undefined || variant === 'primary' || variant === 'danger');
+
+        if (submitsForm && formRef?.current) {
+            if (!formRef.current.reportValidity()) {
+                return;
+            }
             onAction?.({
                 action: 'form_submit',
                 action_id: actionId,
-                data,
+                data: readFormData(formRef.current),
                 source_component_id: component.id ?? actionId,
             });
         } else {
@@ -206,7 +233,7 @@ const ComponentRenderer: React.FC<{ component: Component }> = ({ component }) =>
                     type="button"
                     className={btnClasses}
                     disabled={component.disabled}
-                    onClick={() => handleButtonClick(component.action_id)}
+                    onClick={() => handleButtonClick(component.action_id, component.variant)}
                 >
                     {buttonLabel}
                 </button>
@@ -237,29 +264,7 @@ const ComponentRenderer: React.FC<{ component: Component }> = ({ component }) =>
             );
 
         case 'card':
-            // Cards with inputs become forms
-            const hasInputs = component.content.some(c =>
-                c.type === 'text_input' || c.type === 'number_input' || c.type === 'select' || c.type === 'switch' || c.type === 'textarea'
-            );
-
-            const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-                e.preventDefault();
-                const formData = new FormData(e.currentTarget);
-                const data: Record<string, unknown> = {};
-                formData.forEach((value, key) => {
-                    data[key] = value;
-                });
-                // Find submit button action_id
-                const submitBtn = [...component.content, ...(component.footer || [])].find(
-                    c => c.type === 'button'
-                ) as { type: 'button'; id?: string; action_id: string } | undefined;
-                onAction?.({
-                    action: 'form_submit',
-                    action_id: submitBtn?.action_id || 'form_submit',
-                    data,
-                    source_component_id: submitBtn?.id ?? submitBtn?.action_id ?? component.id ?? 'form_submit',
-                });
-            };
+            const hasInputs = component.content.some(containsInput);
 
             const cardContent = (
                 <>
@@ -270,19 +275,21 @@ const ComponentRenderer: React.FC<{ component: Component }> = ({ component }) =>
                         </div>
                     )}
                     <div className="p-4">
-                        {component.content.map((child, i) => <ComponentRenderer key={i} component={child} />)}
+                        {component.content.map((child, i) => <ComponentRenderer key={componentKey(child, i)} component={child} />)}
                     </div>
                     {component.footer && (
                         <div className="p-4 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex gap-2 justify-end">
-                            {component.footer.map((child, i) => <ComponentRenderer key={i} component={child} />)}
+                            {component.footer.map((child, i) => <ComponentRenderer key={componentKey(child, i)} component={child} />)}
                         </div>
                     )}
                 </>
             );
 
             return hasInputs ? (
-                <form onSubmit={handleSubmit} className="bg-white/95 dark:bg-gray-900 rounded-xl border border-slate-200/80 dark:border-gray-700 shadow-sm overflow-hidden mb-4">
-                    {cardContent}
+                <form ref={cardFormRef} onSubmit={(event) => event.preventDefault()} className="bg-white/95 dark:bg-gray-900 rounded-xl border border-slate-200/80 dark:border-gray-700 shadow-sm overflow-hidden mb-4">
+                    <FormContext.Provider value={{ onAction, formRef: cardFormRef }}>
+                        {cardContent}
+                    </FormContext.Provider>
                 </form>
             ) : (
                 <div className="bg-white/95 dark:bg-gray-900 rounded-xl border border-slate-200/80 dark:border-gray-700 shadow-sm overflow-hidden mb-4">
@@ -308,7 +315,7 @@ const ComponentRenderer: React.FC<{ component: Component }> = ({ component }) =>
             }
             return (
                 <div className={stackClasses} style={stackStyle}>
-                    {component.children.map((child, i) => <ComponentRenderer key={i} component={child} />)}
+                    {component.children.map((child, i) => <ComponentRenderer key={componentKey(child, i)} component={child} />)}
                 </div>
             );
 
@@ -553,11 +560,11 @@ const ComponentRenderer: React.FC<{ component: Component }> = ({ component }) =>
                             )}
                         </div>
                         <div className="p-4">
-                            {component.content.map((child, i) => <ComponentRenderer key={i} component={child} />)}
+                                {component.content.map((child, i) => <ComponentRenderer key={componentKey(child, i)} component={child} />)}
                         </div>
                         {component.footer && (
                             <div className="p-4 border-t dark:border-gray-700 flex justify-end gap-2">
-                                {component.footer.map((child, i) => <ComponentRenderer key={i} component={child} />)}
+                                {component.footer.map((child, i) => <ComponentRenderer key={componentKey(child, i)} component={child} />)}
                             </div>
                         )}
                     </div>
@@ -570,11 +577,13 @@ const ComponentRenderer: React.FC<{ component: Component }> = ({ component }) =>
                 <div
                     className="grid gap-4 mb-4"
                     style={{
-                        gridTemplateColumns: `repeat(${component.columns || 2}, minmax(0, 1fr))`,
+                        gridTemplateColumns: component.columns === 1
+                            ? 'minmax(0, 1fr)'
+                            : 'repeat(auto-fit, minmax(min(100%, 11rem), 1fr))',
                         gap: gridGap,
                     }}
                 >
-                    {component.children.map((child, i) => <ComponentRenderer key={i} component={child} />)}
+                    {component.children.map((child, i) => <ComponentRenderer key={componentKey(child, i)} component={child} />)}
                 </div>
             );
 
@@ -620,7 +629,7 @@ const ComponentRenderer: React.FC<{ component: Component }> = ({ component }) =>
                     </div>
                     <div className="p-4">
                         {component.tabs[activeTab].content.map((child, i) =>
-                            <ComponentRenderer key={i} component={child} />
+                            <ComponentRenderer key={componentKey(child, i)} component={child} />
                         )}
                     </div>
                 </div>
@@ -758,68 +767,10 @@ const ComponentRenderer: React.FC<{ component: Component }> = ({ component }) =>
             );
 
         case 'chart':
-            const DEFAULT_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4'];
-            const chartColors = component.colors || DEFAULT_COLORS;
-            const chartKind = component.kind || 'bar';
-            const showLegend = component.show_legend !== false;
             return (
-                <div className="mb-4 p-4 bg-white dark:bg-gray-900 border dark:border-gray-700 rounded-lg">
-                    {component.title && <h4 className="font-semibold text-lg mb-4 dark:text-white">{component.title}</h4>}
-                    <ResponsiveContainer width="100%" height={300}>
-                        {chartKind === 'line' ? (
-                            <LineChart data={component.data}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey={component.x_key} label={component.x_label ? { value: component.x_label, position: 'bottom' } : undefined} />
-                                <YAxis label={component.y_label ? { value: component.y_label, angle: -90, position: 'insideLeft' } : undefined} />
-                                <Tooltip />
-                                {showLegend && <Legend />}
-                                {component.y_keys.map((key, i) => (
-                                    <Line key={key} type="monotone" dataKey={key} stroke={chartColors[i % chartColors.length]} strokeWidth={2} />
-                                ))}
-                            </LineChart>
-                        ) : chartKind === 'area' ? (
-                            <AreaChart data={component.data}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey={component.x_key} label={component.x_label ? { value: component.x_label, position: 'bottom' } : undefined} />
-                                <YAxis label={component.y_label ? { value: component.y_label, angle: -90, position: 'insideLeft' } : undefined} />
-                                <Tooltip />
-                                {showLegend && <Legend />}
-                                {component.y_keys.map((key, i) => (
-                                    <Area key={key} type="monotone" dataKey={key} fill={chartColors[i % chartColors.length]} fillOpacity={0.6} stroke={chartColors[i % chartColors.length]} />
-                                ))}
-                            </AreaChart>
-                        ) : chartKind === 'pie' ? (
-                            <PieChart>
-                                <Pie
-                                    data={component.data}
-                                    dataKey={component.y_keys[0]}
-                                    nameKey={component.x_key}
-                                    cx="50%"
-                                    cy="50%"
-                                    outerRadius={100}
-                                    label={({ name, percent }) => `${name}: ${((percent ?? 0) * 100).toFixed(0)}%`}
-                                >
-                                    {component.data.map((_, i) => (
-                                        <Cell key={i} fill={chartColors[i % chartColors.length]} />
-                                    ))}
-                                </Pie>
-                                <Tooltip />
-                                {showLegend && <Legend />}
-                            </PieChart>
-                        ) : (
-                            <BarChart data={component.data}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey={component.x_key} label={component.x_label ? { value: component.x_label, position: 'bottom' } : undefined} />
-                                <YAxis label={component.y_label ? { value: component.y_label, angle: -90, position: 'insideLeft' } : undefined} />
-                                <Tooltip />
-                                {showLegend && <Legend />}
-                                {component.y_keys.map((key, i) => (
-                                    <Bar key={key} dataKey={key} fill={chartColors[i % chartColors.length]} />
-                                ))}
-                            </BarChart>
-                        )}
-                    </ResponsiveContainer>
-                </div>
+                <Suspense fallback={<div className="mb-4 h-[300px] animate-pulse rounded-xl bg-slate-100" aria-label="Loading chart" />}>
+                    <ChartRenderer component={component} />
+                </Suspense>
             );
 
         case 'code_block':
@@ -866,13 +817,13 @@ const ComponentRenderer: React.FC<{ component: Component }> = ({ component }) =>
         case 'container':
             return (
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    {component.children.map((child, i) => <ComponentRenderer key={i} component={child} />)}
+                    {component.children.map((child, i) => <ComponentRenderer key={componentKey(child, i)} component={child} />)}
                 </div>
             );
 
         default:
             return <div className="text-red-500 text-sm p-2 border border-red-200 rounded">Unknown component: {(component as any).type}</div>;
     }
-};
+});
 
 export { ComponentRenderer };

@@ -17,7 +17,16 @@ import type {
     A2uiClientMessagePayload,
 } from './events';
 import type { A2uiComponent, A2uiStore } from './store';
+import type { Scene3dComponent } from '../types';
 import { isExternalNavigationUrl, sanitizeUrl } from '../security';
+import {
+    ADK_UI_KIT_CSS,
+    kitStyleVariables,
+    resolveKitAssetSource,
+    useAdkUiKit,
+} from '../kit';
+
+const Scene3DRenderer = React.lazy(() => import('../Scene3DRenderer'));
 
 const IconMap: Record<string, React.ComponentType<any>> = {
     'alert-circle': AlertCircle,
@@ -28,6 +37,25 @@ const IconMap: Record<string, React.ComponentType<any>> = {
     'mail': Mail,
     'calendar': Calendar,
 };
+
+function KitMarkdownImage({ node: _node, src, alt, ...props }: React.ComponentProps<'img'> & { node?: unknown }) {
+    const { manifest } = useAdkUiKit();
+    const safeSrc = sanitizeUrl(src ? resolveKitAssetSource(manifest, src) : null, 'image');
+    if (!safeSrc) {
+        return null;
+    }
+
+    return (
+        <img
+            {...props}
+            alt={alt ?? ''}
+            className="max-w-full h-auto rounded-lg"
+            loading="lazy"
+            referrerPolicy="no-referrer"
+            src={safeSrc}
+        />
+    );
+}
 
 const markdownComponents: Components = {
     a({ node: _node, href, children, ...props }) {
@@ -48,23 +76,7 @@ const markdownComponents: Components = {
             </a>
         );
     },
-    img({ node: _node, src, alt, ...props }) {
-        const safeSrc = sanitizeUrl(src, 'image');
-        if (!safeSrc) {
-            return null;
-        }
-
-        return (
-            <img
-                {...props}
-                alt={alt ?? ''}
-                className="max-w-full h-auto rounded-lg"
-                loading="lazy"
-                referrerPolicy="no-referrer"
-                src={safeSrc}
-            />
-        );
-    },
+    img: KitMarkdownImage,
 };
 
 function renderBlockedAsset(kind: 'image' | 'video' | 'audio') {
@@ -106,6 +118,7 @@ export const A2uiSurfaceRenderer: React.FC<A2uiSurfaceRendererProps> = ({
 }) => {
     const surface = store.getSurface(surfaceId);
     const [version, setVersion] = useState(0);
+    const kit = useAdkUiKit();
 
     const bumpVersion = React.useCallback(() => {
         setVersion((prev) => prev + 1);
@@ -130,7 +143,13 @@ export const A2uiSurfaceRenderer: React.FC<A2uiSurfaceRendererProps> = ({
                 bumpVersion,
             }}
         >
-            <div className={isDark ? 'dark' : ''} data-version={version}>
+            {!kit.provided && <style data-adk-ui-kit-styles>{ADK_UI_KIT_CSS}</style>}
+            <div
+                className={clsx('adk-ui-kit-surface', isDark && 'dark')}
+                data-adk-ui-kit={kit.manifest.id}
+                data-version={version}
+                style={kitStyleVariables(kit.manifest)}
+            >
                 <A2uiComponentRenderer componentId={rootId} />
             </div>
         </A2uiRenderContext.Provider>
@@ -164,6 +183,7 @@ const A2uiComponentView: React.FC<{ component: A2uiComponent; scope?: Record<str
     scope,
 }) => {
     const ctx = useContext(A2uiRenderContext);
+    const { manifest } = useAdkUiKit();
     if (!ctx) {
         return null;
     }
@@ -225,6 +245,7 @@ const A2uiComponentView: React.FC<{ component: A2uiComponent; scope?: Record<str
     );
 
     const baseComponent = component.component;
+    const controlId = `adk-ui-${component.id}-control`.replace(/[^a-zA-Z0-9_-]/g, '-');
 
     switch (baseComponent) {
         case 'Text': {
@@ -232,7 +253,7 @@ const A2uiComponentView: React.FC<{ component: A2uiComponent; scope?: Record<str
             const variant = component.variant as string | undefined;
             if (variant === 'body' || !variant) {
                 return (
-                    <div className="prose prose-sm dark:prose-invert max-w-none text-gray-700 dark:text-gray-300">
+                    <div className="adk-ui-body prose prose-sm dark:prose-invert max-w-none text-gray-700 dark:text-gray-300">
                         <Markdown components={markdownComponents} skipHtml>{text}</Markdown>
                     </div>
                 );
@@ -251,14 +272,14 @@ const A2uiComponentView: React.FC<{ component: A2uiComponent; scope?: Record<str
                 'font-mono bg-gray-100 dark:bg-gray-800 p-1 rounded dark:text-gray-100': variant === 'code',
                 'text-sm text-gray-500 dark:text-gray-400': variant === 'caption',
             });
-            return <Tag className={classes}>{text}</Tag>;
+            return <Tag className={clsx(classes, variant === 'caption' ? 'adk-ui-caption' : 'adk-ui-heading')}>{text}</Tag>;
         }
         case 'Image': {
             const url = resolveString(component.url);
             const alt = resolveString(component.alt ?? '');
             const fit = component.fit as string | undefined;
             const style = fit ? { objectFit: fit as React.CSSProperties['objectFit'] } : undefined;
-            const safeUrl = sanitizeUrl(url, 'image');
+            const safeUrl = sanitizeUrl(resolveKitAssetSource(manifest, url), 'image');
             if (!safeUrl) {
                 return renderBlockedAsset('image');
             }
@@ -271,6 +292,29 @@ const A2uiComponentView: React.FC<{ component: A2uiComponent; scope?: Record<str
                     loading="lazy"
                     referrerPolicy="no-referrer"
                 />
+            );
+        }
+        case 'Scene3D': {
+            const sceneComponent = { ...component, type: 'scene_3d' } as unknown as Scene3dComponent;
+            return (
+                <React.Suspense fallback={<div className="adk-ui-scene-3d__loading" style={{ height: sceneComponent.height ?? 440 }} aria-label="Loading 3D scene" />}>
+                    <Scene3DRenderer
+                        component={sceneComponent}
+                        onAction={(event) => {
+                            if (event.action !== 'button_click') return;
+                            const payload = buildActionEvent(
+                                { event: { name: event.action_id } },
+                                ctx.surfaceId,
+                                event.source_component_id ?? component.id,
+                                { dataModel: ctx.dataModel, scope, functions: ctx.functions },
+                            );
+                            if (payload) {
+                                ctx.onAction?.(payload);
+                                ctx.onClientMessage?.(payload);
+                            }
+                        }}
+                    />
+                </React.Suspense>
             );
         }
         case 'Icon': {
@@ -313,7 +357,7 @@ const A2uiComponentView: React.FC<{ component: A2uiComponent; scope?: Record<str
         case 'Card': {
             const childId = component.child as string;
             return (
-                <div className="bg-white dark:bg-gray-900 rounded-lg border dark:border-gray-700 shadow-sm overflow-hidden mb-4 p-4">
+                <div className="adk-ui-card bg-white dark:bg-gray-900 rounded-lg border dark:border-gray-700 shadow-sm overflow-hidden mb-4 p-4">
                     <A2uiComponentRenderer componentId={childId} scope={scope} />
                 </div>
             );
@@ -321,8 +365,8 @@ const A2uiComponentView: React.FC<{ component: A2uiComponent; scope?: Record<str
         case 'Divider': {
             const axis = component.axis as string | undefined;
             return axis === 'vertical'
-                ? <div className="w-px bg-gray-200 dark:bg-gray-700 self-stretch mx-2" />
-                : <div className="h-px bg-gray-200 dark:bg-gray-700 w-full my-2" />;
+                ? <div className="adk-ui-divider w-px bg-gray-200 dark:bg-gray-700 self-stretch mx-2" />
+                : <div className="adk-ui-divider h-px bg-gray-200 dark:bg-gray-700 w-full my-2" />;
         }
         case 'Tabs': {
             const tabs = (component.tabs as Array<{ title: unknown; child: string }>) ?? [];
@@ -348,9 +392,9 @@ const A2uiComponentView: React.FC<{ component: A2uiComponent; scope?: Record<str
             const childId = component.child as string;
             const variant = component.variant as string | undefined;
             const action = component.action as A2uiActionDefinition | undefined;
-            const btnClasses = clsx('px-4 py-2 rounded font-medium transition-colors', {
-                'bg-blue-600 text-white hover:bg-blue-700': variant === 'primary' || !variant,
-                'bg-transparent text-blue-600 hover:text-blue-700': variant === 'borderless',
+            const btnClasses = clsx('adk-ui-button px-4 py-2 rounded font-medium transition-colors', {
+                'adk-ui-button--primary bg-blue-600 text-white hover:bg-blue-700': variant === 'primary' || !variant,
+                'adk-ui-button--ghost bg-transparent text-blue-600 hover:text-blue-700': variant === 'borderless',
             });
             return (
                 <button
@@ -401,7 +445,7 @@ const A2uiComponentView: React.FC<{ component: A2uiComponent; scope?: Record<str
             const errorMessage = getValidationError(bindingPath);
             return (
                 <div className="mb-3">
-                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                    <label className="adk-ui-label flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
                         <input
                             type="checkbox"
                             checked={value}
@@ -412,7 +456,7 @@ const A2uiComponentView: React.FC<{ component: A2uiComponent; scope?: Record<str
                                     ctx.bumpVersion();
                                 }
                             }}
-                            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            className="adk-ui-control h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                         />
                         {label}
                     </label>
@@ -430,8 +474,9 @@ const A2uiComponentView: React.FC<{ component: A2uiComponent; scope?: Record<str
             if (variant === 'longText') {
                 return (
                     <div className="mb-3">
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
+                        <label htmlFor={controlId} className="adk-ui-label block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
                         <textarea
+                            id={controlId}
                             value={String(value)}
                             onChange={(event) => {
                                 if (bindingPath) {
@@ -440,7 +485,7 @@ const A2uiComponentView: React.FC<{ component: A2uiComponent; scope?: Record<str
                                     ctx.bumpVersion();
                                 }
                             }}
-                            className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+                            className="adk-ui-control w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-white"
                             rows={4}
                         />
                         {errorMessage && <div className="mt-1 text-sm text-red-600 dark:text-red-400">{errorMessage}</div>}
@@ -450,8 +495,9 @@ const A2uiComponentView: React.FC<{ component: A2uiComponent; scope?: Record<str
             const inputType = variant === 'obscured' ? 'password' : variant === 'number' ? 'number' : 'text';
             return (
                 <div className="mb-3">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
+                    <label htmlFor={controlId} className="adk-ui-label block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
                     <input
+                        id={controlId}
                         type={inputType}
                         value={String(value)}
                         onChange={(event) => {
@@ -462,7 +508,7 @@ const A2uiComponentView: React.FC<{ component: A2uiComponent; scope?: Record<str
                                 ctx.bumpVersion();
                             }
                         }}
-                        className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+                        className="adk-ui-control w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-white"
                     />
                     {errorMessage && <div className="mt-1 text-sm text-red-600 dark:text-red-400">{errorMessage}</div>}
                 </div>
@@ -479,8 +525,9 @@ const A2uiComponentView: React.FC<{ component: A2uiComponent; scope?: Record<str
             if (variant === 'mutuallyExclusive') {
                 return (
                     <div className="mb-3">
-                        {label && <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>}
+                        {label && <label htmlFor={controlId} className="adk-ui-label block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>}
                         <select
+                            id={controlId}
                             value={values[0] ?? ''}
                             onChange={(event) => {
                                 if (bindingPath) {
@@ -489,7 +536,7 @@ const A2uiComponentView: React.FC<{ component: A2uiComponent; scope?: Record<str
                                     ctx.bumpVersion();
                                 }
                             }}
-                            className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+                            className="adk-ui-control w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-white"
                         >
                             <option value="">Select...</option>
                             {options.map((opt, i) => (
@@ -502,8 +549,9 @@ const A2uiComponentView: React.FC<{ component: A2uiComponent; scope?: Record<str
             }
             return (
                 <div className="mb-3">
-                    {label && <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>}
+                    {label && <label htmlFor={controlId} className="adk-ui-label block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>}
                     <select
+                        id={controlId}
                         multiple
                         value={values}
                         onChange={(event) => {
@@ -514,7 +562,7 @@ const A2uiComponentView: React.FC<{ component: A2uiComponent; scope?: Record<str
                                 ctx.bumpVersion();
                             }
                         }}
-                        className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+                        className="adk-ui-control w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-white"
                     >
                         {options.map((opt, i) => (
                             <option key={i} value={opt.value}>{resolveString(opt.label)}</option>
@@ -534,8 +582,9 @@ const A2uiComponentView: React.FC<{ component: A2uiComponent; scope?: Record<str
             const errorMessage = getValidationError(bindingPath);
             return (
                 <div className="mb-3">
-                    {label && <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>}
+                    {label && <label htmlFor={controlId} className="adk-ui-label block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>}
                     <input
+                        id={controlId}
                         type="range"
                         min={min}
                         max={max}
@@ -547,7 +596,7 @@ const A2uiComponentView: React.FC<{ component: A2uiComponent; scope?: Record<str
                                 ctx.bumpVersion();
                             }
                         }}
-                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                        className="adk-ui-control w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
                     />
                     {errorMessage && <div className="mt-1 text-sm text-red-600 dark:text-red-400">{errorMessage}</div>}
                 </div>
@@ -564,8 +613,9 @@ const A2uiComponentView: React.FC<{ component: A2uiComponent; scope?: Record<str
             const errorMessage = getValidationError(bindingPath);
             return (
                 <div className="mb-3">
-                    {label && <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>}
+                    {label && <label htmlFor={controlId} className="adk-ui-label block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>}
                     <input
+                        id={controlId}
                         type={inputType}
                         value={value}
                         onChange={(event) => {
@@ -575,7 +625,7 @@ const A2uiComponentView: React.FC<{ component: A2uiComponent; scope?: Record<str
                                 ctx.bumpVersion();
                             }
                         }}
-                        className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+                        className="adk-ui-control w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-white"
                     />
                     {errorMessage && <div className="mt-1 text-sm text-red-600 dark:text-red-400">{errorMessage}</div>}
                 </div>
@@ -615,7 +665,7 @@ const A2uiModal: React.FC<{ triggerId: string; contentId: string; scope?: Record
             </span>
             {open && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-                    <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg max-w-lg w-full">
+                    <div className="adk-ui-modal bg-white dark:bg-gray-900 border rounded-lg shadow-lg max-w-lg w-full">
                         <div className="p-4 flex items-center justify-between border-b dark:border-gray-700">
                             <div className="text-sm font-medium text-gray-700 dark:text-gray-200">Modal</div>
                             <button
@@ -652,14 +702,14 @@ const A2uiTabs: React.FC<{ tabs: Array<{ title: unknown; child: string }>; scope
 
     return (
         <div className="mb-4">
-            <div className="border-b border-gray-200">
+            <div className="adk-ui-tabs border-b border-gray-200">
                 <nav className="flex space-x-4">
                     {tabs.map((tab, i) => (
                         <button
                             key={i}
                             onClick={() => setActiveTab(i)}
                             className={clsx('px-4 py-2 border-b-2 font-medium text-sm transition-colors', {
-                                'border-blue-600 text-blue-600': activeTab === i,
+                                'adk-ui-tab--active border-blue-600 text-blue-600': activeTab === i,
                                 'border-transparent text-gray-500 hover:text-gray-700': activeTab !== i,
                             })}
                         >

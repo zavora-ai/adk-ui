@@ -15,8 +15,8 @@ export type Component =
     | { type: 'slider'; id?: string; name: string; label: string; min?: number; max?: number; step?: number; default_value?: number }
     | { type: 'textarea'; id?: string; name: string; label: string; placeholder?: string; rows?: number; required?: boolean; default_value?: string; error?: string }
     // Layouts
-    | { type: 'stack'; id?: string; direction: 'horizontal' | 'vertical'; children: Component[]; gap?: number }
-    | { type: 'grid'; id?: string; columns: number; children: Component[]; gap?: number }
+    | { type: 'stack'; id?: string; direction: 'horizontal' | 'vertical'; children: Component[]; gap?: number | string; justify?: string; align?: string; wrap?: boolean }
+    | { type: 'grid'; id?: string; columns: number; children: Component[]; gap?: number | string }
     | { type: 'card'; id?: string; title?: string; description?: string; content: Component[]; footer?: Component[] }
     | { type: 'container'; id?: string; children: Component[]; padding?: number }
     | { type: 'divider'; id?: string }
@@ -28,6 +28,7 @@ export type Component =
     | { type: 'code_block'; id?: string; code: string; language?: string }
     // Visualizations
     | { type: 'chart'; id?: string; title?: string; kind: ChartKind; data: Record<string, unknown>[]; x_key: string; y_keys: string[]; x_label?: string; y_label?: string; show_legend?: boolean; colors?: string[] }
+    | Scene3dComponent
     // Feedback
     | { type: 'alert'; id?: string; title: string; description?: string; variant?: AlertVariant }
     | { type: 'progress'; id?: string; value: number; label?: string }
@@ -44,6 +45,37 @@ export type ChartKind = 'bar' | 'line' | 'area' | 'pie';
 export type ModalSize = 'small' | 'medium' | 'large' | 'full';
 export type SpinnerSize = 'small' | 'medium' | 'large';
 export type SkeletonVariant = 'text' | 'circle' | 'rectangle';
+
+export interface Scene3dComponent {
+    type: 'scene_3d';
+    id?: string;
+    title?: string;
+    description?: string;
+    height?: number;
+    background?: 'transparent' | 'surface' | 'muted' | 'contrast';
+    camera?: {
+        position?: [number, number, number];
+        target?: [number, number, number];
+        fov?: number;
+    };
+    objects: Scene3dObject[];
+    auto_rotate?: boolean;
+    controls?: boolean;
+    fallback?: string;
+}
+
+export type Scene3dMaterialRole = 'primary' | 'secondary' | 'surface' | 'muted' | 'success' | 'warning' | 'info';
+export type Scene3dObject =
+    | {
+        kind: 'primitive'; id: string; shape: 'box' | 'sphere' | 'cylinder' | 'torus' | 'plane';
+        position?: [number, number, number]; rotation?: [number, number, number]; scale?: [number, number, number];
+        material?: Scene3dMaterialRole; label?: string; action_id?: string;
+    }
+    | {
+        kind: 'model'; id: string; asset_id: string;
+        position?: [number, number, number]; rotation?: [number, number, number]; scale?: [number, number, number];
+        label?: string; action_id?: string;
+    };
 
 export interface SelectOption {
     label: string;
@@ -68,6 +100,7 @@ export interface KeyValuePair {
 
 export interface UiResponse {
     id?: string;
+    kit_id?: string;
     theme?: 'light' | 'dark' | 'system';
     components: Component[];
 }

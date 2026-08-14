@@ -18,6 +18,9 @@ pub struct LegacyProtocolOptions {
     /// Optional surface id for protocol adapters.
     #[serde(default)]
     pub surface_id: Option<String>,
+    /// Optional approved brand-kit id. This becomes the protocol catalog id.
+    #[serde(default)]
+    pub kit_id: Option<String>,
     /// Optional AG-UI thread id.
     #[serde(default)]
     pub ag_ui_thread_id: Option<String>,
@@ -109,7 +112,10 @@ fn summarize_component(component: &Component) -> String {
 
 fn project_ui_response_to_surface(ui: &UiResponse, surface_id: &str) -> UiSurface {
     let registry = CatalogRegistry::new();
-    let catalog_id = registry.default_catalog_id().to_string();
+    let catalog_id = ui
+        .kit_id
+        .clone()
+        .unwrap_or_else(|| registry.default_catalog_id().to_string());
     let projection_root = stable_id(&format!("legacy:{}:projection", surface_id));
 
     let mut components: Vec<Value> = Vec::new();
@@ -172,10 +178,17 @@ fn serialize_envelope<P: Serialize>(
 }
 
 pub(crate) fn render_ui_response_with_protocol(
-    ui: UiResponse,
+    mut ui: UiResponse,
     options: &LegacyProtocolOptions,
     default_surface_id: &str,
 ) -> Result<Value, crate::compat::AdkError> {
+    if let Some(kit_id) = options
+        .kit_id
+        .as_ref()
+        .filter(|value| !value.trim().is_empty())
+    {
+        ui.kit_id = Some(kit_id.trim().to_string());
+    }
     let protocol = match options.protocol {
         Some(protocol) => protocol,
         None => {
@@ -322,5 +335,41 @@ mod tests {
         };
         let value = render_ui_response_with_protocol(ui, &options, "main");
         assert!(value.is_err());
+    }
+
+    #[test]
+    fn brand_kit_id_propagates_to_legacy_and_a2ui_catalog() {
+        let kit_id = "zavora.ai:adk-ui/kit/acme@1.0.0";
+        let ui = UiResponse::new(vec![Component::Text(Text {
+            id: None,
+            content: "Hello".to_string(),
+            variant: TextVariant::Body,
+        })]);
+        let legacy = render_ui_response_with_protocol(
+            ui.clone(),
+            &LegacyProtocolOptions {
+                kit_id: Some(kit_id.to_string()),
+                ..Default::default()
+            },
+            "main",
+        )
+        .expect("legacy payload");
+        assert_eq!(legacy["kit_id"], kit_id);
+
+        let a2ui = render_ui_response_with_protocol(
+            ui,
+            &LegacyProtocolOptions {
+                protocol: Some(UiProtocol::A2ui),
+                kit_id: Some(kit_id.to_string()),
+                ..Default::default()
+            },
+            "main",
+        )
+        .expect("a2ui payload");
+        assert!(
+            serde_json::to_string(&a2ui)
+                .expect("serialize envelope")
+                .contains(kit_id)
+        );
     }
 }

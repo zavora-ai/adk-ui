@@ -20,7 +20,7 @@ without maintaining separate tool implementations.
 
 - `render_screen`: returns A2UI payload object
 - `render_page`: returns A2UI JSONL string
-- `render_kit`: returns kit artifact JSON
+- `render_kit`: returns a draft brand-kit manifest, complete catalog, semantic tokens, assets, templates, agent constraints, and scoped CSS
 - other render tools: return legacy `UiResponse` JSON
 
 ### Protocol-aware (`protocol` set)
@@ -67,6 +67,8 @@ When `protocol` is set, these tools emit protocol envelopes:
 }
 ```
 
+Pass an approved `kit_id` to these tools when a company brand kit should drive rendering. The value is preserved on legacy `UiResponse` payloads and becomes the catalog id in A2UI, AG-UI, and MCP Apps projections. For native `render_screen` and `render_page` calls, pass the same value as `catalog_id`.
+
 ## Recommended Rollout
 
 1. Keep existing calls unchanged and verify no regressions.
@@ -91,3 +93,5 @@ When `protocol` is set, these tools emit protocol envelopes:
 
 - `adk-server` emits warning logs when requests explicitly or implicitly use `adk_ui`.
 - `/api/ui/capabilities` now includes deprecation metadata for `adk_ui` so clients can surface migration prompts.
+- The endpoint uses capability schema `2026-08-13` and exposes per-version maturity, negotiation metadata, scoped support claims, and protocol-specific details. Consumers should prefer `capabilityClaims` over inferring support from the legacy flat `features` array.
+- A claim marked `partial`, `candidate`, or `host_owned` must not be treated as an end-to-end runtime guarantee.

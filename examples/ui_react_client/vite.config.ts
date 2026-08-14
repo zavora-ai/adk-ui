@@ -12,6 +12,12 @@ export default defineConfig({
             return undefined
           }
 
+          if (id.includes('/three/')) {
+            return id.includes('three.webgpu') || id.includes('/three/src/nodes/')
+              ? 'three-webgpu'
+              : 'three-runtime'
+          }
+
           if (id.includes('/recharts/') || id.includes('/victory-vendor/')) {
             return 'charts'
           }

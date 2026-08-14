@@ -1,5 +1,6 @@
 mod protocol_output;
 mod render_alert;
+mod render_app;
 mod render_card;
 mod render_chart;
 mod render_confirm;
@@ -14,6 +15,7 @@ mod render_table;
 mod render_toast;
 
 pub use render_alert::RenderAlertTool;
+pub use render_app::RenderAppTool;
 pub use render_card::RenderCardTool;
 pub use render_chart::RenderChartTool;
 pub use render_confirm::RenderConfirmTool;

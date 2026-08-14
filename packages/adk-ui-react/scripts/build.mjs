@@ -18,6 +18,8 @@ const shared = {
         'react-dom/*',
         'react-markdown',
         'recharts',
+        'three',
+        'three/*',
     ],
     logLevel: 'info',
     platform: 'browser',
@@ -25,7 +27,15 @@ const shared = {
 };
 const builds = [
     { ...shared, format: 'cjs', outfile: 'dist/index.js' },
-    { ...shared, format: 'esm', outfile: 'dist/index.mjs' },
+    {
+        ...shared,
+        format: 'esm',
+        outdir: 'dist',
+        entryNames: 'index',
+        chunkNames: 'chunks/[name]-[hash]',
+        outExtension: { '.js': '.mjs' },
+        splitting: true,
+    },
 ];
 const tscPath = require.resolve('typescript/bin/tsc');
 const tscArgs = [tscPath, '--emitDeclarationOnly', '--noEmit', 'false'];

@@ -20,6 +20,7 @@ use std::sync::Arc;
 /// ```
 pub struct UiToolset {
     include_screen: bool,
+    include_app: bool,
     include_page: bool,
     include_kit: bool,
     include_form: bool,
@@ -39,6 +40,7 @@ impl UiToolset {
     pub fn new() -> Self {
         Self {
             include_screen: true,
+            include_app: true,
             include_page: true,
             include_kit: true,
             include_form: true,
@@ -58,6 +60,7 @@ impl UiToolset {
     pub fn forms_only() -> Self {
         Self {
             include_screen: false,
+            include_app: false,
             include_page: false,
             include_kit: false,
             include_form: true,
@@ -82,6 +85,12 @@ impl UiToolset {
     /// Disable screen rendering
     pub fn without_screen(mut self) -> Self {
         self.include_screen = false;
+        self
+    }
+
+    /// Disable full application rendering
+    pub fn without_app(mut self) -> Self {
+        self.include_app = false;
         self
     }
 
@@ -155,6 +164,7 @@ impl UiToolset {
     pub fn all_tools() -> Vec<Arc<dyn Tool>> {
         vec![
             Arc::new(RenderScreenTool::new()) as Arc<dyn Tool>,
+            Arc::new(RenderAppTool::new()),
             Arc::new(RenderPageTool::new()),
             Arc::new(RenderKitTool::new()),
             Arc::new(RenderFormTool::new()) as Arc<dyn Tool>,
@@ -197,6 +207,7 @@ impl UiToolset {
         }
 
         maybe_export!(self.include_screen, RenderScreenTool::new());
+        maybe_export!(self.include_app, RenderAppTool::new());
         maybe_export!(self.include_page, RenderPageTool::new());
         maybe_export!(self.include_kit, RenderKitTool::new());
         maybe_export!(self.include_form, RenderFormTool::new());
@@ -231,6 +242,9 @@ impl Toolset for UiToolset {
 
         if self.include_screen {
             tools.push(Arc::new(RenderScreenTool::new()));
+        }
+        if self.include_app {
+            tools.push(Arc::new(RenderAppTool::new()));
         }
         if self.include_page {
             tools.push(Arc::new(RenderPageTool::new()));
@@ -278,12 +292,13 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_all_tools_returns_13_tools() {
+    fn test_all_tools_returns_14_tools() {
         let tools = UiToolset::all_tools();
-        assert_eq!(tools.len(), 13);
+        assert_eq!(tools.len(), 14);
 
         let names: Vec<&str> = tools.iter().map(|t| t.name()).collect();
         assert!(names.contains(&"render_screen"));
+        assert!(names.contains(&"render_app"));
         assert!(names.contains(&"render_page"));
         assert!(names.contains(&"render_kit"));
         assert!(names.contains(&"render_form"));
@@ -302,6 +317,7 @@ mod tests {
     fn test_forms_only() {
         let toolset = UiToolset::forms_only();
         assert!(!toolset.include_screen);
+        assert!(!toolset.include_app);
         assert!(!toolset.include_page);
         assert!(!toolset.include_kit);
         assert!(toolset.include_form);

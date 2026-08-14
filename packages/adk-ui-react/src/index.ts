@@ -2,12 +2,58 @@
 // React components for rendering ADK-UI agent interfaces
 
 export { Renderer, StreamingRenderer } from './Renderer';
+export {
+    ADK_UI_APPLICATION_CSS,
+    ApplicationRenderer,
+    applyUiApplicationUpdate,
+    parseUiApplication,
+    validateUiApplication,
+} from './application';
+export type {
+    ApplicationRendererProps,
+    UiApplication,
+    UiApplicationPage,
+    UiApplicationUpdate,
+    UiNavigationItem,
+    UiPageAtmosphere,
+    UiPageHero,
+    UiPageRegion,
+    UiPageTemplate,
+    UiRegionLayout,
+    UiRegionTone,
+} from './application';
+export {
+    ADK_UI_KIT_CSS,
+    AdkUiKitProvider,
+    defaultUiKit,
+    kitStyleVariables,
+    resolveApprovedUiKit,
+    resolveKitAssetSource,
+    useAdkUiKit,
+} from './kit';
+export type {
+    AdkUiKitProviderProps,
+    UiKitAsset,
+    UiKitAssetKind,
+    UiKitDensity,
+    UiKitManifest,
+    UiKitRadius,
+    UiKitSemanticColors,
+    UiKitSlotProps,
+    UiKitSlots,
+    UiKitStatus,
+} from './kit';
 export { A2uiSurfaceRenderer } from './a2ui/renderer';
 export type {
     Component,
+    UiOperation,
     UiResponse,
     UiEvent,
+    UiUpdate,
     TableColumn,
+    Scene3dComponent,
+    Scene3dMaterialRole,
+    Scene3dObject,
 } from './types';
 export { uiEventToMessage } from './types';
 export { A2uiStore } from './a2ui/store';
@@ -93,20 +139,29 @@ export {
     A2UI_PROTOCOL_VERSION_V1,
     MCP_APPS_EXTENSION_ID,
     MCP_APPS_PROTOCOL_VERSION,
+    buildMcpAppsExtensionCapabilities,
     buildMcpAppsInitializeRequest,
     buildMcpAppsInitializedNotification,
 } from './client';
 export type {
     A2uiClientCapabilities,
+    A2uiCatalogCapabilities,
     A2uiClientDataModel,
     A2uiClientEnvelope,
     A2uiTransportMetadata,
     BuildA2uiClientEnvelopeOptions,
     BuildMcpAppsInitializeRequestOptions,
+    AgUiAgentCapabilities,
+    AgUiInterrupt,
+    AgUiResumeEntry,
+    AgUiRunFinishedOutcome,
+    LegacyA2uiClientCapabilities,
     McpAppsAppCapabilities,
     McpAppsAppInfo,
     McpAppsInitializeRequest,
     McpAppsInitializedNotification,
+    McpAppsExtensionCapabilities,
+    McpAppsHostNotification,
     OutboundEventOptions,
     ProtocolClientOptions,
     UiProtocol,

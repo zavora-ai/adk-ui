@@ -1,23 +1,72 @@
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
-import { Renderer as UiRenderer } from './adk-ui-renderer/Renderer';
-import { convertA2UIComponent } from './adk-ui-renderer/a2ui-converter';
-import { uiEventToMessage, type Component, type UiEvent } from './adk-ui-renderer/types';
 import {
+  ApplicationRenderer,
+  AdkUiKitProvider,
   MCP_APPS_PROTOCOL_VERSION,
   ReasoningPanel,
+  Renderer as UiRenderer,
   applyReasoningEvent,
   buildMcpAppsInitializeRequest,
   buildOutboundEvent,
   createReasoningRuntime,
+  defaultUiKit,
   extractProtocolSurface,
   isActionResponseMessage,
+  parseUiApplication,
+  uiEventToMessage,
   writeJsonPointer,
+  type Component,
+  type UiApplication,
   type ProtocolSurfaceSnapshot as SharedProtocolSurfaceSnapshot,
   type ReasoningMessage,
-} from '../../../packages/adk-ui-react/src/index.ts';
+  type UiEvent,
+} from '@zavora-ai/adk-ui-react';
+import { convertA2UIComponent } from './adk-ui-renderer/a2ui-converter';
+import { ShowcaseGallery } from './showcase/ShowcaseGallery';
 import './App.css';
 
 type UiProtocol = 'adk_ui' | 'a2ui' | 'ag_ui' | 'mcp_apps' | 'awp';
+
+const STUDIO_UI_KIT = {
+  ...defaultUiKit,
+  id: 'zavora.ai:adk-ui/kit/studio@2.1.0',
+  name: 'ADK UI Studio',
+  version: '2.1.0',
+  brand: {
+    vibe: 'editorial, technical, warm',
+    industry: 'agentic software',
+  },
+  tokens: {
+    ...defaultUiKit.tokens,
+    colors: {
+      ...defaultUiKit.tokens.colors,
+      primary: '#ff6846',
+      primaryForeground: '#101923',
+      secondary: '#dce7ff',
+      secondaryForeground: '#172c66',
+      background: '#f4f0e7',
+      foreground: '#101923',
+      surface: '#fffdf8',
+      surfaceForeground: '#101923',
+      muted: '#e7ede8',
+      mutedForeground: '#53606c',
+      border: '#d7d2c8',
+      input: '#c6c1b7',
+      ring: '#4c72ff',
+      destructive: '#c83b2d',
+      destructiveForeground: '#ffffff',
+      success: '#20b486',
+      warning: '#b86b00',
+      info: '#4c72ff',
+      chart: ['#ff6846', '#20b486', '#4c72ff', '#b86b00', '#c83b2d', '#087557'],
+    },
+    typography: {
+      bodyFamily: 'Avenir Next, Century Gothic, sans-serif',
+      headingFamily: 'Avenir Next, Century Gothic, sans-serif',
+      monoFamily: 'IBM Plex Mono, ui-monospace, monospace',
+    },
+  },
+};
 
 interface SurfaceSnapshot {
   protocol?: SharedProtocolSurfaceSnapshot['protocol'];
@@ -71,8 +120,30 @@ interface ExampleTarget {
 interface ProtocolCapability {
   protocol: string;
   versions: string[];
+  available?: boolean;
   implementationTier?: string;
   specTrack?: string;
+  reviewedOn?: string;
+  versionDetails?: Array<{
+    version: string;
+    specTrack: string;
+    status: string;
+    specificationUrl: string;
+  }>;
+  negotiation?: {
+    mode: string;
+    capabilityKeys: string[];
+    contentTypes: string[];
+    transports: string[];
+    fallbackProtocols: string[];
+  };
+  capabilityClaims?: Array<{
+    id: string;
+    status: 'supported' | 'partial' | 'host_owned' | 'candidate' | 'planned' | 'legacy';
+    scope: 'runtime' | 'client' | 'transport' | 'host' | 'security';
+    note?: string;
+  }>;
+  details?: Record<string, unknown>;
   summary?: string;
   features: string[];
   limitations?: string[];
@@ -116,8 +187,8 @@ const EXAMPLES: ExampleTarget[] = [
     description: 'Multi-step A2UI intake → confirm → toast (v1.0 actionResponse)',
     port: 8080,
     prompts: [
-      'My payroll export failed in production and finance needs it today. Open a high-severity ticket and confirm before escalating.',
-      'Render a support intake form with severity, environment, and deadline, then ask me to confirm escalation.',
+      'A production payroll export failed 45 minutes before finance cutoff. Build a guided escalation intake that carries forward those known facts, explains the severity and SLA, collects only the missing impact and evidence, and ends with an editable review step before escalation.',
+      'Turn this vague report into a support workflow: "Checkout sometimes fails after yesterday\'s release." Show progress, group the missing issue details, environment and evidence, then present a review summary. Never escalate without explicit confirmation.',
     ],
   },
   {
@@ -126,8 +197,8 @@ const EXAMPLES: ExampleTarget[] = [
     description: 'Ops dashboard + confirm with AG-UI events / reasoning panel',
     port: 8080,
     prompts: [
-      'Show cluster health for us-east and let me approve a failover if node-3 is degraded. Think step by step.',
-      'Build an operations command center with alerts, node table, traffic chart, and a risky failover confirm.',
+      'Investigate a checkout latency spike in us-east-1. Stream an incident workspace with live service health, recent deploys, affected regions, an evidence timeline, and a guarded rollback proposal whose scope I can edit before approval.',
+      'The order queue is 3.4x above baseline. Build a live triage workspace with impact KPIs, a bottleneck trend, queue owners, current investigation status, and an approve-with-edits remediation plan.',
     ],
   },
   {
@@ -136,7 +207,8 @@ const EXAMPLES: ExampleTarget[] = [
     description: 'MCP Apps ui:// confirm → form host bridge flow',
     port: 8080,
     prompts: [
-      'I need to revoke API keys for the staging project. Confirm first, then collect reason and ticket ID.',
+      'Create an interactive release-readiness app for the mobile launch. Let me filter blockers by team, inspect evidence, edit rollout scope, and request final approval while preserving state in the conversation.',
+      'Build a cloud-spend anomaly explorer with date and team filters, drill-down transactions, annotations, export, and a guarded action to open an investigation.',
     ],
   },
   {
@@ -145,9 +217,9 @@ const EXAMPLES: ExampleTarget[] = [
     description: 'General purpose multi-surface demo',
     port: 8080,
     prompts: [
-      'Create a dashboard with three KPI cards and a trend chart.',
-      'Design an onboarding form with progress, validation hints, and submit actions.',
-      'Build an operations command center with alerts, table, and a confirmation modal.',
+      'Build a revenue operations cockpit with realistic sample data: pipeline KPIs with deltas, a six-month trend, at-risk deals, forecast gaps, and clear follow-up actions for today.',
+      'Design a customer onboarding workspace for a B2B analytics product. Show step progress, contextual guidance, validation, saved-state cues, and a complete review before activation.',
+      'Create a release command center for a Friday production launch: readiness KPIs, blockers by owner, rollout timeline, live risk signals, and a guarded go/no-go decision.',
     ],
   },
   {
@@ -156,9 +228,9 @@ const EXAMPLES: ExampleTarget[] = [
     description: 'Ticket intake and triage workflows',
     port: 8080,
     prompts: [
-      'Build a support intake flow with severity selector, timeline, and submit button.',
-      'Show an incident response board with ownership, status, and next steps.',
-      'Create a postmortem form with root-cause sections and action items.',
+      'A customer cannot complete SSO setup before tomorrow\'s rollout. Build a focused intake that preserves that context, collects affected users, environment, error evidence and contact preference, explains the SLA, and submits to a review step rather than directly escalating.',
+      'Show an incident response board for a payments outage with impact, owners, service status, a timestamped timeline, unresolved decisions, and the next operator action.',
+      'Guide a blameless postmortem for a 38-minute API outage. Separate known facts from hypotheses, collect contributing factors and evidence, assign corrective actions, and show completion progress.',
     ],
   },
   {
@@ -167,9 +239,9 @@ const EXAMPLES: ExampleTarget[] = [
     description: 'Scheduling and availability workflows',
     port: 8080,
     prompts: [
-      'Render an appointment booking experience with service cards and time slots.',
-      'Create a multi-step reschedule workflow with confirmation state.',
-      'Show a clinician schedule table with status badges and reminders.',
+      'Help a new patient book a physiotherapy assessment next week. Compare suitable clinicians and accessible time slots, show price and preparation notes, then review the choice before booking.',
+      'Reschedule Tuesday\'s cardiology follow-up without losing the current appointment until a replacement is confirmed. Show alternatives, conflict warnings, and a final review.',
+      'Build today\'s clinician operations board with capacity, late arrivals, room conflicts, waitlist opportunities, and the next action for each exception.',
     ],
   },
   {
@@ -178,9 +250,9 @@ const EXAMPLES: ExampleTarget[] = [
     description: 'Registration and agenda workflows',
     port: 8080,
     prompts: [
-      'Build an event registration UI with ticket options and attendee details.',
-      'Render an agenda timeline with speaker cards and room map summary.',
-      'Design a networking dashboard with RSVP stats and waitlist table.',
+      'Build registration for a two-day AI engineering summit. Compare ticket entitlements, collect only attendee and accessibility needs, show the running total, and review everything before purchase.',
+      'Create a personalized conference agenda with schedule conflicts, speaker context, room changes, and a one-click way to save sessions without losing my filters.',
+      'Design an organizer workspace with RSVP conversion, capacity risk, waitlist movement, dietary counts, and actionable attendee exceptions.',
     ],
   },
   {
@@ -189,9 +261,9 @@ const EXAMPLES: ExampleTarget[] = [
     description: 'Maintenance requests and escalation',
     port: 8080,
     prompts: [
-      'Create a facilities issue form with priority, location, and SLA warning.',
-      'Show a maintenance dispatch board with progress, owners, and alerts.',
-      'Render a work-order detail view with checklist and completion modal.',
+      'There is water leaking near the third-floor electrical closet. Build an urgent facilities intake that highlights immediate safety guidance, preserves the known location, collects evidence and access details, and reviews the dispatch scope before escalation.',
+      'Show a maintenance dispatch board with SLA risk, technician capacity, site access constraints, progress, ownership, and recommended reassignment actions.',
+      'Create a work-order workspace with asset history, diagnosis, parts, safety checklist, evidence, and a guarded completion review.',
     ],
   },
   {
@@ -200,9 +272,9 @@ const EXAMPLES: ExampleTarget[] = [
     description: 'Stock monitoring and restock workflows',
     port: 8080,
     prompts: [
-      'Build an inventory monitor with low-stock alerts and reorder actions.',
-      'Create a replenishment form with quantity controls and approval summary.',
-      'Render supplier performance cards plus a lead-time trend chart.',
+      'Build a multi-warehouse inventory control tower with days-of-cover KPIs, demand trend, stockout risks, transfer opportunities, and prioritized reorder actions using realistic sample data.',
+      'Create a replenishment workflow for SKU AX-104, which has four days of cover. Compare transfer versus purchase options, collect quantity and urgency, and show cost and approval impact before submission.',
+      'Evaluate three suppliers using on-time delivery, defect rate, lead-time trend, capacity risk, and a clear sourcing recommendation with supporting evidence.',
     ],
   },
 ];
@@ -244,6 +316,188 @@ const PROTOCOLS: Array<{ id: UiProtocol; label: string; hint: string; mark: stri
     status: 'Adaptive',
   },
 ];
+
+const NEXT_GENERATION_DEMO: UiApplication = {
+  id: 'luma-transit-command',
+  name: 'Luma Transit',
+  kit_id: STUDIO_UI_KIT.id,
+  initial_route: '/',
+  navigation: [
+    { label: 'Briefing', route: '/' },
+    { label: 'Network', route: '/network' },
+    { label: 'Spatial twin', route: '/spatial' },
+  ],
+  state: { region: 'all', activeIncident: 'INC-2048' },
+  pages: [
+    {
+      id: 'briefing',
+      route: '/',
+      title: 'Morning network briefing',
+      template: 'marketing',
+      atmosphere: 'gradient',
+      eyebrow: 'Friday / 06:42 UTC',
+      hero: {
+        title: 'Move a city without losing the signal.',
+        description: 'A live operating picture for 2.8 million daily journeys. The agent connects demand, fleet health, and service risk into one decisive briefing.',
+        alignment: 'split',
+        content: [
+          { type: 'badge', label: 'Network confidence 94%', variant: 'success' },
+        ],
+        actions: [
+          { type: 'button', label: 'Open network control', action_id: 'navigate:/network', variant: 'primary' },
+          { type: 'button', label: 'Explore spatial twin', action_id: 'navigate:/spatial', variant: 'outline' },
+        ],
+        visual: [
+          {
+            type: 'card',
+            title: 'Passenger flow',
+            description: 'Boardings by hour / today versus baseline',
+            content: [{
+              type: 'chart', kind: 'area', x_key: 'hour', y_keys: ['today', 'baseline'], show_legend: true,
+              data: [
+                { hour: '05', today: 18, baseline: 16 }, { hour: '06', today: 41, baseline: 36 },
+                { hour: '07', today: 78, baseline: 69 }, { hour: '08', today: 96, baseline: 88 },
+                { hour: '09', today: 71, baseline: 75 }, { hour: '10', today: 57, baseline: 59 },
+              ],
+            }],
+            footer: [{ type: 'text', content: 'Peak load shifted 14 minutes earlier', variant: 'caption' }],
+          },
+        ],
+      },
+      regions: [
+        {
+          id: 'briefing-signals',
+          title: 'Signals that change the day',
+          description: 'Not a wall of metrics. Three conditions the operating team can act on now.',
+          layout: 'bento',
+          columns: 3,
+          components: [
+            {
+              type: 'card', title: 'Airport line is absorbing demand', description: '+12% journeys after the express closure',
+              content: [
+                { type: 'text', content: 'Add two reserve sets between Central and Terminal 2 before 07:30.', variant: 'body' },
+                { type: 'progress', value: 78, label: 'Current vehicle load' },
+              ],
+              footer: [{ type: 'button', label: 'Review deployment', action_id: 'navigate:/network', variant: 'primary' }],
+            },
+            { type: 'card', title: '94%', description: 'On-time performance', content: [{ type: 'badge', label: '+2.1 pts', variant: 'success' }] },
+            { type: 'card', title: '6 min', description: 'Median recovery time', content: [{ type: 'badge', label: 'Inside target', variant: 'info' }] },
+            { type: 'alert', title: 'Weather watch', description: 'Crosswinds may constrain the river crossing after 16:00.', variant: 'warning' },
+          ],
+        },
+      ],
+      footer: [{ type: 'text', content: 'Prepared by the network operations agent from live service, fleet, and demand feeds.', variant: 'caption' }],
+    },
+    {
+      id: 'network',
+      route: '/network',
+      title: 'Network control',
+      description: 'Exceptions, capacity, and owner actions across the live network.',
+      template: 'dashboard',
+      atmosphere: 'grid',
+      eyebrow: 'Live operating picture',
+      regions: [
+        {
+          id: 'network-kpis',
+          layout: 'stats',
+          columns: 4,
+          components: [
+            { type: 'card', title: '1,284', description: 'Vehicles in service', content: [{ type: 'badge', label: '98.7% available', variant: 'success' }] },
+            { type: 'card', title: '42', description: 'Active exceptions', content: [{ type: 'badge', label: '7 need action', variant: 'warning' }] },
+            { type: 'card', title: '2.8m', description: 'Forecast journeys', content: [{ type: 'badge', label: '+4.2% Friday', variant: 'info' }] },
+            { type: 'card', title: '94%', description: 'Network confidence', content: [{ type: 'progress', value: 94, label: 'Confidence' }] },
+          ],
+        },
+        {
+          id: 'network-actions',
+          title: 'Where attention compounds',
+          description: 'The agent has ranked interventions by passenger impact and recovery confidence.',
+          layout: 'split',
+          columns: 2,
+          tone: 'muted',
+          components: [
+            {
+              type: 'chart', title: 'Capacity pressure by corridor', kind: 'bar', x_key: 'corridor', y_keys: ['load', 'threshold'],
+              data: [
+                { corridor: 'Airport', load: 88, threshold: 80 }, { corridor: 'North', load: 72, threshold: 80 },
+                { corridor: 'River', load: 81, threshold: 80 }, { corridor: 'West', load: 64, threshold: 80 },
+              ],
+            },
+            {
+              type: 'table', sortable: true, striped: true, page_size: 4,
+              columns: [
+                { header: 'Priority', accessor_key: 'priority' }, { header: 'Intervention', accessor_key: 'action' },
+                { header: 'Owner', accessor_key: 'owner' }, { header: 'Impact', accessor_key: 'impact' },
+              ],
+              data: [
+                { priority: 'P1', action: 'Deploy reserve sets', owner: 'Fleet', impact: '18k journeys' },
+                { priority: 'P1', action: 'Hold cross-line transfer', owner: 'Control', impact: '9k journeys' },
+                { priority: 'P2', action: 'Stage response crew', owner: 'Field', impact: '4k journeys' },
+                { priority: 'P3', action: 'Update rider guidance', owner: 'Comms', impact: 'All channels' },
+              ],
+            },
+          ],
+        },
+      ],
+      aside: [
+        {
+          type: 'card', title: 'Agent focus', description: 'Tune the operating picture without losing page state.',
+          content: [
+            { type: 'select', name: 'region', label: 'Region', options: [{ label: 'All network', value: 'all' }, { label: 'Airport corridor', value: 'airport' }, { label: 'River corridor', value: 'river' }] },
+            { type: 'switch', name: 'live_refresh', label: 'Live refresh', default_checked: true },
+          ],
+          footer: [{ type: 'button', label: 'Ask agent to re-rank', action_id: 'rerank_network', variant: 'primary' }],
+        },
+      ],
+      footer: [{ type: 'button', label: 'Open the spatial twin', action_id: 'navigate:/spatial', variant: 'outline' }],
+    },
+    {
+      id: 'spatial',
+      route: '/spatial',
+      title: 'Spatial network twin',
+      template: 'immersive',
+      atmosphere: 'spatial',
+      eyebrow: 'Experimental / WebGPU ready',
+      hero: {
+        title: 'See pressure move through the network.',
+        description: 'A safe declarative scene generated by the agent. Select a corridor to focus the investigation; no arbitrary code or shaders are accepted.',
+        alignment: 'split',
+        actions: [{ type: 'button', label: 'Back to network control', action_id: 'navigate:/network', variant: 'outline' }],
+        visual: [{
+          type: 'scene_3d',
+          title: 'Live corridor pressure',
+          description: 'Drag to orbit. Select a labelled corridor below.',
+          height: 560,
+          background: 'contrast',
+          auto_rotate: true,
+          controls: true,
+          camera: { position: [5.5, 4.2, 7.5], target: [0, 0, 0], fov: 39 },
+          objects: [
+            { kind: 'primitive', id: 'core', shape: 'sphere', position: [0, 0.4, 0], scale: [1.25, 1.25, 1.25], material: 'primary', label: 'Central interchange', action_id: 'focus_central' },
+            { kind: 'primitive', id: 'airport', shape: 'torus', position: [2.2, 0.2, 0], rotation: [1.57, 0, 0], scale: [1.4, 1.4, 1.4], material: 'warning', label: 'Airport corridor', action_id: 'focus_airport' },
+            { kind: 'primitive', id: 'north', shape: 'cylinder', position: [-2.2, 0, -0.7], scale: [0.6, 2.1, 0.6], material: 'info', label: 'North corridor', action_id: 'focus_north' },
+            { kind: 'primitive', id: 'river', shape: 'box', position: [0.4, -0.5, -2.4], rotation: [0.25, 0.65, 0], scale: [2.2, 0.28, 0.55], material: 'success', label: 'River crossing', action_id: 'focus_river' },
+            { kind: 'primitive', id: 'ground', shape: 'plane', position: [0, -1.1, 0], rotation: [-1.57, 0, 0], scale: [4.5, 4.5, 4.5], material: 'muted' },
+          ],
+          fallback: 'The spatial twin is unavailable on this device. Use Network control for the same live interventions.',
+        }],
+      },
+      regions: [
+        {
+          id: 'spatial-context',
+          title: 'The scene is part of the workflow',
+          description: 'Spatial selection can drive agent actions, route changes, and detail panels just like any other generated component.',
+          layout: 'editorial',
+          columns: 2,
+          components: [
+            { type: 'text', content: 'The active model is bounded to semantic brand materials, approved GLB assets, a fixed primitive catalog, and host-owned interaction controls.', variant: 'body' },
+            { type: 'key_value', pairs: [{ key: 'Renderer', value: 'WebGPU with WebGL 2 fallback' }, { key: 'Motion', value: 'Reduced-motion aware' }, { key: 'Assets', value: 'Approved kit references only' }, { key: 'Object budget', value: '64 scene objects / 8 models' }] },
+          ],
+        },
+      ],
+    },
+  ],
+};
 
 const MAX_EVENT_LOG = 120;
 const DEFAULT_USER_ID = 'user1';
@@ -648,11 +902,12 @@ function protocolInstruction(protocol: UiProtocol): string {
       'Use adk-ui tools and explicitly set `protocol` to `mcp_apps`.',
       'Assume the host supports MCP Apps initialize/message/model-context bridge flows.',
       'Include `mcp_apps.domain` as `https://example.com` when you call render tools.',
-      'Prefer rich components (cards, tables, charts, alerts, forms) instead of plain text-only layouts.',
-      'Prefer `render_layout`, `render_table`, `render_chart`, and `render_form` when they fit the request.',
+      'Design a focused interactive app that preserves host context and state instead of reproducing the chat composer.',
+      'Use `render_app` with two to five pages when the request describes a complete product, portal, site, or multi-route workflow.',
+      'Use a populated multi-section surface for exploration; use a focused card for a single decision.',
       'Call at least one `render_*` tool before any plain text response.',
       'If rendering fails, call `render_alert` with an error message.',
-      'Return rich UI with forms, charts, and actionable controls.',
+      'Give the surface clear hierarchy, domain-specific content, one primary next action, and no more than one secondary action.',
     ].join(' ');
   }
   if (protocol === 'awp') {
@@ -660,11 +915,11 @@ function protocolInstruction(protocol: UiProtocol): string {
       'Use adk-ui tools and explicitly set `protocol` to `awp`.',
       'AWP (Agentic Web Protocol) produces both a structured component tree and rendered HTML in a single response.',
       'The runtime will generate embeddable HTML from your components automatically.',
-      'Prefer rich components (cards, tables, charts, alerts, forms) instead of plain text-only layouts.',
-      'Prefer `render_layout`, `render_table`, `render_chart`, and `render_form` when they fit the request.',
+      'Design a complete decision surface with realistic domain content instead of a text-only component inventory.',
+      'Use `render_app` with two to five pages when the request describes a complete product, portal, site, or multi-route workflow.',
       'Call at least one `render_*` tool before any plain text response.',
       'If rendering fails, call `render_alert` with an error message.',
-      'Return rich UI with layouts, data visuals, and clear actions.',
+      'Give the surface clear hierarchy, current state, and one obvious next action.',
     ].join(' ');
   }
   return [
@@ -672,32 +927,50 @@ function protocolInstruction(protocol: UiProtocol): string {
     protocol === 'ag_ui'
       ? 'Assume the runtime supports protocol-native AG-UI transport with stable lifecycle, text, and tool events.'
       : 'Assume the runtime preserves protocol-aware payloads alongside the base ADK stream.',
-    'Prefer rich components (cards, tables, charts, alerts, forms) instead of plain text-only layouts.',
-    'Prefer `render_layout`, `render_table`, `render_chart`, and `render_form` when they fit the request.',
+    'Design for the user outcome rather than echoing requested component names.',
+    'When the request is for a complete product, site, portal, or multiple routes, call `render_app` with two to five purpose-built pages instead of compressing the result into one surface.',
+    'Use `scene_3d` only when spatial understanding or product exploration improves the workflow; keep 3D declarative, labelled, and actionable.',
+    'Preserve supplied facts and state; use realistic populated data when the request is a prototype.',
     'Call at least one `render_*` tool before any plain text response.',
     'If rendering fails, call `render_alert` with an error message.',
-    'Return rich UI with layouts, data visuals, and clear actions.',
+    'Give the surface clear hierarchy, domain-specific content, and one obvious next action.',
   ].join(' ');
 }
 
 function retryInstruction(
   protocol: UiProtocol,
+  prompt: string,
   mode: 'no_surface' | 'quality' = 'no_surface',
 ): string {
   if (mode === 'quality') {
-    if (protocol === 'mcp_apps') {
+    const intent = prompt.toLowerCase();
+    const isFormWorkflow = /\b(form|intake|onboard|register|book|reschedule|replenish|postmortem)\b/.test(intent);
+    const isDecisionWorkspace = /\b(dashboard|workspace|cockpit|command center|board|monitor|explorer|control tower)\b/.test(intent);
+
+    if (isFormWorkflow) {
       return [
-        'Retry mode: previous attempt produced a low-fidelity UI (mostly text/buttons).',
-        'Now produce a richer surface using render tools: include at least one table, one card, and one alert.',
-        'Use render_layout for composition and avoid plain text-only timelines/lists.',
+        'Retry mode: the previous form was too sparse or generic for the requested workflow.',
+        'Do not repeat it. Render a focused form with a specific context-setting description, at least four purposeful fields for a multi-step intake, useful select options, and a textarea for evidence or detail when relevant.',
+        'Preserve facts already supplied in the request and collect only missing information.',
+        'Use a domain-specific review CTA such as "Review escalation" or "Review booking", never a generic "Submit" action.',
+        'Do not emit plain text before tool calls.',
+      ].join(' ');
+    }
+
+    if (isDecisionWorkspace) {
+      return [
+        'Retry mode: the previous decision surface lacked enough structure or useful data.',
+        `Produce a populated \`${protocol}\` workspace with domain-specific KPIs, a meaningful chart or table, current risks or exceptions, and one clear next action.`,
+        'Use render_layout for the complete composition. If the user must edit a proposal or filters, include a form section in that layout.',
+        'Do not replace structured sections with one oversized text or form description, and do not use generic placeholders.',
         'Do not emit plain text before tool calls.',
       ].join(' ');
     }
 
     return [
-      'Retry mode: previous attempt produced a low-fidelity UI (mostly text/buttons).',
-      `Now produce a richer \`${protocol}\` surface using render tools: include at least one table, one card, and one alert.`,
-      'Use render_layout for composition and avoid plain text-only timelines/lists.',
+      'Retry mode: the previous surface was too sparse or generic.',
+      `Produce a more complete \`${protocol}\` surface with clear hierarchy, realistic domain content, useful state, and one obvious next action.`,
+      'Do not repeat the previous component inventory or use generic placeholder labels.',
       'Do not emit plain text before tool calls.',
     ].join(' ');
   }
@@ -2805,41 +3078,89 @@ function flattenSurfaceComponents(components: Component[]): Component[] {
   return result;
 }
 
-function isLowFidelitySurface(surface: SurfaceSnapshot): boolean {
-  // AWP surfaces with HTML rendering are never low-fidelity — the HTML is the rich output
+interface SurfaceQuality {
+  score: number;
+  lowFidelity: boolean;
+  placeholder: boolean;
+}
+
+function assessSurfaceQuality(surface: SurfaceSnapshot): SurfaceQuality {
   if (surface.html) {
-    return false;
+    return { score: 100, lowFidelity: false, placeholder: false };
   }
 
   const flat = flattenSurfaceComponents(surface.components);
-  if (flat.length < 5) {
-    return false;
-  }
-
-  const structuredTypes = new Set([
-    'table',
-    'chart',
-    'card',
-    'grid',
-    'tabs',
-    'modal',
-    'alert',
-    'key_value',
-    'list',
-  ]);
-
+  const weights: Partial<Record<Component['type'], number>> = {
+    table: 8,
+    chart: 8,
+    card: 5,
+    grid: 5,
+    tabs: 5,
+    modal: 4,
+    alert: 3,
+    key_value: 3,
+    list: 2,
+    text_input: 3,
+    number_input: 3,
+    select: 3,
+    multi_select: 3,
+    textarea: 3,
+  };
   const typeSet = new Set(flat.map((component) => component.type));
-  const hasStructured = flat.some((component) => structuredTypes.has(component.type));
-  if (hasStructured) {
-    return false;
-  }
-
+  const textValues = flat
+    .filter((component): component is Extract<Component, { type: 'text' }> => component.type === 'text')
+    .map((component) => component.content.trim())
+    .filter(Boolean);
+  const placeholder = flat.length <= 3
+    && textValues.length > 0
+    && textValues.every((value) => /^(rendered|generated|created)\s+(card|screen|surface|ui|layout|form|page)\.?$/i.test(value));
+  const emptyDataDisplay = flat.some((component) => (
+    (component.type === 'chart' && (component.data.length === 0 || component.y_keys.length === 0 || !component.x_key))
+    || (component.type === 'table' && (component.columns.length === 0 || component.data.length === 0))
+  ));
   const textCount = flat.filter((component) => component.type === 'text').length;
   const buttonCount = flat.filter((component) => component.type === 'button').length;
-  const textHeavy = textCount / flat.length >= 0.55;
+  const inputCount = flat.filter((component) => (
+    component.type === 'text_input'
+    || component.type === 'number_input'
+    || component.type === 'select'
+    || component.type === 'multi_select'
+    || component.type === 'textarea'
+  )).length;
+  const formHasOwnContext = flat.some((component) => (
+    component.type === 'card'
+    && typeof component.description === 'string'
+    && component.description.trim().length >= 24
+  ));
+  const formHasWorkspaceContext = inputCount > 0
+    && typeSet.has('alert')
+    && (typeSet.has('table') || typeSet.has('chart') || typeSet.has('key_value'));
+  const hasOversizedFormDescription = inputCount > 0 && flat.some((component) => (
+    component.type === 'card'
+    && typeof component.description === 'string'
+    && component.description.trim().length > 900
+  ));
+  const hasGenericFormAction = inputCount > 0 && flat.some((component) => (
+    component.type === 'button'
+    && /^(submit|send|continue|next)$/i.test(component.label.trim())
+  ));
+  const textHeavy = flat.length > 0 && textCount / flat.length >= 0.55;
   const lowVariety = typeSet.size <= 3;
+  const weightedScore = flat.reduce((score, component) => score + (weights[component.type] ?? 1), 0);
+  const score = weightedScore + typeSet.size * 2 + (inputCount > 0 && buttonCount > 0 ? 4 : 0);
+  const sparseForm = inputCount > 0
+    && (!(formHasOwnContext || formHasWorkspaceContext)
+      || hasGenericFormAction
+      || hasOversizedFormDescription
+      || score < 32);
+  const lowFidelity = flat.length === 0
+    || placeholder
+    || emptyDataDisplay
+    || sparseForm
+    || (flat.length <= 3 && inputCount === 0 && !flat.some((component) => weights[component.type]))
+    || (flat.length >= 5 && textHeavy && lowVariety && buttonCount >= 1);
 
-  return textHeavy && lowVariety && buttonCount >= 1;
+  return { score, lowFidelity, placeholder };
 }
 
 function buildAssistantFallback(
@@ -2878,6 +3199,7 @@ function App() {
   const [selectedProtocol, setSelectedProtocol] = useState<UiProtocol>('a2ui');
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [surface, setSurface] = useState<SurfaceSnapshot | null>(null);
+  const [application, setApplication] = useState<UiApplication | null>(null);
   const [promptInput, setPromptInput] = useState('');
   const [assistantText, setAssistantText] = useState('');
   const [activityMessages, setActivityMessages] = useState<AgUiActivityMessage[]>([]);
@@ -2895,7 +3217,10 @@ function App() {
   const [capabilities, setCapabilities] = useState<ProtocolCapability[]>([]);
   const [capabilitiesError, setCapabilitiesError] = useState<string | null>(null);
   const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>('desktop');
+  const [isCanvasExpanded, setIsCanvasExpanded] = useState(false);
+  const [isCanvasFullscreen, setIsCanvasFullscreen] = useState(false);
   const [inspectorTab, setInspectorTab] = useState<'events' | 'output' | 'reasoning'>('events');
+  const canvasPanelRef = useRef<HTMLElement | null>(null);
   const agUiContextRef = useRef<{
     threadId?: string;
     lastRunId?: string;
@@ -2917,6 +3242,10 @@ function App() {
   const capabilityForSelectedProtocol = useMemo(() => {
     return capabilities.find((capability) => normalizeProtocol(capability.protocol) === selectedProtocol);
   }, [capabilities, selectedProtocol]);
+  const selectedCapabilityClaims = capabilityForSelectedProtocol?.capabilityClaims ?? [];
+  const supportedCapabilityCount = selectedCapabilityClaims.filter(
+    (claim) => claim.status === 'supported',
+  ).length;
 
   const baseUrl = `http://localhost:${selectedExample.port}`;
 
@@ -3029,6 +3358,36 @@ function App() {
         threadId: agUiContextRef.current.threadId,
         parentRunId: agUiContextRef.current.lastRunId,
       });
+
+      if (action.action === 'input_change') {
+        setSurface((current) => current
+          ? {
+              ...current,
+              dataModel: {
+                ...current.dataModel,
+                __localFormValues: {
+                  ...(isRecord(current.dataModel.__localFormValues)
+                    ? current.dataModel.__localFormValues
+                    : {}),
+                  [action.name]: action.value,
+                },
+              },
+            }
+          : current);
+        appendEvent(
+          'input_change_local',
+          selectedProtocol,
+          { surfaceId, name: action.name, value: action.value },
+          `Updated ${action.name} locally`,
+        );
+
+        // MCP Apps has an explicit model-context bridge for non-submitting edits.
+        // Other protocols send the complete form state only on submit.
+        if (selectedProtocol !== 'mcp_apps') {
+          setStatusText('Editing');
+          return;
+        }
+      }
 
       if (wantsA2uiResponse && a2uiActionId) {
         bridge.requestBody.a2uiAction = {
@@ -3194,6 +3553,7 @@ function App() {
       setEventLog([]);
       if (options?.clearSurfaceOnStart !== false) {
         setSurface(null);
+        setApplication(null);
         setReasoningMessages([]);
         reasoningRuntimeRef.current = createReasoningRuntime();
         setLastActionResponse(null);
@@ -3204,16 +3564,56 @@ function App() {
     const instructedPrompt = options?.skipPromptAugmentation
       ? prompt
       : `${prompt}\n\n${protocolInstruction(selectedProtocol)}${
-          isAutoRetry ? `\n\n${retryInstruction(selectedProtocol, options?.retryMode ?? 'no_surface')}` : ''
+          isAutoRetry ? `\n\n${retryInstruction(selectedProtocol, prompt, options?.retryMode ?? 'no_surface')}` : ''
         }`;
     const fetchedArtifactVersions = new Set<string>();
     let assistantTextCaptured = false;
     let renderDetected = false;
     let lowFidelityDetected = false;
     let latestSurface: SurfaceSnapshot | null = null;
+    let latestSurfaceId = 'main';
+    let latestSurfaceQuality: SurfaceQuality | null = null;
     let lastRuntimeEventSeen: Record<string, unknown> | null = null;
     let lastToolResponseSeen: unknown | null = null;
     const startedAt = readClockMs();
+    const acceptSurfaceCandidate = (candidate: SurfaceSnapshot, source: string): boolean => {
+      renderDetected = true;
+      const quality = assessSurfaceQuality(candidate);
+      const shouldAccept = latestSurface === null
+        || latestSurfaceQuality === null
+        || (!quality.placeholder && quality.score >= latestSurfaceQuality.score)
+        || (!quality.lowFidelity && latestSurfaceQuality.lowFidelity);
+
+      if (!shouldAccept) {
+        appendEvent(
+          'surface_candidate_ignored',
+          selectedProtocol,
+          { source, surfaceId: candidate.surfaceId, quality },
+          `Kept higher-quality surface; ignored ${source}`,
+        );
+        return false;
+      }
+
+      latestSurface = candidate;
+      latestSurfaceId = candidate.surfaceId;
+      latestSurfaceQuality = quality;
+      lowFidelityDetected = quality.lowFidelity;
+      setSurface(candidate);
+      setStatusText(`Rendered ${candidate.surfaceId}`);
+      return true;
+    };
+    const acceptApplicationCandidate = (candidate: unknown, source: string): boolean => {
+      const parsed = parseUiApplication(candidate);
+      if (!parsed) return false;
+      renderDetected = true;
+      lowFidelityDetected = false;
+      latestSurfaceId = `${parsed.id}:${parsed.initial_route}`;
+      setApplication(parsed);
+      setSurface(null);
+      setStatusText(`Rendered ${parsed.pages.length}-page application`);
+      appendEvent('application_rendered', selectedProtocol, candidate, `Accepted ${source}: ${parsed.pages.length} routes`);
+      return true;
+    };
     const endpoint = '/api/run_sse';
     const requestPayload: Record<string, unknown> = {
       appName: selectedExample.id,
@@ -3505,6 +3905,12 @@ function App() {
           }
 
           for (const toolResponse of toolResponses) {
+            if (acceptApplicationCandidate(toolResponse.response, `${toolResponse.source} ${toolResponse.name}`)) {
+              if (toolResponse.source === 'response') {
+                lastToolResponseSeen = toolResponse.response;
+              }
+              continue;
+            }
             if (toolResponse.source === 'call') {
               appendEvent(`tool_call:${toolResponse.name}`, runtimeProtocol, toolResponse.response);
               const responseSurface = responseSurfaceByTool.get(toolResponse.name);
@@ -3518,11 +3924,7 @@ function App() {
                 extractSurfaceFromToolResponse(toolResponse.response) ??
                 extractSurfaceFromRenderToolInvocation(toolResponse.name, toolResponse.response);
               if (maybeSurface) {
-                renderDetected = true;
-                latestSurface = maybeSurface;
-                lowFidelityDetected = isLowFidelitySurface(maybeSurface);
-                setSurface(maybeSurface);
-                setStatusText(`Rendered ${maybeSurface.surfaceId}`);
+                acceptSurfaceCandidate(maybeSurface, `tool call ${toolResponse.name}`);
                 setToolHitCount((count) => count + 1);
               }
               continue;
@@ -3534,11 +3936,7 @@ function App() {
               extractSurfaceFromToolResponse(toolResponse.response) ??
               extractSurfaceFromRenderToolInvocation(toolResponse.name, toolResponse.response);
             if (maybeSurface) {
-              renderDetected = true;
-              latestSurface = maybeSurface;
-              lowFidelityDetected = isLowFidelitySurface(maybeSurface);
-              setSurface(maybeSurface);
-              setStatusText(`Rendered ${maybeSurface.surfaceId}`);
+              acceptSurfaceCandidate(maybeSurface, `tool response ${toolResponse.name}`);
             }
           }
 
@@ -3548,11 +3946,7 @@ function App() {
               events: [runtimeEvent],
             });
             if (eventSurface) {
-              renderDetected = true;
-              latestSurface = eventSurface;
-              lowFidelityDetected = isLowFidelitySurface(eventSurface);
-              setSurface(eventSurface);
-              setStatusText(`Rendered ${eventSurface.surfaceId}`);
+              acceptSurfaceCandidate(eventSurface, 'AG-UI event');
             }
           }
 
@@ -3589,11 +3983,7 @@ function App() {
               let rendered = false;
               const extractedSurface = extractSurfaceFromToolResponse(artifactBody);
               if (extractedSurface) {
-                renderDetected = true;
-                latestSurface = extractedSurface;
-                lowFidelityDetected = isLowFidelitySurface(extractedSurface);
-                setSurface(extractedSurface);
-                setStatusText(`Rendered ${extractedSurface.surfaceId} from artifact`);
+                acceptSurfaceCandidate(extractedSurface, `artifact ${artifactDelta.name}`);
                 rendered = true;
               }
 
@@ -3602,11 +3992,7 @@ function App() {
                   const parsedArtifact = JSON.parse(artifactBody);
                   const maybeSurface = extractSurfaceFromToolResponse(parsedArtifact);
                   if (maybeSurface) {
-                    renderDetected = true;
-                    latestSurface = maybeSurface;
-                    lowFidelityDetected = isLowFidelitySurface(maybeSurface);
-                    setSurface(maybeSurface);
-                    setStatusText(`Rendered ${maybeSurface.surfaceId} from artifact`);
+                    acceptSurfaceCandidate(maybeSurface, `artifact ${artifactDelta.name}`);
                   }
                 } catch {
                   // ignore non-JSON artifacts
@@ -3664,7 +4050,7 @@ function App() {
           {
             reason: 'Low-fidelity UI detected (mostly text/buttons without structured components).',
             attempt: 2,
-            surfaceId: latestSurface?.surfaceId ?? 'main',
+            surfaceId: latestSurfaceId,
           },
           'Low-fidelity UI detected. Retrying once with stricter structure constraints...',
         );
@@ -3705,6 +4091,7 @@ function App() {
     pendingA2uiActionsRef.current = new Map();
     setSessionId(null);
     setSurface(null);
+    setApplication(null);
     setAssistantText('');
     setActivityMessages([]);
     setReasoningMessages([]);
@@ -3725,6 +4112,43 @@ function App() {
     return () => window.clearTimeout(timer);
   }, [baseUrl]);
 
+  useEffect(() => {
+    const syncFullscreenState = () => {
+      setIsCanvasFullscreen(document.fullscreenElement === canvasPanelRef.current);
+    };
+    const restoreExpandedCanvas = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && document.fullscreenElement === null) {
+        setIsCanvasExpanded(false);
+      }
+    };
+
+    document.addEventListener('fullscreenchange', syncFullscreenState);
+    window.addEventListener('keydown', restoreExpandedCanvas);
+    return () => {
+      document.removeEventListener('fullscreenchange', syncFullscreenState);
+      window.removeEventListener('keydown', restoreExpandedCanvas);
+    };
+  }, []);
+
+  async function toggleCanvasFullscreen() {
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+        return;
+      }
+
+      if (!canvasPanelRef.current?.requestFullscreen) {
+        throw new Error('This browser does not support the Fullscreen API.');
+      }
+
+      await canvasPanelRef.current.requestFullscreen();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Fullscreen could not be opened.';
+      setErrorText(message);
+      appendEvent('fullscreen_error', selectedProtocol, { message }, message);
+    }
+  }
+
   /** Offline showcase for reasoning UI + A2UI actionResponse (no LLM required). */
   function loadLocalFeatureDemo() {
     setSelectedProtocol('a2ui');
@@ -3734,6 +4158,7 @@ function App() {
     setPendingA2uiActions([]);
     setLastActionResponse(null);
     setStatusText('Local feature demo loaded');
+    setApplication(null);
     setAssistantText(
       'Feature demo: support intake surface + sample reasoning stream.\nClick "Confirm escalation" to complete a correlated A2UI v1.0 actionResponse entirely in the browser.',
     );
@@ -3835,7 +4260,27 @@ function App() {
     );
   }
 
+  function loadNextGenerationDemo() {
+    setApplication(NEXT_GENERATION_DEMO);
+    setSurface(null);
+    setErrorText(null);
+    setSelectedProtocol('a2ui');
+    setInspectorTab('events');
+    setStatusText('Three-page application loaded');
+    setAssistantText('Generated a complete transit operations product with preserved multi-page state and a declarative 3D network twin. Navigate between Briefing, Network, and Spatial twin inside the canvas.');
+    setActivityMessages([]);
+    setReasoningMessages([]);
+    setEventLog([]);
+    appendEvent(
+      'local_application_demo',
+      'a2ui',
+      { applicationId: NEXT_GENERATION_DEMO.id, routes: NEXT_GENERATION_DEMO.pages.map((page) => page.route), scene3d: true },
+      'Loaded multi-page application + 3D scene',
+    );
+  }
+
   const surfaceSourceLabel = surface?.source ? formatCapabilityToken(surface.source) : null;
+  const surfaceQuality = surface ? assessSurfaceQuality(surface) : null;
   const surfaceDisplayMode =
     typeof surface?.bridge?.hostContext?.displayMode === 'string'
       ? (surface.bridge.hostContext.displayMode as string)
@@ -3866,9 +4311,10 @@ function App() {
           <span className="brand-mark" aria-hidden="true"><i /><i /><i /></span>
           <span>ADK UI</span>
         </a>
-        <span className="release-pill"><i /> Version 2.0</span>
+        <span className="release-pill"><i /> Version 2.1</span>
         <div className="topbar-links">
           <a href="#studio">Studio</a>
+          <a href="#showcase">Showcase</a>
           <a href="#whats-new">What&apos;s new</a>
           <a href="https://github.com/zavora-ai/adk-ui" target="_blank" rel="noreferrer">
             GitHub <span aria-hidden="true">↗</span>
@@ -3890,8 +4336,8 @@ function App() {
             and ready for real user actions.
           </p>
           <div className="hero-actions">
-            <button type="button" className="primary-cta" onClick={loadLocalFeatureDemo} data-testid="load-feature-demo">
-              Explore the live demo <span aria-hidden="true">→</span>
+            <button type="button" className="primary-cta" onClick={loadNextGenerationDemo} data-testid="load-feature-demo">
+              Explore a generated app <span aria-hidden="true">→</span>
             </button>
             <a className="secondary-cta" href="https://github.com/zavora-ai/adk-ui#quick-start" target="_blank" rel="noreferrer">
               Read the quick start
@@ -3943,26 +4389,77 @@ function App() {
         </div>
 
         <div className="protocol-signal">
-          <div className="signal-summary">
-            <span className={`signal-light ${capabilityForSelectedProtocol ? 'is-online' : ''}`} />
-            <div>
-              <strong>{selectedProtocolMeta.label}</strong>
-              <p>{capabilityForSelectedProtocol?.summary ?? selectedProtocolMeta.hint}</p>
+          <div className="protocol-signal-topline">
+            <div className="signal-summary">
+              <span className={`signal-light ${capabilityForSelectedProtocol && capabilityForSelectedProtocol.available !== false ? 'is-online' : ''}`} />
+              <div>
+                <span className="signal-eyebrow">Live capability contract</span>
+                <strong>{selectedProtocolMeta.label}</strong>
+                <p>{capabilityForSelectedProtocol?.summary ?? selectedProtocolMeta.hint}</p>
+              </div>
+            </div>
+            <div className="capability-score" aria-label={`${supportedCapabilityCount} supported capabilities`}>
+              <strong>{supportedCapabilityCount}<span>/{selectedCapabilityClaims.length || '—'}</span></strong>
+              <small>native claims</small>
             </div>
           </div>
-          <div className="chip-row">
-            {(capabilityForSelectedProtocol?.versions ?? [selectedProtocolMeta.status]).map((version) => (
-              <span className="chip" key={version}>{version}</span>
-            ))}
-            {capabilityForSelectedProtocol?.implementationTier ? (
-              <span className={`chip chip-${capabilityForSelectedProtocol.implementationTier}`}>
-                {formatCapabilityToken(capabilityForSelectedProtocol.implementationTier)}
-              </span>
+
+          <div className="capability-contract-grid">
+            <div className="capability-version-rail" aria-label="Protocol versions">
+              {(capabilityForSelectedProtocol?.versionDetails ?? []).map((version) => (
+                <a
+                  href={version.specificationUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={`version-contract version-${version.status}`}
+                  key={`${version.version}-${version.specTrack}`}
+                >
+                  <span>{version.version}</span>
+                  <strong>{formatCapabilityToken(version.status)}</strong>
+                  <small>{formatCapabilityToken(version.specTrack)}</small>
+                </a>
+              ))}
+            </div>
+
+            {capabilityForSelectedProtocol?.negotiation ? (
+              <div className="negotiation-contract">
+                <span>Discovery</span>
+                <strong>{formatCapabilityToken(capabilityForSelectedProtocol.negotiation.mode)}</strong>
+                <p>{capabilityForSelectedProtocol.negotiation.transports.map(formatCapabilityToken).join(' · ')}</p>
+                <code>{capabilityForSelectedProtocol.negotiation.capabilityKeys[0]}</code>
+              </div>
             ) : null}
-            {capabilityForSelectedProtocol?.specTrack ? (
-              <span className={`chip chip-${capabilityForSelectedProtocol.specTrack}`}>
-                {formatCapabilityToken(capabilityForSelectedProtocol.specTrack)}
-              </span>
+
+            <div className="capability-claims" aria-label="Capability support claims">
+              {selectedCapabilityClaims.map((claim) => (
+                <div
+                  className={`capability-claim claim-${claim.status}`}
+                  key={`${claim.scope}-${claim.id}`}
+                  title={claim.note}
+                >
+                  <span>{formatCapabilityToken(claim.scope)}</span>
+                  <strong>{formatCapabilityToken(claim.id)}</strong>
+                  <small>{formatCapabilityToken(claim.status)}</small>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="capability-contract-footer">
+            <div className="chip-row">
+              {capabilityForSelectedProtocol?.implementationTier ? (
+                <span className={`chip chip-${capabilityForSelectedProtocol.implementationTier}`}>
+                  {formatCapabilityToken(capabilityForSelectedProtocol.implementationTier)}
+                </span>
+              ) : null}
+              {capabilityForSelectedProtocol?.specTrack ? (
+                <span className={`chip chip-${capabilityForSelectedProtocol.specTrack}`}>
+                  {formatCapabilityToken(capabilityForSelectedProtocol.specTrack)}
+                </span>
+              ) : null}
+            </div>
+            {capabilityForSelectedProtocol?.reviewedOn ? (
+              <span>Reviewed {capabilityForSelectedProtocol.reviewedOn}</span>
             ) : null}
           </div>
         </div>
@@ -4022,7 +4519,7 @@ function App() {
           </div>
         ) : null}
 
-        <div className="studio-grid">
+        <div className={`studio-grid${isCanvasExpanded ? ' is-canvas-expanded' : ''}`}>
           <aside className="launcher-panel" aria-labelledby="launcher-heading">
             <div className="panel-heading">
               <span className="step-number">01</span>
@@ -4078,7 +4575,7 @@ function App() {
             </div>
           </aside>
 
-          <main className="canvas-panel" aria-labelledby="canvas-heading">
+          <main ref={canvasPanelRef} className="canvas-panel" aria-labelledby="canvas-heading">
             <div className="canvas-toolbar">
               <div className="panel-heading compact">
                 <span className="step-number">02</span>
@@ -4087,13 +4584,32 @@ function App() {
                   <h3 id="canvas-heading">Live surface</h3>
                 </div>
               </div>
-              <div className="preview-toggle" aria-label="Preview size">
-                <button type="button" aria-pressed={previewMode === 'desktop'} onClick={() => setPreviewMode('desktop')}>
-                  <span aria-hidden="true">▱</span> Desktop
-                </button>
-                <button type="button" aria-pressed={previewMode === 'mobile'} onClick={() => setPreviewMode('mobile')}>
-                  <span aria-hidden="true">▯</span> Mobile
-                </button>
+              <div className="canvas-controls">
+                <div className="preview-toggle" aria-label="Preview size">
+                  <button type="button" aria-pressed={previewMode === 'desktop'} onClick={() => setPreviewMode('desktop')}>
+                    <span aria-hidden="true">▱</span> Desktop
+                  </button>
+                  <button type="button" aria-pressed={previewMode === 'mobile'} onClick={() => setPreviewMode('mobile')}>
+                    <span aria-hidden="true">▯</span> Mobile
+                  </button>
+                </div>
+                <div className="canvas-actions" aria-label="Canvas display">
+                  <button
+                    type="button"
+                    aria-pressed={isCanvasExpanded}
+                    onClick={() => setIsCanvasExpanded((current) => !current)}
+                  >
+                    {isCanvasExpanded ? 'Restore' : 'Maximize'}
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={isCanvasFullscreen}
+                    disabled={!document.fullscreenEnabled}
+                    onClick={() => void toggleCanvasFullscreen()}
+                  >
+                    {isCanvasFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -4101,13 +4617,19 @@ function App() {
               <div className={`preview-viewport preview-${previewMode}`}>
                 <div className="preview-chrome">
                   <span><i /><i /><i /></span>
-                  <strong>{surface ? surface.surfaceId : `${selectedProtocol}.surface`}</strong>
-                  <em>{surface ? 'live' : 'ready'}</em>
+                  <strong>{application ? application.name : surface ? surface.surfaceId : `${selectedProtocol}.surface`}</strong>
+                  <em>{application ? `${application.pages.length} routes / 3D ready` : surfaceQuality ? `quality ${Math.min(100, surfaceQuality.score)}` : 'ready'}</em>
                 </div>
 
-                {surfaceSourceLabel ? (
+                {application || surfaceSourceLabel || surfaceQuality ? (
                   <div className="surface-meta-strip">
-                    <span>{surfaceSourceLabel}</span>
+                    {application ? <span>application graph</span> : null}
+                    {surfaceSourceLabel ? <span>{surfaceSourceLabel}</span> : null}
+                    {surfaceQuality ? (
+                      <span className={surfaceQuality.lowFidelity ? 'quality-low' : 'quality-good'}>
+                        {surfaceQuality.lowFidelity ? 'needs refinement' : 'quality checked'}
+                      </span>
+                    ) : null}
                     {surfaceDisplayMode ? <span>{surfaceDisplayMode}</span> : null}
                     {surfaceProtocolVersion ? <span>{surfaceProtocolVersion}</span> : null}
                     {surfaceHostLabel ? <span>{surfaceHostLabel}</span> : null}
@@ -4115,7 +4637,17 @@ function App() {
                   </div>
                 ) : null}
 
-                {surface ? (
+                {application ? (
+                  <div className="render-application" data-application={application.id}>
+                    <ApplicationRenderer
+                      application={application}
+                      kits={[STUDIO_UI_KIT]}
+                      fallbackKit={STUDIO_UI_KIT}
+                      onAction={registerUiAction}
+                      onNavigate={(route) => appendEvent('application_navigate', selectedProtocol, { route }, `Navigate to ${route}`)}
+                    />
+                  </div>
+                ) : surface ? (
                   <div className="render-surface" data-surface={surface.surfaceId}>
                     {surface.html ? (
                       <iframe
@@ -4124,13 +4656,15 @@ function App() {
                         sandbox="allow-scripts"
                       />
                     ) : (
-                      surface.components.map((component, index) => (
-                        <UiRenderer
-                          key={`${component.id ?? 'component'}-${index}`}
-                          component={component}
-                          onAction={registerUiAction}
-                        />
-                      ))
+                      <AdkUiKitProvider kit={STUDIO_UI_KIT}>
+                        {surface.components.map((component, index) => (
+                          <UiRenderer
+                            key={`${component.id ?? 'component'}-${index}`}
+                            component={component}
+                            onAction={registerUiAction}
+                          />
+                        ))}
+                      </AdkUiKitProvider>
                     )}
                   </div>
                 ) : (
@@ -4151,8 +4685,8 @@ function App() {
                     ) : (
                       <>
                         <h4>Your agent&apos;s interface appears here</h4>
-                        <p>Choose a scenario or explore the zero-setup v2 demo.</p>
-                        <button type="button" onClick={loadLocalFeatureDemo}>Load example surface</button>
+                        <p>Choose a scenario or explore a complete generated product with three routes and 3D.</p>
+                        <button type="button" onClick={loadNextGenerationDemo}>Load next-generation app</button>
                       </>
                     )}
                   </div>
@@ -4249,6 +4783,8 @@ function App() {
           </aside>
         </div>
       </section>
+
+      <ShowcaseGallery />
 
       <section id="whats-new" className="whats-new-section fade-in-rise" aria-labelledby="whats-new-heading">
         <div className="whats-new-intro">

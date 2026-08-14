@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
 :root {
   --paper: #f4f0e7;
@@ -14,7 +14,7 @@
   --coral: #ff6846;
   --blue: #4c72ff;
   --danger: #c83b2d;
-  font-family: 'Space Grotesk', 'Avenir Next', sans-serif;
+  font-family: 'Avenir Next', 'Century Gothic', sans-serif;
   color: var(--ink);
   background: var(--paper);
   font-synthesis: none;
@@ -565,14 +565,21 @@ summary:focus-visible {
 }
 
 .protocol-signal {
+  display: grid;
+  gap: 0.85rem;
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid rgba(16, 25, 35, 0.08);
+  border-radius: 16px;
+  background:
+    linear-gradient(135deg, rgba(255, 253, 248, 0.86), rgba(238, 247, 243, 0.66));
+}
+
+.protocol-signal-topline {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 1.5rem;
-  margin-top: 1rem;
-  padding: 0.85rem 1rem;
-  border-radius: 10px;
-  background: rgba(255, 253, 248, 0.56);
 }
 
 .signal-summary {
@@ -595,7 +602,17 @@ summary:focus-visible {
 
 .signal-summary strong {
   display: block;
-  font-size: 0.82rem;
+  font-size: 0.92rem;
+}
+
+.signal-eyebrow {
+  display: block;
+  margin-bottom: 0.15rem;
+  color: var(--mint-dark);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.57rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
 .signal-summary p {
@@ -604,6 +621,182 @@ summary:focus-visible {
   color: var(--ink-soft);
   font-size: 0.75rem;
   line-height: 1.45;
+}
+
+.capability-score {
+  flex: 0 0 auto;
+  display: grid;
+  min-width: 86px;
+  padding-left: 1rem;
+  border-left: 1px solid rgba(16, 25, 35, 0.1);
+  text-align: right;
+}
+
+.capability-score strong {
+  color: var(--ink);
+  font-family: 'Fraunces', serif;
+  font-size: 1.55rem;
+  line-height: 1;
+}
+
+.capability-score strong span {
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+}
+
+.capability-score small,
+.capability-contract-footer > span {
+  margin-top: 0.25rem;
+  color: var(--ink-soft);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.57rem;
+  text-transform: uppercase;
+}
+
+.capability-contract-grid {
+  display: grid;
+  grid-template-columns: minmax(160px, 0.65fr) minmax(190px, 0.8fr) minmax(360px, 1.8fr);
+  gap: 0.65rem;
+}
+
+.capability-version-rail,
+.capability-claims {
+  display: grid;
+  gap: 0.42rem;
+}
+
+.capability-version-rail {
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+}
+
+.version-contract,
+.negotiation-contract,
+.capability-claim {
+  border: 1px solid rgba(16, 25, 35, 0.09);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.version-contract {
+  display: grid;
+  align-content: center;
+  min-height: 74px;
+  padding: 0.65rem;
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 160ms ease, transform 160ms ease;
+}
+
+.version-contract:hover {
+  border-color: rgba(8, 117, 87, 0.35);
+  transform: translateY(-1px);
+}
+
+.version-contract > span,
+.negotiation-contract > span,
+.capability-claim > span {
+  color: var(--ink-soft);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.54rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.version-contract strong,
+.negotiation-contract strong,
+.capability-claim strong {
+  margin-top: 0.2rem;
+  color: var(--ink);
+  font-size: 0.7rem;
+  line-height: 1.25;
+}
+
+.version-contract small,
+.capability-claim small {
+  margin-top: 0.16rem;
+  color: var(--mint-dark);
+  font-size: 0.57rem;
+  text-transform: uppercase;
+}
+
+.version-candidate small,
+.claim-candidate small,
+.claim-partial small {
+  color: #2b53c4;
+}
+
+.negotiation-contract {
+  display: grid;
+  align-content: start;
+  min-width: 0;
+  padding: 0.65rem;
+}
+
+.negotiation-contract p {
+  margin: 0.25rem 0 0.45rem;
+  color: var(--ink-soft);
+  font-size: 0.62rem;
+}
+
+.negotiation-contract code {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--mint-dark);
+  font-size: 0.57rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.capability-claims {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.capability-claim {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  padding: 0.55rem 0.65rem 0.55rem 0.8rem;
+  overflow: hidden;
+}
+
+.capability-claim::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--mint);
+  content: '';
+}
+
+.claim-partial::before,
+.claim-candidate::before {
+  background: #4c72ff;
+}
+
+.claim-host_owned::before,
+.claim-planned::before {
+  background: #d0902f;
+}
+
+.claim-legacy::before {
+  background: #a7afb5;
+}
+
+.claim-host_owned small,
+.claim-planned small {
+  color: #8d5d15;
+}
+
+.claim-legacy small {
+  color: var(--ink-soft);
+}
+
+.capability-contract-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid rgba(16, 25, 35, 0.08);
 }
 
 .chip-row {
@@ -854,6 +1047,19 @@ summary:focus-visible {
   background: #f8faf9;
 }
 
+.studio-grid.is-canvas-expanded {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.studio-grid.is-canvas-expanded .launcher-panel,
+.studio-grid.is-canvas-expanded .inspector-panel {
+  display: none;
+}
+
+.studio-grid.is-canvas-expanded .canvas-panel {
+  grid-column: 1 / -1;
+}
+
 .launcher-panel,
 .canvas-panel,
 .inspector-panel {
@@ -1028,6 +1234,22 @@ summary:focus-visible {
   background: #f9faf8;
 }
 
+.canvas-panel:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  min-height: 100vh;
+  background: #f9faf8;
+}
+
+.canvas-panel:fullscreen .canvas-stage {
+  min-height: 0;
+}
+
+.canvas-panel:fullscreen .preview-viewport.preview-desktop {
+  min-height: 100%;
+  border-radius: 0;
+}
+
 .canvas-toolbar {
   min-height: 76px;
   display: flex;
@@ -1036,6 +1258,12 @@ summary:focus-visible {
   gap: 1rem;
   padding: 0.75rem 1rem;
   border-bottom: 1px solid rgba(16, 25, 35, 0.1);
+}
+
+.canvas-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
 }
 
 .preview-toggle {
@@ -1060,6 +1288,34 @@ summary:focus-visible {
   color: var(--ink);
   background: white;
   box-shadow: 0 2px 8px rgba(16, 25, 35, 0.1);
+}
+
+.canvas-actions {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.canvas-actions button {
+  min-height: 32px;
+  border: 1px solid rgba(16, 25, 35, 0.18);
+  border-radius: 7px;
+  padding: 0.42rem 0.62rem;
+  color: var(--ink);
+  background: white;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.58rem;
+  cursor: pointer;
+}
+
+.canvas-actions button:hover,
+.canvas-actions button[aria-pressed='true'] {
+  border-color: var(--mint-dark);
+  color: var(--mint-dark);
+}
+
+.canvas-actions button:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
 }
 
 .canvas-stage {
@@ -1150,10 +1406,31 @@ summary:focus-visible {
   font-size: 0.52rem;
 }
 
+.surface-meta-strip .quality-good {
+  color: #087458;
+  background: rgba(8, 116, 88, 0.1);
+}
+
+.surface-meta-strip .quality-low {
+  color: #9a3412;
+  background: rgba(234, 88, 12, 0.1);
+}
+
 .render-surface {
   min-height: 480px;
   padding: clamp(0.8rem, 2vw, 1.3rem);
   overflow: auto;
+}
+
+.render-application {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  background: #f5f7f6;
+}
+
+.preview-mobile .render-application {
+  width: 390px;
 }
 
 .render-surface iframe {
@@ -1875,8 +2152,28 @@ summary:focus-visible {
   }
 
   .protocol-signal {
+    padding: 0.8rem;
+  }
+
+  .protocol-signal-topline,
+  .capability-contract-footer {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .capability-score {
+    min-width: 0;
+    padding: 0;
+    border-left: 0;
+    text-align: left;
+  }
+
+  .capability-contract-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .capability-claims {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .chip-row {
@@ -2048,11 +2345,21 @@ summary:focus-visible {
     flex-direction: column;
   }
 
+  .canvas-controls {
+    width: 100%;
+    align-items: stretch;
+    flex-direction: column;
+  }
+
   .preview-toggle {
     width: 100%;
   }
 
   .preview-toggle button {
+    flex: 1;
+  }
+
+  .canvas-actions button {
     flex: 1;
   }
 

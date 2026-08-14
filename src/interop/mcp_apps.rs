@@ -2,14 +2,166 @@ use super::surface::UiSurface;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
-/// Official MCP Apps HTML resource profile (SEP-1865 Final / ext-apps).
+/// Official MCP Apps HTML resource profile (stable 2026-01-26 extension).
 pub const MCP_APPS_HTML_MIME_TYPE: &str = "text/html;profile=mcp-app";
 /// Extension identifier for capability negotiation.
 pub const MCP_APPS_EXTENSION_ID: &str = "io.modelcontextprotocol/ui";
-/// Protocol version string advertised on initialize (SEP create date lineage).
-pub const MCP_APPS_PROTOCOL_VERSION: &str = "2025-11-21";
-/// Human-readable status of the upstream SEP.
-pub const MCP_APPS_SEP_STATUS: &str = "final";
+/// Protocol version string advertised by the stable MCP Apps extension.
+pub const MCP_APPS_PROTOCOL_VERSION: &str = "2026-01-26";
+/// Human-readable status of the upstream extension specification.
+pub const MCP_APPS_SEP_STATUS: &str = "stable";
+
+pub const MCP_APPS_INITIALIZE_METHOD: &str = "ui/initialize";
+pub const MCP_APPS_INITIALIZED_METHOD: &str = "ui/notifications/initialized";
+pub const MCP_APPS_TOOL_INPUT_METHOD: &str = "ui/notifications/tool-input";
+pub const MCP_APPS_TOOL_INPUT_PARTIAL_METHOD: &str = "ui/notifications/tool-input-partial";
+pub const MCP_APPS_TOOL_RESULT_METHOD: &str = "ui/notifications/tool-result";
+pub const MCP_APPS_TOOL_CANCELLED_METHOD: &str = "ui/notifications/tool-cancelled";
+pub const MCP_APPS_HOST_CONTEXT_CHANGED_METHOD: &str = "ui/notifications/host-context-changed";
+pub const MCP_APPS_SIZE_CHANGED_METHOD: &str = "ui/notifications/size-changed";
+pub const MCP_APPS_RESOURCE_TEARDOWN_METHOD: &str = "ui/resource-teardown";
+pub const MCP_APPS_REQUEST_DISPLAY_MODE_METHOD: &str = "ui/request-display-mode";
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct McpAppsExtensionSettings {
+    pub mime_types: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub features: Option<Vec<String>>,
+}
+
+/// MCP initialize capability fragment used to negotiate the optional Apps extension.
+pub fn default_mcp_apps_extension_capabilities() -> Value {
+    json!({
+        "extensions": {
+            (MCP_APPS_EXTENSION_ID): {
+                "mimeTypes": [MCP_APPS_HTML_MIME_TYPE],
+            }
+        }
+    })
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct McpAppsToolInputParams {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub arguments: Option<serde_json::Map<String, Value>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct McpAppsToolInputNotification {
+    pub method: String,
+    pub params: McpAppsToolInputParams,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
+pub struct McpAppsToolResultNotification {
+    pub method: String,
+    pub params: Value,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+pub struct McpAppsToolCancelledParams {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reason: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct McpAppsToolCancelledNotification {
+    pub method: String,
+    pub params: McpAppsToolCancelledParams,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct McpAppsHostContextChangedNotification {
+    pub method: String,
+    pub params: Value,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct McpAppsSizeChangedParams {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub width: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub height: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct McpAppsSizeChangedNotification {
+    pub method: String,
+    pub params: McpAppsSizeChangedParams,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct McpAppsResourceTeardownRequest {
+    pub method: String,
+    pub params: Value,
+}
+
+pub fn mcp_apps_tool_input_notification(
+    arguments: serde_json::Map<String, Value>,
+) -> McpAppsToolInputNotification {
+    McpAppsToolInputNotification {
+        method: MCP_APPS_TOOL_INPUT_METHOD.to_string(),
+        params: McpAppsToolInputParams {
+            arguments: Some(arguments),
+        },
+    }
+}
+
+pub fn mcp_apps_tool_input_partial_notification(
+    arguments: serde_json::Map<String, Value>,
+) -> McpAppsToolInputNotification {
+    McpAppsToolInputNotification {
+        method: MCP_APPS_TOOL_INPUT_PARTIAL_METHOD.to_string(),
+        params: McpAppsToolInputParams {
+            arguments: Some(arguments),
+        },
+    }
+}
+
+pub fn mcp_apps_tool_result_notification(params: Value) -> McpAppsToolResultNotification {
+    McpAppsToolResultNotification {
+        method: MCP_APPS_TOOL_RESULT_METHOD.to_string(),
+        params,
+    }
+}
+
+pub fn mcp_apps_tool_cancelled_notification(
+    reason: Option<String>,
+) -> McpAppsToolCancelledNotification {
+    McpAppsToolCancelledNotification {
+        method: MCP_APPS_TOOL_CANCELLED_METHOD.to_string(),
+        params: McpAppsToolCancelledParams { reason },
+    }
+}
+
+pub fn mcp_apps_host_context_changed_notification(
+    context_delta: Value,
+) -> McpAppsHostContextChangedNotification {
+    McpAppsHostContextChangedNotification {
+        method: MCP_APPS_HOST_CONTEXT_CHANGED_METHOD.to_string(),
+        params: context_delta,
+    }
+}
+
+pub fn mcp_apps_size_changed_notification(
+    width: Option<f64>,
+    height: Option<f64>,
+) -> McpAppsSizeChangedNotification {
+    McpAppsSizeChangedNotification {
+        method: MCP_APPS_SIZE_CHANGED_METHOD.to_string(),
+        params: McpAppsSizeChangedParams { width, height },
+    }
+}
+
+pub fn mcp_apps_resource_teardown_request() -> McpAppsResourceTeardownRequest {
+    McpAppsResourceTeardownRequest {
+        method: MCP_APPS_RESOURCE_TEARDOWN_METHOD.to_string(),
+        params: json!({}),
+    }
+}
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
@@ -328,22 +480,8 @@ pub fn default_mcp_apps_host_info() -> McpAppsPartyInfo {
 
 pub fn default_mcp_apps_host_capabilities() -> Value {
     json!({
-        "extensions": {
-            (MCP_APPS_EXTENSION_ID): {
-                "mimeTypes": [MCP_APPS_HTML_MIME_TYPE],
-                "sepStatus": MCP_APPS_SEP_STATUS,
-            }
-        },
         "message": {
             "text": {},
-            "structuredContent": {},
-            "resource": {},
-            "resourceLink": {},
-        },
-        "openLinks": {},
-        "sandbox": {
-            "csp": {},
-            "permissions": {},
         },
         "updateModelContext": {
             "text": {},
@@ -363,6 +501,19 @@ pub fn default_mcp_apps_host_context(resource_uri: &str, domain: Option<&str>) -
         "deviceCapabilities": {
             "hover": true,
             "touch": false,
+        },
+        "safeAreaInsets": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0,
+        },
+        "styles": {
+            "variables": {
+                "--color-background-primary": "#ffffff",
+                "--color-text-primary": "#172033",
+                "--font-sans": "IBM Plex Sans, sans-serif",
+            }
         },
         "containerDimensions": {
             "maxWidth": 960,
@@ -420,11 +571,6 @@ fn build_bridge_metadata(
             "availableDisplayModes": ["inline"],
             "tools": {
                 "listChanged": false,
-            },
-            "extensions": {
-                (MCP_APPS_EXTENSION_ID): {
-                    "mimeTypes": [MCP_APPS_HTML_MIME_TYPE],
-                }
             }
         })),
         app_info: Some(json!({
@@ -593,5 +739,43 @@ mod tests {
         };
         let result = validate_mcp_apps_render_options(&options);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn stable_extension_capabilities_use_2026_mime_negotiation() {
+        let capabilities = default_mcp_apps_extension_capabilities();
+        assert_eq!(MCP_APPS_PROTOCOL_VERSION, "2026-01-26");
+        assert_eq!(
+            capabilities["extensions"][MCP_APPS_EXTENSION_ID]["mimeTypes"][0],
+            MCP_APPS_HTML_MIME_TYPE
+        );
+    }
+
+    #[test]
+    fn default_host_capabilities_only_claim_implemented_bridges() {
+        let capabilities = default_mcp_apps_host_capabilities();
+        assert!(capabilities.get("message").is_some());
+        assert!(capabilities.get("updateModelContext").is_some());
+        assert!(capabilities.get("openLinks").is_none());
+        assert!(capabilities.get("sandbox").is_none());
+        assert!(capabilities.get("extensions").is_none());
+    }
+
+    #[test]
+    fn lifecycle_helpers_emit_stable_method_names() {
+        let arguments = serde_json::Map::from_iter([("city".to_string(), json!("Nairobi"))]);
+        let partial = mcp_apps_tool_input_partial_notification(arguments.clone());
+        let complete = mcp_apps_tool_input_notification(arguments);
+        let result = mcp_apps_tool_result_notification(json!({"content": []}));
+        let cancelled = mcp_apps_tool_cancelled_notification(Some("user action".to_string()));
+        let context = mcp_apps_host_context_changed_notification(json!({"theme": "dark"}));
+        let teardown = mcp_apps_resource_teardown_request();
+
+        assert_eq!(partial.method, MCP_APPS_TOOL_INPUT_PARTIAL_METHOD);
+        assert_eq!(complete.method, MCP_APPS_TOOL_INPUT_METHOD);
+        assert_eq!(result.method, MCP_APPS_TOOL_RESULT_METHOD);
+        assert_eq!(cancelled.method, MCP_APPS_TOOL_CANCELLED_METHOD);
+        assert_eq!(context.method, MCP_APPS_HOST_CONTEXT_CHANGED_METHOD);
+        assert_eq!(teardown.method, MCP_APPS_RESOURCE_TEARDOWN_METHOD);
     }
 }

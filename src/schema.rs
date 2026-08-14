@@ -40,6 +40,7 @@ pub enum Component {
 
     // Visualizations
     Chart(Chart),
+    Scene3d(Scene3d),
 
     // Feedback
     Alert(Alert),
@@ -447,6 +448,144 @@ pub enum ChartKind {
     Pie,
 }
 
+/// Declarative, bounded 3D scene. Hosts retain control of loading, rendering,
+/// interaction, and asset policy; agents cannot inject shaders or executable code.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct Scene3d {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(default = "default_scene_height")]
+    pub height: u16,
+    #[serde(default)]
+    pub background: SceneBackground,
+    #[serde(default)]
+    pub camera: SceneCamera,
+    pub objects: Vec<SceneObject>,
+    #[serde(default)]
+    pub auto_rotate: bool,
+    #[serde(default = "default_true")]
+    pub controls: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fallback: Option<String>,
+}
+
+fn default_scene_height() -> u16 {
+    440
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum SceneBackground {
+    Transparent,
+    #[default]
+    Surface,
+    Muted,
+    Contrast,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct SceneCamera {
+    #[serde(default = "default_camera_position")]
+    pub position: [f32; 3],
+    #[serde(default = "default_camera_target")]
+    pub target: [f32; 3],
+    #[serde(default = "default_camera_fov")]
+    pub fov: f32,
+}
+
+impl Default for SceneCamera {
+    fn default() -> Self {
+        Self {
+            position: default_camera_position(),
+            target: default_camera_target(),
+            fov: default_camera_fov(),
+        }
+    }
+}
+
+fn default_camera_position() -> [f32; 3] {
+    [4.5, 3.0, 6.0]
+}
+fn default_camera_target() -> [f32; 3] {
+    [0.0, 0.0, 0.0]
+}
+fn default_camera_fov() -> f32 {
+    42.0
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum SceneObject {
+    Primitive(ScenePrimitive),
+    Model(SceneModel),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct ScenePrimitive {
+    pub id: String,
+    pub shape: ScenePrimitiveShape,
+    #[serde(default)]
+    pub position: [f32; 3],
+    #[serde(default)]
+    pub rotation: [f32; 3],
+    #[serde(default = "default_scene_scale")]
+    pub scale: [f32; 3],
+    #[serde(default)]
+    pub material: SceneMaterialRole,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub label: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub action_id: Option<String>,
+}
+
+fn default_scene_scale() -> [f32; 3] {
+    [1.0, 1.0, 1.0]
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum ScenePrimitiveShape {
+    Box,
+    Sphere,
+    Cylinder,
+    Torus,
+    Plane,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum SceneMaterialRole {
+    #[default]
+    Primary,
+    Secondary,
+    Surface,
+    Muted,
+    Success,
+    Warning,
+    Info,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct SceneModel {
+    pub id: String,
+    /// Approved `model_3d` asset from the active brand kit.
+    pub asset_id: String,
+    #[serde(default)]
+    pub position: [f32; 3],
+    #[serde(default)]
+    pub rotation: [f32; 3],
+    #[serde(default = "default_scene_scale")]
+    pub scale: [f32; 3],
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub label: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub action_id: Option<String>,
+}
+
 // --- Feedback ---
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
@@ -594,6 +733,9 @@ pub struct UiResponse {
     /// Unique ID for this UI response (for updates)
     #[serde(default)]
     pub id: Option<String>,
+    /// Approved brand-kit/catalog identifier used to constrain and style this response.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub kit_id: Option<String>,
     /// Theme preference
     #[serde(default)]
     pub theme: Theme,
@@ -605,6 +747,7 @@ impl UiResponse {
     pub fn new(components: Vec<Component>) -> Self {
         Self {
             id: None,
+            kit_id: None,
             theme: Theme::default(),
             components,
         }
@@ -617,6 +760,11 @@ impl UiResponse {
 
     pub fn with_id(mut self, id: impl Into<String>) -> Self {
         self.id = Some(id.into());
+        self
+    }
+
+    pub fn with_kit_id(mut self, kit_id: impl Into<String>) -> Self {
+        self.kit_id = Some(kit_id.into());
         self
     }
 

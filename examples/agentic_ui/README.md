@@ -13,7 +13,7 @@ Three production-style agents, one protocol each:
 ```bash
 # Default — OpenAI
 export OPENAI_API_KEY=sk-...
-# optional: export ADK_UI_MODEL=gpt-4o-mini
+# optional: export ADK_UI_MODEL=gpt-5.6-sol
 
 cargo run --example agentic_ui --features adk-core
 

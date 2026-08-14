@@ -27,6 +27,7 @@ function extractLegacyUiResponse(payload: unknown): UiResponse | null {
     if (isLegacyComponentArray(payload.components)) {
         return {
             id: typeof payload.id === 'string' ? payload.id : undefined,
+            kit_id: typeof payload.kit_id === 'string' ? payload.kit_id : undefined,
             theme: getUiTheme(payload.theme),
             components: payload.components,
         };
@@ -38,6 +39,7 @@ function extractLegacyUiResponse(payload: unknown): UiResponse | null {
     ) {
         return {
             id: typeof payload.payload.id === 'string' ? payload.payload.id : undefined,
+            kit_id: typeof payload.payload.kit_id === 'string' ? payload.payload.kit_id : undefined,
             theme: getUiTheme(payload.payload.theme),
             components: payload.payload.components,
         };
