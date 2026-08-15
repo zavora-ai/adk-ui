@@ -10,7 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@zavora-ai/adk-ui-react": "^0.5.0",
+    "@zavora-ai/adk-ui-react": "^2.1.0",
     "@tailwindcss/typography": "^0.5.19",
     "autoprefixer": "^10.4.22",
     "clsx": "^2.1.1",
@@ -21,7 +21,8 @@
     "react-markdown": "^10.1.0",
     "recharts": "^3.5.1",
     "tailwind-merge": "^3.4.0",
-    "tailwindcss": "^3.4.19"
+    "tailwindcss": "^3.4.19",
+    "three": "^0.185.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

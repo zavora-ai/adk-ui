@@ -1,6 +1,6 @@
 {
     "name": "@zavora-ai/adk-ui-react",
-    "version": "0.5.0",
+    "version": "2.1.0",
     "description": "React components for rendering ADK-UI agent interfaces",
     "main": "dist/index.js",
     "module": "dist/index.mjs",
@@ -10,7 +10,8 @@
             "types": "./dist/index.d.ts",
             "import": "./dist/index.mjs",
             "require": "./dist/index.js"
-        }
+        },
+        "./package.json": "./package.json"
     },
     "files": [
         "dist",
@@ -20,28 +21,39 @@
         "build": "node scripts/build.mjs",
         "dev": "node scripts/build.mjs --watch",
         "lint": "eslint src/",
+        "prepublishOnly": "npm run lint && npm run typecheck && npm test",
         "pretest": "npm run build",
         "test": "node --test ./test/*.cjs",
         "typecheck": "tsc --noEmit"
     },
     "peerDependencies": {
         "react": ">=18.0.0",
-        "react-dom": ">=18.0.0"
+        "react-dom": ">=18.0.0",
+        "recharts": "^3.0.0",
+        "three": ">=0.180.0"
+    },
+    "peerDependenciesMeta": {
+        "recharts": {
+            "optional": true
+        },
+        "three": {
+            "optional": true
+        }
     },
     "dependencies": {
         "clsx": "^2.0.0",
         "lucide-react": "^0.564.0",
-        "react-markdown": "^10.1.0",
-        "recharts": "^3.10.1",
-        "three": "^0.185.1"
+        "react-markdown": "^10.1.0"
     },
     "devDependencies": {
         "@types/react": "^19.2.5",
         "@types/react-dom": "^19.2.3",
-        "@types/three": "^0.183.1",
+        "@types/three": "^0.185.0",
         "esbuild": "^0.28.2",
         "react": "^19.2.0",
         "react-dom": "^19.2.0",
+        "recharts": "^3.10.1",
+        "three": "^0.185.1",
         "typescript": "^5.0.0"
     },
     "keywords": [

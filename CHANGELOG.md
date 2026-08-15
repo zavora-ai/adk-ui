@@ -31,6 +31,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Corrected A2UI conversion paths that could drop component identity or produce malformed nested layouts.
 - Prevented generated form controls and action flows from losing state during rerenders.
 
+### Packaging
+
+- `@zavora-ai/adk-ui-react` moves from its own `0.x` line to **2.1.0** so the React package and the `adk-ui` crate share one version. The public API stays a strict superset of the published `0.3.2`.
+- `three` and `recharts` become **optional peer dependencies**. Both are only reachable from lazily loaded renderers, so hosts that render neither charts nor 3D scenes drop roughly 63 MB from a fresh install.
+- A missing optional peer now degrades the affected component to an accessible note naming the package to install instead of propagating the failed chunk import to the host application.
+- Added a `prepublishOnly` gate that runs lint, typecheck, and the test suite so a publish cannot ship an unbuilt or unverified `dist`.
+
 ## [2.0.0] - 2026-08-13
 
 ### Breaking

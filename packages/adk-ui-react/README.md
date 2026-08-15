@@ -27,7 +27,8 @@ Render rich, interactive user interfaces from your AI agents instead of plain te
 - Tri-protocol support — A2UI, AG-UI, and MCP Apps through a unified client
 - TypeScript first — full type definitions included
 - Approved brand kits — semantic tokens, company assets, component slots, and protocol kit identity
-- Lazy heavy renderers — charts and 3D are split from the normal interface path
+- Reasoning transcripts — accumulate and display agent reasoning as it streams
+- Lazy heavy renderers — charts and 3D ship as separate chunks and are optional to install
 
 ## Installation
 
@@ -35,7 +36,28 @@ Render rich, interactive user interfaces from your AI agents instead of plain te
 npm install @zavora-ai/adk-ui-react
 ```
 
-Peer dependencies: `react >= 18.0.0` and `react-dom >= 18.0.0`.
+Required peers:
+
+```bash
+npm install react react-dom
+```
+
+### Optional peers
+
+Charts and 3D scenes are loaded on demand from their own chunks, so their libraries are **optional peer dependencies**. Install them only for the capabilities you actually render:
+
+| Capability | Component | Install |
+| --- | --- | --- |
+| Charts | `chart` | `npm install recharts` |
+| Declarative 3D | `scene_3d`, A2UI `Scene3D` | `npm install three` |
+
+Skipping both keeps roughly 63 MB of `three`, `recharts`, and their transitive packages out of your install, measured against a fresh consumer project. Nothing else in the package depends on them, and the entry point never resolves them at import time.
+
+If an agent sends a `chart` or `scene_3d` component while its peer is missing, that component degrades to an accessible note naming the package to install. The surrounding surface keeps rendering, and the reason is logged once to the console.
+
+### Version alignment
+
+The package version tracks the ADK UI release line, so `@zavora-ai/adk-ui-react@2.1.x` pairs with the `adk-ui = "2.1"` Rust crate.
 
 ### Complete applications
 
@@ -63,6 +85,8 @@ Buttons with an action such as `navigate:/orders/at-risk` route locally. Visited
 `scene_3d` accepts a bounded scene description, not JSX, JavaScript, or shaders. Primitive materials resolve through semantic brand-kit colors. External models must be approved `model_3d` kit assets with the `model/gltf-binary` MIME type.
 
 The renderer loads on demand, prefers WebGPU where available, falls back to WebGL 2, caps device pixel ratio, pauses offscreen work, honors reduced motion, and disposes geometries, textures, materials, controls, and the renderer on unmount.
+
+`three` is an optional peer dependency. Install it to enable `scene_3d`; without it the component degrades to an accessible note instead of failing the surface.
 
 ## Quick Start
 
@@ -276,50 +300,62 @@ Text (with Markdown), Image, Icon, Row, Column, List, Card, Divider, Tabs, Modal
 
 ### Exports
 
+Everything is available from the package root. 55 values and 78 types are exported; the grouping below covers the entry points you are most likely to reach for.
+
 ```ts
 // Renderers
-export { Renderer, StreamingRenderer } from './Renderer';
-export { A2uiSurfaceRenderer } from './a2ui/renderer';
-export { AdkUiKitProvider, defaultUiKit, resolveApprovedUiKit } from './kit';
-export type { UiKitManifest, UiKitSlots } from './kit';
+import {
+  Renderer, StreamingRenderer, A2uiSurfaceRenderer,
+  ApplicationRenderer, ReasoningPanel,
+} from '@zavora-ai/adk-ui-react';
+
+// Applications
+import {
+  parseUiApplication, validateUiApplication, applyUiApplicationUpdate,
+  ADK_UI_APPLICATION_CSS,
+} from '@zavora-ai/adk-ui-react';
+
+// Brand kits
+import {
+  AdkUiKitProvider, useAdkUiKit, defaultUiKit, resolveApprovedUiKit,
+  resolveKitAssetSource, kitStyleVariables, ADK_UI_KIT_CSS,
+} from '@zavora-ai/adk-ui-react';
+
+// Protocol clients and stores
+import {
+  ProtocolClient, createProtocolClient, UnifiedRenderStore, A2uiStore,
+  applyProtocolPayload, parseProtocolPayload, extractProtocolSurface,
+  applySurfaceSnapshot, buildOutboundEvent, buildA2uiClientEnvelope,
+} from '@zavora-ai/adk-ui-react';
+
+// Protocol versions and MCP Apps handshake
+import {
+  A2UI_PROTOCOL_VERSION, A2UI_PROTOCOL_VERSION_V1,
+  MCP_APPS_EXTENSION_ID, MCP_APPS_PROTOCOL_VERSION,
+  buildMcpAppsExtensionCapabilities, buildMcpAppsInitializeRequest,
+  buildMcpAppsInitializedNotification,
+} from '@zavora-ai/adk-ui-react';
+
+// Streaming updates, reasoning, and A2UI bindings
+import {
+  applyUiUpdate, applyUiUpdates,
+  createReasoningRuntime, applyReasoningEvent,
+  parseJsonl, applyParsedMessages, evaluateChecks,
+  isDataBinding, isFunctionCall, resolvePath,
+  resolveDynamicString, resolveDynamicValue,
+  buildActionEvent, buildErrorEvent, buildValidationFailedEvent,
+  runLocalAction, nextActionId, uiEventToMessage, writeJsonPointer,
+} from '@zavora-ai/adk-ui-react';
 
 // Types
-export type { Component, UiResponse, UiEvent, TableColumn } from './types';
-export { uiEventToMessage } from './types';
-
-// A2UI Store & Parser
-export { A2uiStore } from './a2ui/store';
-export { applyParsedMessages, parseJsonl } from './a2ui/parser';
-export type {
-  A2uiMessage, CreateSurfaceMessage, DeleteSurfaceMessage,
-  ParsedA2uiMessage, UpdateComponentsMessage, UpdateDataModelMessage,
-} from './a2ui/parser';
-
-// A2UI Bindings
-export {
-  isDataBinding, isFunctionCall, resolveDynamicString,
-  resolveDynamicValue, resolvePath,
-} from './a2ui/bindings';
-export type { DataBinding, FunctionCall, FunctionRegistry, ResolveContext } from './a2ui/bindings';
-
-// A2UI Events
-export { buildActionEvent } from './a2ui/events';
-export type {
-  A2uiActionDefinition, A2uiActionEventDefinition,
-  A2uiActionEventPayload, ActionEventOptions,
-} from './a2ui/events';
-
-// Streaming Updates
-export { applyUiUpdate, applyUiUpdates } from './updates';
-
-// Protocol Adapters
-export { applyProtocolPayload, parseProtocolPayload } from './protocols';
-
-// Unified Store & Client
-export { UnifiedRenderStore } from './store';
-export { ProtocolClient, buildOutboundEvent, createProtocolClient } from './client';
-export type { OutboundEventOptions, ProtocolClientOptions, UiProtocol } from './client';
+import type {
+  Component, UiResponse, UiEvent, UiUpdate, TableColumn,
+  UiApplication, UiApplicationPage, UiKitManifest, UiKitSlots,
+  Scene3dComponent, ReasoningMessage, UiProtocol,
+} from '@zavora-ai/adk-ui-react';
 ```
+
+`ChartRenderer` and `Scene3DRenderer` are intentionally not exported. They load on demand from their own chunks so that hosts which never render charts or 3D scenes neither ship nor install those libraries.
 
 ## Integration with ADK-Rust
 
@@ -340,8 +376,14 @@ Your agent calls `render_form`, `render_table`, `render_chart`, and other tools 
 
 ## Requirements
 
-- React 18.0.0+
-- react-dom 18.0.0+
+| Package | Range | Required |
+| --- | --- | --- |
+| `react` | >= 18.0.0 | yes |
+| `react-dom` | >= 18.0.0 | yes |
+| `recharts` | ^3.0.0 | only for `chart` components |
+| `three` | >= 0.180.0 | only for `scene_3d` / A2UI `Scene3D` |
+
+Ships CommonJS, ESM, and TypeScript declarations. The ESM build is code-split, so bundlers fetch the chart and 3D chunks only when those components are rendered.
 
 ## License
 

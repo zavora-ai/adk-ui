@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState } from 'react';
 import clsx from 'clsx';
 import Markdown, { type Components } from 'react-markdown';
 import { AlertCircle, CheckCircle, Info, XCircle, User, Mail, Calendar } from 'lucide-react';
+import { OptionalRenderer } from '../OptionalRenderer';
 
 import type { CheckRule, FunctionRegistry } from './bindings';
 import { evaluateChecks, isDataBinding, resolveDynamicString, resolveDynamicValue, resolvePath } from './bindings';
@@ -297,7 +298,11 @@ const A2uiComponentView: React.FC<{ component: A2uiComponent; scope?: Record<str
         case 'Scene3D': {
             const sceneComponent = { ...component, type: 'scene_3d' } as unknown as Scene3dComponent;
             return (
-                <React.Suspense fallback={<div className="adk-ui-scene-3d__loading" style={{ height: sceneComponent.height ?? 440 }} aria-label="Loading 3D scene" />}>
+                <OptionalRenderer
+                    peerDependency="three"
+                    capability="3D scene"
+                    loading={<div className="adk-ui-scene-3d__loading" style={{ height: sceneComponent.height ?? 440 }} aria-label="Loading 3D scene" />}
+                >
                     <Scene3DRenderer
                         component={sceneComponent}
                         onAction={(event) => {
@@ -314,7 +319,7 @@ const A2uiComponentView: React.FC<{ component: A2uiComponent; scope?: Record<str
                             }
                         }}
                     />
-                </React.Suspense>
+                </OptionalRenderer>
             );
         }
         case 'Icon': {

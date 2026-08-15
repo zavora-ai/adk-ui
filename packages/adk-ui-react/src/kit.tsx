@@ -385,6 +385,24 @@ export const ADK_UI_KIT_CSS = `
 }
 @keyframes adk-ui-scene-loading { 50% { background-position: 100% 0; } }
 @media (prefers-reduced-motion: reduce) { .adk-ui-scene-3d__loading { animation: none; } }
+.adk-ui-optional-renderer {
+  display: grid;
+  gap: 0.25rem;
+  place-content: center;
+  padding: 1.5rem;
+  min-height: 160px;
+  text-align: center;
+  border: 1px dashed var(--adk-ui-border);
+  border-radius: calc(var(--adk-ui-radius) * 1.5);
+  background: var(--adk-ui-muted);
+  color: var(--adk-ui-muted-foreground);
+}
+.adk-ui-optional-renderer__title { font-weight: 600; }
+.adk-ui-optional-renderer__hint { font-size: 0.875rem; }
+.adk-ui-optional-renderer code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8125rem;
+}
 .adk-ui-kit-surface .adk-ui-badge--default,
 .adk-ui-kit-surface .adk-ui-badge--secondary {
   background: var(--adk-ui-muted);

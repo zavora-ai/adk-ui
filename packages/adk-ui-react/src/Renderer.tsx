@@ -1,4 +1,4 @@
-import React, { createContext, lazy, Suspense, useContext, useMemo, useRef, useState } from 'react';
+import React, { createContext, lazy, useContext, useMemo, useRef, useState } from 'react';
 import type { Component, UiEvent, UiUpdate } from './types';
 import { applyUiUpdates } from './updates';
 import { AlertCircle, CheckCircle, Info, XCircle, User, Mail, Calendar } from 'lucide-react';
@@ -11,6 +11,7 @@ import {
     resolveKitAssetSource,
     useAdkUiKit,
 } from './kit';
+import { OptionalRenderer } from './OptionalRenderer';
 
 const ChartRenderer = lazy(() => import('./ChartRenderer'));
 const Scene3DRenderer = lazy(() => import('./Scene3DRenderer'));
@@ -838,16 +839,24 @@ const DefaultComponentRenderer: React.FC<{ component: Component }> = React.memo(
 
         case 'chart':
             return (
-                <Suspense fallback={<div className="mb-4 h-[300px] animate-pulse rounded-xl bg-slate-100" aria-label="Loading chart" />}>
+                <OptionalRenderer
+                    peerDependency="recharts"
+                    capability="Chart"
+                    loading={<div className="mb-4 h-[300px] animate-pulse rounded-xl bg-slate-100" aria-label="Loading chart" />}
+                >
                     <ChartRenderer component={component} />
-                </Suspense>
+                </OptionalRenderer>
             );
 
         case 'scene_3d':
             return (
-                <Suspense fallback={<div className="adk-ui-scene-3d__loading" style={{ height: component.height ?? 440 }} aria-label="Loading 3D scene" />}>
+                <OptionalRenderer
+                    peerDependency="three"
+                    capability="3D scene"
+                    loading={<div className="adk-ui-scene-3d__loading" style={{ height: component.height ?? 440 }} aria-label="Loading 3D scene" />}
+                >
                     <Scene3DRenderer component={component} onAction={onAction} />
-                </Suspense>
+                </OptionalRenderer>
             );
 
         case 'code_block':
