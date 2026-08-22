@@ -98,6 +98,23 @@ for tool in tools {
 let agent = builder.build()?;
 ```
 
+For versioned, durable surfaces, register the toolset itself with a store:
+
+```rust,ignore
+use adk_ui::{FsSurfaceStore, UiToolset};
+use std::sync::Arc;
+
+let store = Arc::new(FsSurfaceStore::new("./data/surfaces")?);
+let ui = UiToolset::new().with_persistence(store);
+let agent = LlmAgentBuilder::new("assistant")
+    .model(model)
+    .instruction(UI_AGENT_PROMPT)
+    .toolset(Arc::new(ui))
+    .build()?;
+```
+
+This adds `save_surface`, `load_surface`, `list_surfaces`, and `delete_surface`; `patch_surface` also updates the stored payload using optimistic revision checks.
+
 ### 3. Run the example stack
 
 The bundled demo pairs the Rust example server with the React client.

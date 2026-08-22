@@ -1,9 +1,11 @@
+use crate::surface_runtime::SurfaceRef;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 pub const MIME_TYPE_UI: &str = "application/vnd.adk.ui+json";
 pub const MIME_TYPE_UI_UPDATE: &str = "application/vnd.adk.ui.update+json";
+pub const MIME_TYPE_UI_EVENT: &str = "application/vnd.adk.ui.event+json";
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "type", rename_all = "snake_case")]
@@ -344,13 +346,39 @@ pub struct Tab {
 
 // --- Data Display ---
 
+/// A data-model binding used instead of literal component data.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct DataSource {
+    /// RFC 6901 JSON Pointer into the active surface data model.
+    pub binding_path: String,
+    #[serde(default)]
+    pub refresh: DataRefresh,
+    /// Maximum age, in seconds, before the host should request fresh data.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ttl: Option<u64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Default)]
+#[serde(tag = "mode", rename_all = "snake_case")]
+pub enum DataRefresh {
+    #[default]
+    Manual,
+    Interval {
+        secs: u64,
+    },
+    Push,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct Table {
     /// Optional ID for streaming updates
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<String>,
     pub columns: Vec<TableColumn>,
+    #[serde(default)]
     pub data: Vec<HashMap<String, serde_json::Value>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub data_source: Option<DataSource>,
     /// Enable sorting on columns
     #[serde(default)]
     pub sortable: bool,
@@ -390,7 +418,10 @@ pub struct KeyValue {
     /// Optional ID for streaming updates
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<String>,
+    #[serde(default)]
     pub pairs: Vec<KeyValuePair>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub data_source: Option<DataSource>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
@@ -418,9 +449,18 @@ pub struct Chart {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub title: Option<String>,
     pub kind: ChartKind,
+    #[serde(default)]
     pub data: Vec<HashMap<String, serde_json::Value>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub data_source: Option<DataSource>,
     pub x_key: String,
     pub y_keys: Vec<String>,
+    #[serde(default)]
+    pub x_type: ChartXType,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub time_format: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub window: Option<u32>,
     /// X-axis label
     #[serde(skip_serializing_if = "Option::is_none")]
     pub x_label: Option<String>,
@@ -446,6 +486,17 @@ pub enum ChartKind {
     Line,
     Area,
     Pie,
+    Scatter,
+    Sparkline,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum ChartXType {
+    #[default]
+    Category,
+    Numeric,
+    Time,
 }
 
 /// Declarative, bounded 3D scene. Hosts retain control of loading, rendering,
@@ -809,6 +860,40 @@ pub enum UiEvent {
     },
 }
 
+/// Typed UI-to-agent event with surface correlation metadata.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct UiEventEnvelope {
+    pub surface_ref: SurfaceRef,
+    pub event: UiEvent,
+    pub occurred_at: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<serde_json::Value>,
+}
+
+impl UiEventEnvelope {
+    pub fn new(surface_ref: SurfaceRef, event: UiEvent) -> Self {
+        Self {
+            surface_ref,
+            event,
+            occurred_at: chrono::Utc::now().to_rfc3339(),
+            metadata: None,
+        }
+    }
+
+    pub fn with_metadata(mut self, metadata: serde_json::Value) -> Self {
+        self.metadata = Some(metadata);
+        self
+    }
+
+    pub fn to_content(&self) -> crate::compat::Content {
+        let json = serde_json::to_vec(self).unwrap_or_default();
+        crate::compat::Content {
+            role: "user".to_string(),
+            parts: vec![crate::compat::inline_data_part(MIME_TYPE_UI_EVENT, json)],
+        }
+    }
+}
+
 impl UiEvent {
     /// Convert UI event to a user message for the agent
     pub fn to_user_message(&self) -> String {
@@ -835,9 +920,13 @@ impl UiEvent {
         }
     }
 
-    /// Convert to Content for sending to agent
+    /// Convert to typed Content for sending to an agent runtime.
     pub fn to_content(&self) -> crate::compat::Content {
-        crate::compat::Content::new("user").with_text(self.to_user_message())
+        let json = serde_json::to_vec(self).unwrap_or_default();
+        crate::compat::Content {
+            role: "user".to_string(),
+            parts: vec![crate::compat::inline_data_part(MIME_TYPE_UI_EVENT, json)],
+        }
     }
 }
 
@@ -878,6 +967,15 @@ impl UiUpdate {
         Self {
             target_id: target_id.into(),
             operation: UiOperation::Replace,
+            payload: Some(component),
+        }
+    }
+
+    /// Create a patch update that merges component fields into the target.
+    pub fn patch(target_id: impl Into<String>, component: Component) -> Self {
+        Self {
+            target_id: target_id.into(),
+            operation: UiOperation::Patch,
             payload: Some(component),
         }
     }
@@ -966,6 +1064,29 @@ mod tests {
     }
 
     #[test]
+    fn ui_event_content_is_typed() {
+        let event = UiEvent::ButtonClick {
+            action_id: "open".to_string(),
+        };
+        let content = event.to_content();
+        let value = serde_json::to_value(content).unwrap();
+        assert_eq!(value["parts"][0]["mime_type"], MIME_TYPE_UI_EVENT);
+    }
+
+    #[test]
+    fn patch_constructor_emits_patch_operation() {
+        let update = UiUpdate::patch(
+            "status",
+            Component::Text(Text {
+                id: Some("status".to_string()),
+                content: "ready".to_string(),
+                variant: TextVariant::Body,
+            }),
+        );
+        assert!(matches!(update.operation, UiOperation::Patch));
+    }
+
+    #[test]
     fn test_ui_update_replace() {
         let update = UiUpdate::replace(
             "target-1",
@@ -1003,6 +1124,7 @@ mod tests {
                     value: "30".to_string(),
                 },
             ],
+            data_source: None,
         };
 
         let json = serde_json::to_string(&kv).unwrap();

@@ -1,4 +1,5 @@
 use super::surface::UiSurface;
+use crate::notifications::UiNotification;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
@@ -213,7 +214,7 @@ pub fn default_ag_ui_agent_capabilities() -> AgUiAgentCapabilities {
             streaming: Some(true),
             websocket: Some(false),
             http_binary: Some(false),
-            push_notifications: Some(false),
+            push_notifications: Some(true),
             resumable: Some(false),
         }),
         tools: Some(AgUiToolsCapabilities {
@@ -252,6 +253,7 @@ pub fn default_ag_ui_agent_capabilities() -> AgUiAgentCapabilities {
             "adkUiSurfaceEvents": ["ACTIVITY_SNAPSHOT", "CUSTOM"],
             "interruptWireTypes": true,
             "durableInterruptRuntime": false,
+            "adkUiNotificationChannel": true,
         })),
         ..Default::default()
     }
@@ -1078,6 +1080,17 @@ pub fn raw_event(event: Value, source: Option<String>) -> AgUiEvent {
         event_type: AgUiEventType::Raw,
         event,
         source,
+    })
+}
+
+/// Convert an out-of-turn UI notification into an AG-UI custom event.
+pub fn notification_event(notification: &UiNotification) -> AgUiEvent {
+    AgUiEvent::Custom(AgUiCustomEvent {
+        event_type: AgUiEventType::Custom,
+        name: "adk.ui.notification".to_string(),
+        value: serde_json::to_value(notification).unwrap_or(Value::Null),
+        timestamp: None,
+        raw_event: None,
     })
 }
 

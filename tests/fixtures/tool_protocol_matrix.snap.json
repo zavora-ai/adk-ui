@@ -230,6 +230,19 @@
     "has_version": true
   },
   {
+    "tool": "patch_surface",
+    "protocol": "a2ui",
+    "value_kind": "object",
+    "top_level_keys": [
+      "surface_ref",
+      "update"
+    ],
+    "jsonl_line_count": null,
+    "event_types": [],
+    "resource_uri": null,
+    "has_version": false
+  },
+  {
     "tool": "render_screen",
     "protocol": "ag_ui",
     "value_kind": "object",
@@ -503,6 +516,19 @@
     ],
     "resource_uri": null,
     "has_version": true
+  },
+  {
+    "tool": "patch_surface",
+    "protocol": "ag_ui",
+    "value_kind": "object",
+    "top_level_keys": [
+      "surface_ref",
+      "update"
+    ],
+    "jsonl_line_count": null,
+    "event_types": [],
+    "resource_uri": null,
+    "has_version": false
   },
   {
     "tool": "render_screen",
@@ -713,5 +739,18 @@
     "event_types": [],
     "resource_uri": "ui://adk-rust/toast",
     "has_version": true
+  },
+  {
+    "tool": "patch_surface",
+    "protocol": "mcp_apps",
+    "value_kind": "object",
+    "top_level_keys": [
+      "surface_ref",
+      "update"
+    ],
+    "jsonl_line_count": null,
+    "event_types": [],
+    "resource_uri": null,
+    "has_version": false
   }
 ]

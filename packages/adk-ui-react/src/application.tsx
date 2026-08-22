@@ -49,6 +49,9 @@ export interface UiApplicationPage {
 export interface UiApplication {
     id: string;
     name: string;
+    version?: number;
+    owner?: string;
+    updated_at?: string;
     kit_id?: string;
     initial_route: string;
     navigation?: UiNavigationItem[];
@@ -105,22 +108,41 @@ export function parseUiApplication(value: unknown): UiApplication | null {
 }
 
 export function applyUiApplicationUpdate(application: UiApplication, update: UiApplicationUpdate): UiApplication {
-    if (update.operation === 'replace') return update.application;
+    if (update.operation === 'replace') return {
+        ...update.application,
+        version: (application.version ?? 1) + 1,
+        owner: update.application.owner || application.owner,
+        updated_at: new Date().toISOString(),
+    };
     if (update.operation === 'patch_state') {
-        return { ...application, state: { ...application.state, ...update.values } };
+        return touchApplication({ ...application, state: { ...application.state, ...update.values } });
     }
     if (update.operation === 'upsert_page') {
         const exists = application.pages.some((page) => page.id === update.page.id);
-        return { ...application, pages: exists
-            ? application.pages.map((page) => page.id === update.page.id ? update.page : page)
-            : [...application.pages, update.page] };
+        const previousRoute = application.pages.find((page) => page.id === update.page.id)?.route;
+        return touchApplication({
+            ...application,
+            pages: exists
+                ? application.pages.map((page) => page.id === update.page.id ? update.page : page)
+                : [...application.pages, update.page],
+            initial_route: previousRoute && application.initial_route === previousRoute ? update.page.route : application.initial_route,
+            navigation: application.navigation?.map((item) => previousRoute && item.route === previousRoute ? { ...item, route: update.page.route } : item),
+        });
     }
     if (update.operation === 'remove_page') {
         const pages = application.pages.filter((page) => page.id !== update.page_id);
         const routes = new Set(pages.map((page) => page.route));
-        return { ...application, pages, navigation: application.navigation?.filter((item) => routes.has(item.route)) };
+        return touchApplication({ ...application, pages, navigation: application.navigation?.filter((item) => routes.has(item.route)) });
     }
     return application;
+}
+
+function touchApplication(application: UiApplication): UiApplication {
+    return {
+        ...application,
+        version: (application.version ?? 1) + 1,
+        updated_at: new Date().toISOString(),
+    };
 }
 
 export interface ApplicationRendererProps {

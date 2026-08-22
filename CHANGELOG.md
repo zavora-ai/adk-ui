@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2026-08-22
+
+### Added
+
+- Versioned surface references are now written to ADK `EventActions.state_delta` by every render tool.
+- `SurfaceStore` with optimistic revisions, owner scoping, in-memory and atomic filesystem backends, plus save/load/list/delete tools enabled by `UiToolset::with_persistence`.
+- `patch_surface`, `UiUpdate::patch`, typed UI event envelopes, and an agent-owned notification channel with AG-UI custom-event projection.
+- Declarative data sources for charts, tables, and key-value views with manual, interval, and push refresh policies.
+- Numeric and time axes, time formatting, rolling windows, scatter plots, and sparklines.
+- Version, owner, and update timestamps for multi-page applications with persisted page-upsert semantics.
+
+### Changed
+
+- Chart tools now expose axis labels, colors, legend visibility, time-series options, and data bindings.
+- Table tools now honor sortable, per-column sorting, page size, striped rows, and data bindings.
+- React renderers resolve JSON Pointer data bindings and can request interval or TTL refreshes through `DataSourceProvider`.
+- UI-to-agent messages retain human-readable fallbacks while carrying typed, surface-correlated event envelopes.
+
+### Fixed
+
+- Application page route changes now keep navigation and the initial route consistent.
+- AG-UI capability discovery now reports the available notification channel and its host-bridge boundary.
+
 ## [2.1.0] - 2026-08-14
 
 ### Added

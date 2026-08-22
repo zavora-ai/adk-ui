@@ -1,7 +1,8 @@
 // @anthropic-ai/adk-ui-react
 // React components for rendering ADK-UI agent interfaces
 
-export { Renderer, StreamingRenderer } from './Renderer';
+export { DataSourceProvider, Renderer, StreamingRenderer } from './Renderer';
+export type { DataSourceProviderProps } from './Renderer';
 export {
     ADK_UI_APPLICATION_CSS,
     ApplicationRenderer,
@@ -49,8 +50,13 @@ export type {
     UiOperation,
     UiResponse,
     UiEvent,
+    UiEventEnvelope,
+    SurfaceRef,
     UiUpdate,
     TableColumn,
+    DataSource,
+    DataRefresh,
+    ChartXType,
     Scene3dComponent,
     Scene3dMaterialRole,
     Scene3dObject,

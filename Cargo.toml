@@ -1,6 +1,6 @@
 [package]
 name = "adk-ui"
-version = "2.1.0"
+version = "2.2.0"
 edition = "2024"
 rust-version = "1.95.0"
 license = "Apache-2.0"
@@ -23,6 +23,7 @@ awp-types = { version = "2", optional = true }
 uuid = { version = "1", features = ["v7"], optional = true }
 jsonschema = "0.29"
 chrono = { version = "0.4", default-features = false, features = ["clock"] }
+tokio = { version = "1.40", features = ["sync"] }
 
 [features]
 default = []
@@ -50,6 +51,7 @@ base64 = "0.22"
 futures = "0.3"
 proptest = "1.5"
 tracing = "0.1"
+tempfile = "3"
 
 [[example]]
 name = "ui_server"

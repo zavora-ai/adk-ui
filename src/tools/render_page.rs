@@ -121,7 +121,7 @@ impl Tool for RenderPageTool {
         Some(super::generate_gemini_schema::<RenderPageParams>())
     }
 
-    async fn execute(&self, _ctx: Arc<dyn ToolContext>, args: Value) -> Result<Value> {
+    async fn execute(&self, ctx: Arc<dyn ToolContext>, args: Value) -> Result<Value> {
         let params: RenderPageParams = serde_json::from_value(args.clone()).map_err(|e| {
             crate::compat::AdkError::tool(format!("Invalid parameters: {}. Got: {}", e, args))
         })?;
@@ -233,7 +233,7 @@ impl Tool for RenderPageTool {
             .with_theme(params.theme.clone())
             .with_send_data_model(params.send_data_model);
 
-        match params.protocol_options.protocol {
+        let output = match params.protocol_options.protocol {
             UiProtocol::A2ui => {
                 let messages = surface.to_a2ui_messages();
                 if params.validate {
@@ -287,7 +287,10 @@ impl Tool for RenderPageTool {
                 let adapter = crate::interop::AwpAdapter::new();
                 adapter.to_protocol_payload(&surface)
             }
-        }
+        }?;
+        let surface_ref = crate::surface_runtime::next_surface_ref(&ctx, params.surface_id);
+        crate::surface_runtime::record_surface_ref(&ctx, &surface_ref);
+        Ok(output)
     }
 }
 

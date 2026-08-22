@@ -952,6 +952,7 @@ mod tests {
                 row.insert("name".to_string(), json!("Alice"));
                 row
             }],
+            data_source: None,
             sortable: false,
             page_size: None,
             striped: false,
@@ -1002,8 +1003,12 @@ mod tests {
             title: Some("Sales".to_string()),
             kind: ChartKind::Bar,
             data: vec![],
+            data_source: None,
             x_key: "month".to_string(),
             y_keys: vec!["revenue".to_string()],
+            x_type: ChartXType::Category,
+            time_format: None,
+            window: None,
             x_label: None,
             y_label: None,
             show_legend: true,
@@ -1020,8 +1025,12 @@ mod tests {
             title: Some("Sales".to_string()),
             kind: ChartKind::Bar,
             data: vec![],
+            data_source: None,
             x_key: "month".to_string(),
             y_keys: vec!["revenue".to_string()],
+            x_type: ChartXType::Category,
+            time_format: None,
+            window: None,
             x_label: None,
             y_label: None,
             show_legend: true,
@@ -1286,6 +1295,7 @@ mod tests {
                 key: "Name".to_string(),
                 value: "Alice".to_string(),
             }],
+            data_source: None,
         });
         let html = render_component_html(&c, &default_opts());
         assert!(html.contains("<dl>"));

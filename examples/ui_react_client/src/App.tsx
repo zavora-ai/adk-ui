@@ -29,9 +29,9 @@ type UiProtocol = 'adk_ui' | 'a2ui' | 'ag_ui' | 'mcp_apps' | 'awp';
 
 const STUDIO_UI_KIT = {
   ...defaultUiKit,
-  id: 'zavora.ai:adk-ui/kit/studio@2.1.0',
+  id: 'zavora.ai:adk-ui/kit/studio@2.2.0',
   name: 'ADK UI Studio',
-  version: '2.1.0',
+  version: '2.2.0',
   brand: {
     vibe: 'editorial, technical, warm',
     industry: 'agentic software',
@@ -769,7 +769,7 @@ function buildMcpAppsHandshakePayload(): {
       protocolVersion: MCP_APPS_PROTOCOL_VERSION,
       appInfo: {
         name: 'adk-ui-react-example',
-        version: '0.4.0',
+        version: '2.2.0',
         title: 'ADK UI Example View',
         description: 'Example MCP Apps-compatible view host for adk-ui.',
       },
@@ -3115,8 +3115,8 @@ function assessSurfaceQuality(surface: SurfaceSnapshot): SurfaceQuality {
     && textValues.length > 0
     && textValues.every((value) => /^(rendered|generated|created)\s+(card|screen|surface|ui|layout|form|page)\.?$/i.test(value));
   const emptyDataDisplay = flat.some((component) => (
-    (component.type === 'chart' && (component.data.length === 0 || component.y_keys.length === 0 || !component.x_key))
-    || (component.type === 'table' && (component.columns.length === 0 || component.data.length === 0))
+    (component.type === 'chart' && ((!component.data_source && (component.data?.length ?? 0) === 0) || component.y_keys.length === 0 || !component.x_key))
+    || (component.type === 'table' && (component.columns.length === 0 || (!component.data_source && (component.data?.length ?? 0) === 0)))
   ));
   const textCount = flat.filter((component) => component.type === 'text').length;
   const buttonCount = flat.filter((component) => component.type === 'button').length;

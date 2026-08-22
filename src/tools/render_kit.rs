@@ -49,7 +49,7 @@ impl Tool for RenderKitTool {
         Some(super::generate_gemini_schema::<RenderKitParams>())
     }
 
-    async fn execute(&self, _ctx: Arc<dyn ToolContext>, args: Value) -> Result<Value> {
+    async fn execute(&self, ctx: Arc<dyn ToolContext>, args: Value) -> Result<Value> {
         let params: RenderKitParams = serde_json::from_value(args.clone()).map_err(|e| {
             crate::compat::AdkError::tool(format!("Invalid parameters: {}. Got: {}", e, args))
         })?;
@@ -68,17 +68,21 @@ impl Tool for RenderKitTool {
         }
         let payload = format_output(&artifacts, params.output.as_deref());
 
-        Ok(match params.protocol.protocol {
+        let surface_id = params.protocol.resolved_surface_id("kit");
+        let output = match params.protocol.protocol {
             Some(protocol) => {
                 let protocol = serde_json::to_value(protocol).unwrap_or_else(|_| json!("a2ui"));
                 json!({
                     "protocol": protocol,
-                    "surface_id": params.protocol.resolved_surface_id("kit"),
+                    "surface_id": surface_id.clone(),
                     "payload": payload
                 })
             }
             None => payload,
-        })
+        };
+        let surface_ref = crate::surface_runtime::next_surface_ref(&ctx, surface_id);
+        crate::surface_runtime::record_surface_ref(&ctx, &surface_ref);
+        Ok(output)
     }
 }
 

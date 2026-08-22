@@ -67,7 +67,10 @@ fn add_application_fields(
         })?,
     );
     object.insert("surfaces".to_string(), Value::Array(surfaces));
-    object.insert("application_version".to_string(), json!("1.0"));
+    object.insert(
+        "application_version".to_string(),
+        json!(application.version),
+    );
     Ok(Value::Object(object))
 }
 
@@ -85,10 +88,13 @@ impl Tool for RenderAppTool {
         Some(super::generate_gemini_schema::<RenderAppParams>())
     }
 
-    async fn execute(&self, _ctx: Arc<dyn ToolContext>, args: Value) -> Result<Value> {
-        let params: RenderAppParams = serde_json::from_value(args).map_err(|error| {
+    async fn execute(&self, ctx: Arc<dyn ToolContext>, args: Value) -> Result<Value> {
+        let mut params: RenderAppParams = serde_json::from_value(args).map_err(|error| {
             crate::compat::AdkError::tool(format!("Invalid parameters: {error}"))
         })?;
+        params
+            .application
+            .normalize_metadata(crate::surface_runtime::surface_owner(ctx.as_ref()));
         params.application.validate().map_err(|errors| {
             crate::compat::AdkError::tool(format!("Invalid application: {}", errors.join("; ")))
         })?;
@@ -119,14 +125,31 @@ impl Tool for RenderAppTool {
             .get(primary_index)
             .cloned()
             .unwrap_or_else(|| json!({}));
-        if params.protocol.protocol.is_none() {
-            return Ok(json!({
-                "application_version": "1.0",
-                "application": params.application,
+        let output = if params.protocol.protocol.is_none() {
+            json!({
+                "application_version": params.application.version,
+                "application": &params.application,
                 "surfaces": surfaces,
-            }));
+            })
+        } else {
+            add_application_fields(primary, &params.application, surfaces)?
+        };
+
+        let refs = params
+            .application
+            .pages
+            .iter()
+            .map(|page| {
+                crate::surface_runtime::next_surface_ref(
+                    &ctx,
+                    format!("{}-{}", params.application.id, page.id),
+                )
+            })
+            .collect::<Vec<_>>();
+        if let Some(active) = refs.get(primary_index) {
+            crate::surface_runtime::record_surface_refs(&ctx, active, &refs);
         }
-        add_application_fields(primary, &params.application, surfaces)
+        Ok(output)
     }
 }
 
@@ -197,6 +220,9 @@ mod tests {
         UiApplication {
             id: "app".into(),
             name: "App".into(),
+            version: 1,
+            owner: "test".into(),
+            updated_at: chrono::Utc::now().to_rfc3339(),
             kit_id: None,
             initial_route: "/".into(),
             navigation: vec![],

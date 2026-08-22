@@ -215,7 +215,7 @@ Section types: stats (label/value/status), table, chart, alert, text, key_value,
         Some(super::generate_gemini_schema::<RenderLayoutParams>())
     }
 
-    async fn execute(&self, _ctx: Arc<dyn ToolContext>, args: Value) -> Result<Value> {
+    async fn execute(&self, ctx: Arc<dyn ToolContext>, args: Value) -> Result<Value> {
         let params: RenderLayoutParams = serde_json::from_value(args.clone()).map_err(|e| {
             crate::compat::AdkError::tool(format!("Invalid parameters: {}. Got: {}", e, args))
         })?;
@@ -257,7 +257,11 @@ Section types: stats (label/value/status), table, chart, alert, text, key_value,
             ui = ui.with_theme(theme);
         }
 
-        render_ui_response_with_protocol(ui, &protocol_options, "layout")
+        let surface_id = protocol_options.resolved_surface_id("layout");
+        let output = render_ui_response_with_protocol(ui, &protocol_options, "layout")?;
+        let surface_ref = crate::surface_runtime::next_surface_ref(&ctx, surface_id);
+        crate::surface_runtime::record_surface_ref(&ctx, &surface_ref);
+        Ok(output)
     }
 }
 
@@ -308,6 +312,7 @@ fn build_section_component(section: DashboardSection) -> Component {
                     id: None,
                     columns: table_columns,
                     data: rows,
+                    data_source: None,
                     sortable: true,
                     page_size,
                     striped: true,
@@ -327,8 +332,12 @@ fn build_section_component(section: DashboardSection) -> Component {
                     title: None,
                     kind,
                     data,
+                    data_source: None,
                     x_key: x,
                     y_keys: y,
+                    x_type: ChartXType::Category,
+                    time_format: None,
+                    window: None,
                     x_label: None,
                     y_label: None,
                     show_legend: true,
@@ -364,6 +373,7 @@ fn build_section_component(section: DashboardSection) -> Component {
                 card_content.push(Component::KeyValue(KeyValue {
                     id: None,
                     pairs: kv_pairs,
+                    data_source: None,
                 }));
             }
         }

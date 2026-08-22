@@ -274,6 +274,14 @@ fn templates_by_tool() -> BTreeMap<&'static str, Value> {
             "duration": 1200
         }),
     );
+    templates.insert(
+        "patch_surface",
+        json!({
+            "surface_id": "matrix-surface",
+            "target_id": "status",
+            "component": { "type": "text", "id": "status", "content": "Updated", "variant": "body" }
+        }),
+    );
     templates
 }
 
@@ -332,6 +340,10 @@ fn extract_jsonl_line_count(value: &Value) -> Option<usize> {
 
 fn validate_contract(tool: &str, protocol: &str, value: &Value) {
     match (tool, protocol) {
+        ("patch_surface", _) => {
+            assert_eq!(value["update"]["operation"], "patch");
+            assert_eq!(value["surface_ref"]["id"], "matrix-surface");
+        }
         ("render_page", "a2ui") => {
             let jsonl = value
                 .as_str()
@@ -407,7 +419,7 @@ async fn collect_matrix_snapshots() -> Vec<MatrixSnapshot> {
     let protocols = ["a2ui", "ag_ui", "mcp_apps"];
     let mut snapshots = Vec::new();
 
-    assert_eq!(tools.len(), 14, "toolset should expose 14 tools");
+    assert_eq!(tools.len(), 15, "toolset should expose 15 tools");
 
     for protocol in protocols {
         for tool in &tools {
@@ -415,12 +427,23 @@ async fn collect_matrix_snapshots() -> Vec<MatrixSnapshot> {
                 .get(tool.name())
                 .unwrap_or_else(|| panic!("missing args for {}", tool.name()));
             let args = args_with_protocol(template, protocol);
-            let ctx: Arc<dyn ToolContext> = Arc::new(TestContext::new());
+            let concrete_ctx = Arc::new(TestContext::new());
+            let ctx: Arc<dyn ToolContext> = concrete_ctx.clone();
             let value = tool
                 .execute(ctx, args)
                 .await
                 .unwrap_or_else(|e| panic!("{} {} failed: {}", tool.name(), protocol, e));
             validate_contract(tool.name(), protocol, &value);
+            assert!(
+                concrete_ctx
+                    .actions
+                    .lock()
+                    .expect("actions lock")
+                    .state_delta
+                    .contains_key("adk_ui.active_surface"),
+                "{} should record its surface reference",
+                tool.name(),
+            );
             snapshots.push(snapshot_record(tool.name(), protocol, &value));
         }
     }
@@ -431,7 +454,7 @@ async fn collect_matrix_snapshots() -> Vec<MatrixSnapshot> {
 #[tokio::test]
 async fn tool_protocol_matrix_covers_all_tools_and_protocols() {
     let snapshots = collect_matrix_snapshots().await;
-    assert_eq!(snapshots.len(), 42, "expected 14 tools x 3 protocols");
+    assert_eq!(snapshots.len(), 45, "expected 15 tools x 3 protocols");
 }
 
 #[tokio::test]

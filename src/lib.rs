@@ -8,9 +8,12 @@ pub mod html;
 pub mod interop;
 pub mod kit;
 pub mod model;
+pub mod notifications;
+pub mod persistence;
 pub mod prompts;
 pub mod protocol_capabilities;
 pub mod schema;
+mod surface_runtime;
 pub mod templates;
 pub mod tools;
 pub mod toolset;
@@ -22,6 +25,10 @@ pub use catalog_registry::{CatalogArtifact, CatalogError, CatalogRegistry, Catal
 pub use interop::*;
 pub use kit::{BrandKitManifest, KitArtifacts, KitGenerator, KitSpec};
 pub use model::{ToolEnvelope, ToolEnvelopeProtocol};
+pub use notifications::{UiNotification, UiNotificationChannel, UiNotificationSeverity};
+pub use persistence::{
+    FsSurfaceStore, InMemorySurfaceStore, SavedSurface, SurfaceStore, SurfaceStoreError,
+};
 pub use prompts::{UI_AGENT_PROMPT, UI_AGENT_PROMPT_SHORT};
 #[cfg(feature = "awp")]
 pub use protocol_capabilities::AWP_PROTOCOL_CAPABILITY;
@@ -33,6 +40,7 @@ pub use protocol_capabilities::{
     UiProtocolNegotiationSpec, UiProtocolSpecTrack, UiProtocolVersionSpec,
     normalize_runtime_ui_protocol,
 };
+pub use surface_runtime::{ACTIVE_SURFACE_STATE_KEY, SURFACE_REFS_STATE_KEY, SurfaceRef};
 
 // Re-export frequently used protocol constants at the crate root for discoverability.
 pub use a2ui::{A2UI_BASIC_CATALOG_ID, A2UI_MIME_TYPE, A2UI_PROTOCOL_VERSION};

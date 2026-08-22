@@ -13,6 +13,7 @@ mod render_progress;
 mod render_screen;
 mod render_table;
 mod render_toast;
+mod surface_persistence;
 
 pub use render_alert::RenderAlertTool;
 pub use render_app::RenderAppTool;
@@ -28,6 +29,9 @@ pub use render_progress::RenderProgressTool;
 pub use render_screen::RenderScreenTool;
 pub use render_table::RenderTableTool;
 pub use render_toast::RenderToastTool;
+pub use surface_persistence::{
+    DeleteSurfaceTool, ListSurfacesTool, LoadSurfaceTool, PatchSurfaceTool, SaveSurfaceTool,
+};
 
 pub(crate) use protocol_output::{
     LegacyProtocolOptions, SurfaceProtocolOptions, render_ui_response_with_protocol,

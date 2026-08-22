@@ -1,5 +1,5 @@
 import React, { createContext, lazy, useContext, useMemo, useRef, useState } from 'react';
-import type { Component, UiEvent, UiUpdate } from './types';
+import type { Component, DataSource, UiEvent, UiUpdate } from './types';
 import { applyUiUpdates } from './updates';
 import { AlertCircle, CheckCircle, Info, XCircle, User, Mail, Calendar } from 'lucide-react';
 import Markdown, { type Components } from 'react-markdown';
@@ -113,20 +113,49 @@ interface FormContextValue {
 
 const FormContext = createContext<FormContextValue>({});
 
+interface DataSourceContextValue {
+    dataModel?: unknown;
+    onRefresh?: (source: DataSource) => void;
+}
+
+const DataSourceContext = createContext<DataSourceContextValue>({});
+
+export interface DataSourceProviderProps extends DataSourceContextValue {
+    children: React.ReactNode;
+}
+
+export function DataSourceProvider({ dataModel, onRefresh, children }: DataSourceProviderProps) {
+    const value = useMemo(() => ({ dataModel, onRefresh }), [dataModel, onRefresh]);
+    return <DataSourceContext.Provider value={value}>{children}</DataSourceContext.Provider>;
+}
+
+function resolveJsonPointer(value: unknown, pointer: string): unknown {
+    if (pointer === '' || pointer === '/') return value;
+    if (!pointer.startsWith('/')) return undefined;
+    return pointer.slice(1).split('/').reduce<unknown>((current, segment) => {
+        if (current === null || typeof current !== 'object') return undefined;
+        const key = segment.replace(/~1/g, '/').replace(/~0/g, '~');
+        return (current as Record<string, unknown>)[key];
+    }, value);
+}
+
 interface RendererProps {
     component: Component;
     onAction?: (event: UiEvent) => void;
     /** Theme for this component: 'dark' wraps in dark mode styling */
     theme?: 'light' | 'dark' | 'system';
+    dataModel?: unknown;
+    onDataRefresh?: (source: DataSource) => void;
 }
 
-export const Renderer: React.FC<RendererProps> = ({ component, onAction, theme }) => {
+export const Renderer: React.FC<RendererProps> = ({ component, onAction, theme, dataModel, onDataRefresh }) => {
     const isDark = theme === 'dark';
     const contextValue = useMemo(() => ({ onAction }), [onAction]);
     const kit = useAdkUiKit();
 
     return (
         <FormContext.Provider value={contextValue}>
+          <DataSourceProvider dataModel={dataModel} onRefresh={onDataRefresh}>
             {!kit.provided && <style data-adk-ui-kit-styles>{ADK_UI_KIT_CSS}</style>}
             <div
                 className={clsx('adk-ui-kit-surface', isDark && 'dark')}
@@ -135,6 +164,7 @@ export const Renderer: React.FC<RendererProps> = ({ component, onAction, theme }
             >
                 <ComponentRenderer component={component} />
             </div>
+          </DataSourceProvider>
         </FormContext.Provider>
     );
 };
@@ -143,7 +173,7 @@ interface StreamingRendererProps extends RendererProps {
     updates?: UiUpdate | UiUpdate[];
 }
 
-export const StreamingRenderer: React.FC<StreamingRendererProps> = ({ component, updates, onAction, theme }) => {
+export const StreamingRenderer: React.FC<StreamingRendererProps> = ({ component, updates, onAction, theme, dataModel, onDataRefresh }) => {
     const [current, setCurrent] = useState(component);
     const updatesList = useMemo(() => {
         if (!updates) return [];
@@ -162,7 +192,7 @@ export const StreamingRenderer: React.FC<StreamingRendererProps> = ({ component,
         });
     }, [updatesList]);
 
-    return <Renderer component={current} onAction={onAction} theme={theme} />;
+    return <Renderer component={current} onAction={onAction} theme={theme} dataModel={dataModel} onDataRefresh={onDataRefresh} />;
 };
 
 function componentKey(component: Component, index: number): string {
@@ -216,6 +246,22 @@ const DefaultComponentRenderer: React.FC<{ component: Component }> = React.memo(
     const [sortColumn, setSortColumn] = React.useState<string | null>(null);
     const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>('asc');
     const [currentPage, setCurrentPage] = React.useState(0);
+    const dataContext = useContext(DataSourceContext);
+    const onDataRefresh = dataContext.onRefresh;
+    const dataSource = 'data_source' in component ? component.data_source : undefined;
+    const boundData = useMemo(
+        () => dataSource ? resolveJsonPointer(dataContext.dataModel, dataSource.binding_path) : undefined,
+        [dataContext.dataModel, dataSource],
+    );
+
+    React.useEffect(() => {
+        if (!dataSource || !onDataRefresh) return;
+        const interval = dataSource.refresh?.mode === 'interval' ? dataSource.refresh.secs : undefined;
+        const seconds = interval ?? dataSource.ttl;
+        if (!seconds || seconds <= 0) return;
+        const timer = window.setInterval(() => onDataRefresh(dataSource), seconds * 1000);
+        return () => window.clearInterval(timer);
+    }, [onDataRefresh, dataSource]);
 
     const handleButtonClick = (actionId: string, variant?: string) => {
         const submitsForm = Boolean(formRef?.current)
@@ -707,9 +753,10 @@ const DefaultComponentRenderer: React.FC<{ component: Component }> = React.memo(
             );
 
         case 'key_value':
+            const keyValuePairs = Array.isArray(boundData) ? boundData as NonNullable<typeof component.pairs> : (component.pairs ?? []);
             return (
                 <dl className="grid grid-cols-2 gap-x-4 gap-y-2 mb-4">
-                    {component.pairs.map((pair, i) => (
+                    {keyValuePairs.map((pair, i) => (
                         <React.Fragment key={i}>
                             <dt className="adk-ui-label font-medium text-gray-700">{pair.key}:</dt>
                             <dd className="adk-ui-body text-gray-900">{pair.value}</dd>
@@ -760,7 +807,8 @@ const DefaultComponentRenderer: React.FC<{ component: Component }> = React.memo(
                 }
             };
 
-            const tableData = [...component.data];
+            const sourceRows = Array.isArray(boundData) ? boundData as Record<string, unknown>[] : (component.data ?? []);
+            const tableData = [...sourceRows];
             if (sortColumn) {
                 tableData.sort((a, b) => {
                     const aVal = a[sortColumn] ?? '';
@@ -838,13 +886,14 @@ const DefaultComponentRenderer: React.FC<{ component: Component }> = React.memo(
             );
 
         case 'chart':
+            const chartData = Array.isArray(boundData) ? boundData as Record<string, unknown>[] : (component.data ?? []);
             return (
                 <OptionalRenderer
                     peerDependency="recharts"
                     capability="Chart"
                     loading={<div className="mb-4 h-[300px] animate-pulse rounded-xl bg-slate-100" aria-label="Loading chart" />}
                 >
-                    <ChartRenderer component={component} />
+                    <ChartRenderer component={{ ...component, data: chartData }} />
                 </OptionalRenderer>
             );
 

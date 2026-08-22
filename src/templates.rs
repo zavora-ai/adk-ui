@@ -278,6 +278,7 @@ fn user_profile_template(data: &TemplateData) -> Vec<Component> {
                     key: "Email".to_string(),
                     value: email,
                 }],
+                data_source: None,
             }),
         ],
         footer: Some(vec![Component::Button(Button {
@@ -490,6 +491,7 @@ fn data_table_template(data: &TemplateData) -> Vec<Component> {
             id: Some("data-table".to_string()),
             columns,
             data: data.rows.clone(),
+            data_source: None,
             sortable: true,
             page_size: Some(10),
             striped: true,

@@ -17,6 +17,12 @@ pub const MAX_PAGE_REGIONS: usize = 16;
 pub struct UiApplication {
     pub id: String,
     pub name: String,
+    #[serde(default = "default_application_version")]
+    pub version: u64,
+    #[serde(default)]
+    pub owner: String,
+    #[serde(default)]
+    pub updated_at: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub kit_id: Option<String>,
     pub initial_route: String,
@@ -25,6 +31,14 @@ pub struct UiApplication {
     pub pages: Vec<UiApplicationPage>,
     #[serde(default)]
     pub state: HashMap<String, Value>,
+}
+
+fn default_application_version() -> u64 {
+    1
+}
+
+fn timestamp() -> String {
+    chrono::Utc::now().to_rfc3339()
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
@@ -157,6 +171,23 @@ pub enum UiApplicationUpdate {
 }
 
 impl UiApplication {
+    pub fn normalize_metadata(&mut self, owner: impl Into<String>) {
+        if self.version == 0 {
+            self.version = 1;
+        }
+        if self.owner.trim().is_empty() {
+            self.owner = owner.into();
+        }
+        if self.updated_at.trim().is_empty() {
+            self.updated_at = timestamp();
+        }
+    }
+
+    fn touch(&mut self) {
+        self.version = self.version.saturating_add(1).max(1);
+        self.updated_at = timestamp();
+    }
+
     pub fn validate(&self) -> Result<(), Vec<String>> {
         let mut errors = Vec::new();
         if self.id.trim().is_empty() {
@@ -240,22 +271,41 @@ impl UiApplication {
                 }
             }
             UiApplicationUpdate::Replace { application } => {
+                let mut application = application;
                 application.validate()?;
+                application.version = self.version.saturating_add(1).max(1);
+                if application.owner.trim().is_empty() {
+                    application.owner = self.owner.clone();
+                }
+                application.updated_at = timestamp();
                 *self = application;
                 Ok(Some(self.initial_route.clone()))
             }
             UiApplicationUpdate::UpsertPage { page } => {
                 let mut candidate = self.clone();
-                if let Some(existing) = candidate
+                if let Some(index) = candidate
                     .pages
-                    .iter_mut()
-                    .find(|candidate| candidate.id == page.id)
+                    .iter()
+                    .position(|candidate| candidate.id == page.id)
                 {
-                    *existing = page;
+                    let previous_route = candidate.pages[index].route.clone();
+                    candidate.pages[index] = page;
+                    let next_route = candidate.pages[index].route.clone();
+                    if previous_route != next_route {
+                        if candidate.initial_route == previous_route {
+                            candidate.initial_route = next_route.clone();
+                        }
+                        for item in &mut candidate.navigation {
+                            if item.route == previous_route {
+                                item.route = next_route.clone();
+                            }
+                        }
+                    }
                 } else {
                     candidate.pages.push(page);
                 }
                 candidate.validate()?;
+                candidate.touch();
                 *self = candidate;
                 Ok(None)
             }
@@ -266,15 +316,54 @@ impl UiApplication {
                     .navigation
                     .retain(|item| candidate.pages.iter().any(|page| page.route == item.route));
                 candidate.validate()?;
+                candidate.touch();
                 *self = candidate;
                 Ok(None)
             }
             UiApplicationUpdate::PatchState { values } => {
                 self.state.extend(values);
+                self.touch();
                 Ok(None)
             }
         }
     }
+}
+
+/// Atomically upsert a page in a persisted application surface.
+pub async fn upsert_persisted_application_page(
+    store: &dyn crate::persistence::SurfaceStore,
+    owner: &str,
+    application_id: &str,
+    expected_version: u64,
+    page: UiApplicationPage,
+) -> Result<UiApplication, crate::persistence::SurfaceStoreError> {
+    let saved = store.load(owner, application_id).await?;
+    if saved.version != expected_version {
+        return Err(crate::persistence::SurfaceStoreError::VersionConflict {
+            expected: expected_version,
+            actual: saved.version,
+        });
+    }
+    let mut application: UiApplication = serde_json::from_value(saved.payload)
+        .map_err(|error| crate::persistence::SurfaceStoreError::Json(error.to_string()))?;
+    application
+        .apply_update(UiApplicationUpdate::UpsertPage { page })
+        .map_err(|errors| crate::persistence::SurfaceStoreError::Json(errors.join("; ")))?;
+    application.owner = owner.to_string();
+    let payload = serde_json::to_value(&application)
+        .map_err(|error| crate::persistence::SurfaceStoreError::Json(error.to_string()))?;
+    let persisted = store
+        .save(
+            owner,
+            application_id,
+            &saved.name,
+            payload,
+            Some(expected_version),
+        )
+        .await?;
+    application.version = persisted.version;
+    application.updated_at = persisted.updated_at;
+    Ok(application)
 }
 
 fn is_route(route: &str) -> bool {
@@ -309,6 +398,9 @@ mod tests {
         let app = UiApplication {
             id: "ops".into(),
             name: "Operations".into(),
+            version: 1,
+            owner: "test".into(),
+            updated_at: timestamp(),
             kit_id: None,
             initial_route: "/".into(),
             navigation: vec![UiNavigationItem {
@@ -327,6 +419,9 @@ mod tests {
         let mut app = UiApplication {
             id: "ops".into(),
             name: "Operations".into(),
+            version: 1,
+            owner: "test".into(),
+            updated_at: timestamp(),
             kit_id: None,
             initial_route: "/".into(),
             navigation: vec![UiNavigationItem {
@@ -344,5 +439,66 @@ mod tests {
             })
             .is_err()
         );
+    }
+
+    #[test]
+    fn upsert_page_rewrites_routes_and_increments_version() {
+        let mut app = UiApplication {
+            id: "ops".into(),
+            name: "Operations".into(),
+            version: 3,
+            owner: "agent".into(),
+            updated_at: timestamp(),
+            kit_id: None,
+            initial_route: "/".into(),
+            navigation: vec![UiNavigationItem {
+                label: "Home".into(),
+                route: "/".into(),
+                icon: None,
+            }],
+            pages: vec![page("home", "/")],
+            state: HashMap::new(),
+        };
+        app.apply_update(UiApplicationUpdate::UpsertPage {
+            page: page("home", "/home"),
+        })
+        .unwrap();
+        assert_eq!(app.version, 4);
+        assert_eq!(app.initial_route, "/home");
+        assert_eq!(app.navigation[0].route, "/home");
+    }
+
+    #[tokio::test]
+    async fn persisted_upsert_uses_optimistic_versioning() {
+        let store = crate::persistence::InMemorySurfaceStore::new();
+        let app = UiApplication {
+            id: "ops".into(),
+            name: "Operations".into(),
+            version: 1,
+            owner: "agent".into(),
+            updated_at: timestamp(),
+            kit_id: None,
+            initial_route: "/".into(),
+            navigation: vec![],
+            pages: vec![page("home", "/")],
+            state: HashMap::new(),
+        };
+        let payload = serde_json::to_value(&app).unwrap();
+        crate::persistence::SurfaceStore::save(
+            &store,
+            "agent",
+            "ops",
+            "Operations",
+            payload,
+            Some(0),
+        )
+        .await
+        .unwrap();
+        let updated =
+            upsert_persisted_application_page(&store, "agent", "ops", 1, page("detail", "/detail"))
+                .await
+                .unwrap();
+        assert_eq!(updated.version, 2);
+        assert_eq!(updated.pages.len(), 2);
     }
 }

@@ -13,6 +13,7 @@ export interface ProtocolClientOptions {
 
 export interface OutboundEventOptions {
     surfaceId?: string;
+    surfaceVersion?: number;
     threadId?: string;
     runId?: string;
     parentRunId?: string;
@@ -271,7 +272,7 @@ export function buildMcpAppsInitializeRequest(
             protocolVersion: options.protocolVersion ?? MCP_APPS_PROTOCOL_VERSION,
             appInfo: {
                 name: options.appInfo?.name ?? 'adk-ui-react',
-                version: options.appInfo?.version ?? '0.4.0',
+                version: options.appInfo?.version ?? '2.2.0',
                 title: options.appInfo?.title,
                 description: options.appInfo?.description,
                 websiteUrl: options.appInfo?.websiteUrl,
@@ -350,6 +351,11 @@ export function buildOutboundEvent(
     options: OutboundEventOptions = {},
 ): Record<string, unknown> {
     const surfaceId = options.surfaceId ?? DEFAULT_SURFACE_ID;
+    const eventEnvelope = {
+        surface_ref: { id: surfaceId, version: options.surfaceVersion ?? 1 },
+        event,
+        occurred_at: new Date().toISOString(),
+    };
 
     switch (protocol) {
         case 'ag_ui':
@@ -363,6 +369,7 @@ export function buildOutboundEvent(
                         adkUi: {
                             surfaceId,
                             event,
+                            eventEnvelope,
                         },
                     },
                     messages: [
@@ -379,6 +386,7 @@ export function buildOutboundEvent(
                         source: 'adk-ui-react',
                         surfaceId,
                         uiEvent: event,
+                        uiEventEnvelope: eventEnvelope,
                     },
                     ...(options.resume ? { resume: options.resume } : {}),
                 },
@@ -399,6 +407,7 @@ export function buildOutboundEvent(
                         structuredContent: {
                             surfaceId,
                             uiEvent: event,
+                            uiEventEnvelope: eventEnvelope,
                         },
                     },
                 };
@@ -420,6 +429,7 @@ export function buildOutboundEvent(
                             _meta: {
                                 surfaceId,
                                 uiEvent: event,
+                                uiEventEnvelope: eventEnvelope,
                             },
                         },
                     ],
@@ -433,6 +443,7 @@ export function buildOutboundEvent(
                 event: {
                     surfaceId,
                     ...event,
+                    envelope: eventEnvelope,
                 },
             };
     }

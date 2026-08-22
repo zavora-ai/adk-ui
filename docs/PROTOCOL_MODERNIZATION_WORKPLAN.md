@@ -29,7 +29,7 @@ Historical note:
 ### 2026-08-14 Application Generation and Spatial UI
 
 - Added the additive `UiApplication` graph and `render_app` tool. Agents can now emit complete products with bounded routes, navigation, shared state, page templates, hero composition, region layouts, asides, and footers instead of compressing every request into a single generic surface.
-- Preserved protocol compatibility by carrying the application graph alongside independently addressable page surfaces for A2UI, AG-UI, MCP Apps, and optional AWP output. The protocol matrix now covers 14 tools across all three primary transports.
+- Preserved protocol compatibility by carrying the application graph alongside independently addressable page surfaces for A2UI, AG-UI, MCP Apps, and optional AWP output. The protocol matrix now covers 15 default tools across all three primary transports, including incremental surface patching.
 - Added `ApplicationRenderer` to the public React package with approved-kit resolution, responsive page art direction, in-memory routing, and mounted visited routes so uncontrolled form state survives navigation.
 - Added the declarative `scene_3d` component and `Scene3D` catalog entry. The renderer supports bounded primitives and approved GLB kit assets, semantic brand materials, labelled interactions, WebGPU with WebGL fallback, reduced motion, intersection throttling, capped pixel ratio, responsive sizing, and explicit GPU/resource disposal.
 - Replaced the primary offline showcase with a three-route generated transit operations product spanning editorial briefing, data-dense network control, and an immersive spatial twin. The SSE client now recognizes `render_app` responses directly.

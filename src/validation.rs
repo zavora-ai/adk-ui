@@ -145,6 +145,18 @@ impl Validate for Table {
                 message: "Table must have at least one column".to_string(),
             });
         }
+        if self.page_size == Some(0) {
+            errors.push(ValidationError {
+                path: format!("{}.page_size", path),
+                message: "Table page_size must be greater than zero".to_string(),
+            });
+        }
+        if let Some(source) = &self.data_source {
+            errors.extend(validate_data_source(
+                source,
+                &format!("{}.data_source", path),
+            ));
+        }
         errors
     }
 }
@@ -152,7 +164,7 @@ impl Validate for Table {
 impl Validate for Chart {
     fn validate(&self, path: &str) -> Vec<ValidationError> {
         let mut errors = Vec::new();
-        if self.data.is_empty() {
+        if self.data.is_empty() && self.data_source.is_none() {
             errors.push(ValidationError {
                 path: format!("{}.data", path),
                 message: "Chart must have data".to_string(),
@@ -164,8 +176,43 @@ impl Validate for Chart {
                 message: "Chart must have at least one y_key".to_string(),
             });
         }
+        if self.x_key.trim().is_empty() {
+            errors.push(ValidationError {
+                path: format!("{}.x_key", path),
+                message: "Chart x_key cannot be empty".to_string(),
+            });
+        }
+        if let Some(source) = &self.data_source {
+            errors.extend(validate_data_source(
+                source,
+                &format!("{}.data_source", path),
+            ));
+        }
         errors
     }
+}
+
+fn validate_data_source(source: &DataSource, path: &str) -> Vec<ValidationError> {
+    let mut errors = Vec::new();
+    if !source.binding_path.starts_with('/') {
+        errors.push(ValidationError {
+            path: format!("{}.binding_path", path),
+            message: "Data source binding_path must be an absolute JSON Pointer".to_string(),
+        });
+    }
+    if matches!(source.refresh, DataRefresh::Interval { secs: 0 }) {
+        errors.push(ValidationError {
+            path: format!("{}.refresh.secs", path),
+            message: "Data source refresh interval must be greater than zero".to_string(),
+        });
+    }
+    if source.ttl == Some(0) {
+        errors.push(ValidationError {
+            path: format!("{}.ttl", path),
+            message: "Data source ttl must be greater than zero".to_string(),
+        });
+    }
+    errors
 }
 
 impl Validate for Card {

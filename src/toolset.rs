@@ -1,4 +1,5 @@
 use crate::compat::{ReadonlyContext, Result, Tool, Toolset};
+use crate::persistence::SurfaceStore;
 use crate::tools::*;
 use async_trait::async_trait;
 use std::sync::Arc;
@@ -33,6 +34,8 @@ pub struct UiToolset {
     include_progress: bool,
     include_modal: bool,
     include_toast: bool,
+    include_patch: bool,
+    persistence: Option<Arc<dyn SurfaceStore>>,
 }
 
 impl UiToolset {
@@ -53,6 +56,8 @@ impl UiToolset {
             include_progress: true,
             include_modal: true,
             include_toast: true,
+            include_patch: true,
+            persistence: None,
         }
     }
 
@@ -73,6 +78,8 @@ impl UiToolset {
             include_progress: false,
             include_modal: false,
             include_toast: false,
+            include_patch: false,
+            persistence: None,
         }
     }
 
@@ -160,6 +167,18 @@ impl UiToolset {
         self
     }
 
+    /// Disable incremental surface patching.
+    pub fn without_patch(mut self) -> Self {
+        self.include_patch = false;
+        self
+    }
+
+    /// Add durable surface CRUD tools and make `patch_surface` update stored surfaces.
+    pub fn with_persistence(mut self, store: Arc<dyn SurfaceStore>) -> Self {
+        self.persistence = Some(store);
+        self
+    }
+
     /// Get all tools as a Vec for use with LlmAgentBuilder
     pub fn all_tools() -> Vec<Arc<dyn Tool>> {
         vec![
@@ -177,6 +196,7 @@ impl UiToolset {
             Arc::new(RenderProgressTool::new()),
             Arc::new(RenderModalTool::new()),
             Arc::new(RenderToastTool::new()),
+            Arc::new(PatchSurfaceTool::new()),
         ]
     }
 }
@@ -220,6 +240,18 @@ impl UiToolset {
         maybe_export!(self.include_progress, RenderProgressTool::new());
         maybe_export!(self.include_modal, RenderModalTool::new());
         maybe_export!(self.include_toast, RenderToastTool::new());
+        if let Some(store) = &self.persistence {
+            maybe_export!(
+                self.include_patch,
+                PatchSurfaceTool::with_store(store.clone())
+            );
+            maybe_export!(true, SaveSurfaceTool::new(store.clone()));
+            maybe_export!(true, LoadSurfaceTool::new(store.clone()));
+            maybe_export!(true, ListSurfacesTool::new(store.clone()));
+            maybe_export!(true, DeleteSurfaceTool::new(store.clone()));
+        } else if self.include_patch {
+            maybe_export!(true, PatchSurfaceTool::new());
+        }
 
         entries
     }
@@ -283,6 +315,18 @@ impl Toolset for UiToolset {
             tools.push(Arc::new(RenderToastTool::new()));
         }
 
+        if let Some(store) = &self.persistence {
+            if self.include_patch {
+                tools.push(Arc::new(PatchSurfaceTool::with_store(store.clone())));
+            }
+            tools.push(Arc::new(SaveSurfaceTool::new(store.clone())));
+            tools.push(Arc::new(LoadSurfaceTool::new(store.clone())));
+            tools.push(Arc::new(ListSurfacesTool::new(store.clone())));
+            tools.push(Arc::new(DeleteSurfaceTool::new(store.clone())));
+        } else if self.include_patch {
+            tools.push(Arc::new(PatchSurfaceTool::new()));
+        }
+
         Ok(tools)
     }
 }
@@ -292,9 +336,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_all_tools_returns_14_tools() {
+    fn test_all_tools_returns_15_tools() {
         let tools = UiToolset::all_tools();
-        assert_eq!(tools.len(), 14);
+        assert_eq!(tools.len(), 15);
 
         let names: Vec<&str> = tools.iter().map(|t| t.name()).collect();
         assert!(names.contains(&"render_screen"));
@@ -311,6 +355,7 @@ mod tests {
         assert!(names.contains(&"render_progress"));
         assert!(names.contains(&"render_modal"));
         assert!(names.contains(&"render_toast"));
+        assert!(names.contains(&"patch_surface"));
     }
 
     #[test]
@@ -321,6 +366,7 @@ mod tests {
         assert!(!toolset.include_page);
         assert!(!toolset.include_kit);
         assert!(toolset.include_form);
+        assert!(!toolset.include_patch);
         assert!(!toolset.include_card);
         assert!(!toolset.include_alert);
         assert!(!toolset.include_table);
@@ -356,5 +402,6 @@ mod tests {
         assert_eq!(default.include_form, new.include_form);
         assert_eq!(default.include_card, new.include_card);
         assert_eq!(default.include_chart, new.include_chart);
+        assert_eq!(default.include_patch, new.include_patch);
     }
 }

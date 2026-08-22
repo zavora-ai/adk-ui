@@ -361,6 +361,7 @@ pub const UI_PROTOCOL_CAPABILITIES: &[UiProtocolCapabilitySpec] = &[
             "agent_capability_discovery",
             "interrupt_resume_wire_types",
             "custom_surface_event",
+            "push_notification_channel",
             "surface_activity_snapshot",
             "run_error",
             "raw_events",
@@ -368,7 +369,7 @@ pub const UI_PROTOCOL_CAPABILITIES: &[UiProtocolCapabilitySpec] = &[
         limitations: &[
             "Example hosts may still wrap some ADK runtime events; prefer protocol_native SSE when available from adk-server.",
             "Durable checkpointing and approval policy for interrupt/resume remain application-defined.",
-            "WebSocket, binary HTTP, push notification, and resumable sequence transports are not implemented by the example server.",
+            "WebSocket, binary HTTP, and resumable sequence transports are not implemented by the example server; hosts must bridge the agent notification channel to their chosen push transport.",
         ],
         deprecation: None,
     },

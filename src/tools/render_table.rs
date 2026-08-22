@@ -17,7 +17,17 @@ pub struct RenderTableParams {
     /// Column definitions
     pub columns: Vec<ColumnDef>,
     /// Row data - array of objects with keys matching accessor_key
+    #[serde(default)]
     pub data: Vec<HashMap<String, Value>>,
+    /// Optional data-model binding. Literal `data` remains the fallback.
+    #[serde(default)]
+    pub data_source: Option<DataSource>,
+    #[serde(default)]
+    pub sortable: bool,
+    #[serde(default)]
+    pub page_size: Option<u32>,
+    #[serde(default)]
+    pub striped: bool,
     /// Optional protocol output configuration.
     #[serde(flatten)]
     pub protocol: LegacyProtocolOptions,
@@ -29,6 +39,12 @@ pub struct ColumnDef {
     pub header: String,
     /// Key to access data from row objects
     pub accessor_key: String,
+    #[serde(default = "default_column_sortable")]
+    pub sortable: bool,
+}
+
+fn default_column_sortable() -> bool {
+    true
 }
 
 /// Tool for rendering data tables.
@@ -87,9 +103,22 @@ Set sortable=true for clickable column headers. Set page_size for pagination. Se
         Some(super::generate_gemini_schema::<RenderTableParams>())
     }
 
-    async fn execute(&self, _ctx: Arc<dyn ToolContext>, args: Value) -> Result<Value> {
+    async fn execute(&self, ctx: Arc<dyn ToolContext>, args: Value) -> Result<Value> {
         let params: RenderTableParams = serde_json::from_value(args)
             .map_err(|e| crate::compat::AdkError::tool(format!("Invalid parameters: {}", e)))?;
+        if params.page_size == Some(0) {
+            return Err(crate::compat::AdkError::tool(
+                "Invalid parameters: page_size must be greater than zero".to_string(),
+            ));
+        }
+        if let Some(source) = &params.data_source
+            && !source.binding_path.starts_with('/')
+        {
+            return Err(crate::compat::AdkError::tool(
+                "Invalid parameters: data_source.binding_path must be an absolute JSON Pointer"
+                    .to_string(),
+            ));
+        }
         let protocol_options = params.protocol.clone();
 
         let columns: Vec<TableColumn> = params
@@ -98,7 +127,7 @@ Set sortable=true for clickable column headers. Set page_size for pagination. Se
             .map(|c| TableColumn {
                 header: c.header,
                 accessor_key: c.accessor_key,
-                sortable: true,
+                sortable: c.sortable,
             })
             .collect();
 
@@ -117,12 +146,39 @@ Set sortable=true for clickable column headers. Set page_size for pagination. Se
             id: None,
             columns,
             data: params.data,
-            sortable: false,
-            page_size: None,
-            striped: false,
+            data_source: params.data_source,
+            sortable: params.sortable,
+            page_size: params.page_size,
+            striped: params.striped,
         }));
 
         let ui = UiResponse::new(components);
-        render_ui_response_with_protocol(ui, &protocol_options, "table")
+        let surface_id = protocol_options.resolved_surface_id("table");
+        let output = render_ui_response_with_protocol(ui, &protocol_options, "table")?;
+        let surface_ref = crate::surface_runtime::next_surface_ref(&ctx, surface_id);
+        crate::surface_runtime::record_surface_ref(&ctx, &surface_ref);
+        Ok(output)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn parameters_expose_table_behavior() {
+        let params: RenderTableParams = serde_json::from_value(json!({
+            "columns": [{ "header": "Name", "accessor_key": "name", "sortable": false }],
+            "data": [],
+            "sortable": true,
+            "page_size": 25,
+            "striped": true
+        }))
+        .unwrap();
+        assert!(params.sortable);
+        assert_eq!(params.page_size, Some(25));
+        assert!(params.striped);
+        assert!(!params.columns[0].sortable);
     }
 }

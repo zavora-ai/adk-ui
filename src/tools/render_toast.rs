@@ -67,7 +67,7 @@ impl Tool for RenderToastTool {
         Some(super::generate_gemini_schema::<RenderToastParams>())
     }
 
-    async fn execute(&self, _ctx: Arc<dyn ToolContext>, args: Value) -> Result<Value> {
+    async fn execute(&self, ctx: Arc<dyn ToolContext>, args: Value) -> Result<Value> {
         let params: RenderToastParams = serde_json::from_value(args)
             .map_err(|e| crate::compat::AdkError::tool(format!("Invalid parameters: {}", e)))?;
         let protocol_options = params.protocol.clone();
@@ -87,6 +87,10 @@ impl Tool for RenderToastTool {
             dismissible: params.dismissible,
         })]);
 
-        render_ui_response_with_protocol(ui, &protocol_options, "toast")
+        let surface_id = protocol_options.resolved_surface_id("toast");
+        let output = render_ui_response_with_protocol(ui, &protocol_options, "toast")?;
+        let surface_ref = crate::surface_runtime::next_surface_ref(&ctx, surface_id);
+        crate::surface_runtime::record_surface_ref(&ctx, &surface_ref);
+        Ok(output)
     }
 }

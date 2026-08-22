@@ -97,7 +97,7 @@ impl Tool for RenderModalTool {
         Some(super::generate_gemini_schema::<RenderModalParams>())
     }
 
-    async fn execute(&self, _ctx: Arc<dyn ToolContext>, args: Value) -> Result<Value> {
+    async fn execute(&self, ctx: Arc<dyn ToolContext>, args: Value) -> Result<Value> {
         let params: RenderModalParams = serde_json::from_value(args)
             .map_err(|e| crate::compat::AdkError::tool(format!("Invalid parameters: {}", e)))?;
         let protocol_options = params.protocol.clone();
@@ -153,6 +153,10 @@ impl Tool for RenderModalTool {
             closable: params.closable,
         })]);
 
-        render_ui_response_with_protocol(ui, &protocol_options, "modal")
+        let surface_id = protocol_options.resolved_surface_id("modal");
+        let output = render_ui_response_with_protocol(ui, &protocol_options, "modal")?;
+        let surface_ref = crate::surface_runtime::next_surface_ref(&ctx, surface_id);
+        crate::surface_runtime::record_surface_ref(&ctx, &surface_ref);
+        Ok(output)
     }
 }

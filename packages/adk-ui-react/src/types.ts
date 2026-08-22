@@ -22,12 +22,12 @@ export type Component =
     | { type: 'divider'; id?: string }
     | { type: 'tabs'; id?: string; tabs: Tab[] }
     // Data Display
-    | { type: 'table'; id?: string; columns: TableColumn[]; data: Record<string, unknown>[]; sortable?: boolean; page_size?: number; striped?: boolean }
+    | { type: 'table'; id?: string; columns: TableColumn[]; data?: Record<string, unknown>[]; data_source?: DataSource; sortable?: boolean; page_size?: number; striped?: boolean }
     | { type: 'list'; id?: string; items: string[]; ordered?: boolean }
-    | { type: 'key_value'; id?: string; pairs: KeyValuePair[] }
+    | { type: 'key_value'; id?: string; pairs?: KeyValuePair[]; data_source?: DataSource }
     | { type: 'code_block'; id?: string; code: string; language?: string }
     // Visualizations
-    | { type: 'chart'; id?: string; title?: string; kind: ChartKind; data: Record<string, unknown>[]; x_key: string; y_keys: string[]; x_label?: string; y_label?: string; show_legend?: boolean; colors?: string[] }
+    | { type: 'chart'; id?: string; title?: string; kind: ChartKind; data?: Record<string, unknown>[]; data_source?: DataSource; x_key: string; y_keys: string[]; x_type?: ChartXType; time_format?: string; window?: number; x_label?: string; y_label?: string; show_legend?: boolean; colors?: string[] }
     | Scene3dComponent
     // Feedback
     | { type: 'alert'; id?: string; title: string; description?: string; variant?: AlertVariant }
@@ -41,7 +41,10 @@ export type TextVariant = 'h1' | 'h2' | 'h3' | 'h4' | 'body' | 'caption' | 'code
 export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost' | 'outline';
 export type BadgeVariant = 'default' | 'info' | 'success' | 'warning' | 'error' | 'secondary' | 'outline';
 export type AlertVariant = 'info' | 'success' | 'warning' | 'error';
-export type ChartKind = 'bar' | 'line' | 'area' | 'pie';
+export type ChartKind = 'bar' | 'line' | 'area' | 'pie' | 'scatter' | 'sparkline';
+export type ChartXType = 'category' | 'numeric' | 'time';
+export type DataRefresh = { mode: 'manual' } | { mode: 'interval'; secs: number } | { mode: 'push' };
+export interface DataSource { binding_path: string; refresh?: DataRefresh; ttl?: number }
 export type ModalSize = 'small' | 'medium' | 'large' | 'full';
 export type SpinnerSize = 'small' | 'medium' | 'large';
 export type SkeletonVariant = 'text' | 'circle' | 'rectangle';
@@ -112,6 +115,14 @@ export type UiEvent =
     | { action: 'button_click'; action_id: string; source_component_id?: string }
     | { action: 'input_change'; name: string; value: unknown }
     | { action: 'tab_change'; index: number };
+
+export interface SurfaceRef { id: string; version: number }
+export interface UiEventEnvelope {
+    surface_ref: SurfaceRef;
+    event: UiEvent;
+    occurred_at: string;
+    metadata?: Record<string, unknown>;
+}
 
 export function uiEventToMessage(event: UiEvent): string {
     switch (event.action) {

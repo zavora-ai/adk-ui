@@ -23,11 +23,11 @@ pub use ag_ui::{
     AgUiToolCallChunkEvent, AgUiToolCallEndEvent, AgUiToolCallResultEvent, AgUiToolCallStartEvent,
     AgUiToolsCapabilities, AgUiTransportCapabilities, activity_delta_event,
     activity_snapshot_event, default_ag_ui_agent_capabilities, error_event,
-    messages_snapshot_event, raw_event, reasoning_message_chunk_event, reasoning_message_events,
-    run_error_event, run_finished_event, run_interrupted_event, run_started_event,
-    state_delta_event, state_snapshot_event, step_finished_event, step_started_event,
-    surface_to_event_stream, text_message_chunk_event, text_message_events, tool_call_chunk_event,
-    tool_call_events,
+    messages_snapshot_event, notification_event, raw_event, reasoning_message_chunk_event,
+    reasoning_message_events, run_error_event, run_finished_event, run_interrupted_event,
+    run_started_event, state_delta_event, state_snapshot_event, step_finished_event,
+    step_started_event, surface_to_event_stream, text_message_chunk_event, text_message_events,
+    tool_call_chunk_event, tool_call_events,
 };
 #[cfg(feature = "awp")]
 pub use awp::AwpAdapter;
