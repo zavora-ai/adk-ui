@@ -1,64 +1,28 @@
 [package]
 name = "adk-ui"
-version = "2.2.0"
+version = "3.0.0"
 edition = "2024"
 rust-version = "1.95.0"
 license = "Apache-2.0"
 authors = ["James Karanja Maina <james.karanja@zavora.ai>"]
-description = "Dynamic UI generation for ADK-Rust agents - render forms, cards, tables, charts and more"
+description = "Extension catalogs for ADK-Rust agent-drawn UI: charts, metrics, pages and scenes on adk-surface's genui, which keeps drawing, provenance and approvals"
 repository = "https://github.com/zavora-ai/adk-ui"
 documentation = "https://docs.rs/adk-ui"
-keywords = ["ai", "agent", "ui", "generative", "adk"]
-categories = ["api-bindings", "gui"]
+keywords = ["ai", "agent", "ui", "generative", "a2ui"]
+categories = ["gui", "web-programming"]
 readme = "README.md"
 
+# adk-ui 3 adds catalogs to adk-surface's `genui`; it owns no render tool, protocol,
+# provenance or approval path (spec 3.3 decision 11, as amended). Until ADK-Rust 3.0 is on
+# crates.io, point `adk-*` at an adk-rust checkout: copy `.cargo/config.toml.example` to
+# `.cargo/config.toml` (untracked) and set its paths.
+
 [dependencies]
+adk-surface = { version = "3.0.0", default-features = false, features = ["genui"] }
+schemars = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 thiserror = "2.0"
-schemars = "0.8"
-async-trait = "0.1"
-adk-core = { version = "2", optional = true }
-awp-types = { version = "2", optional = true }
-uuid = { version = "1", features = ["v7"], optional = true }
-jsonschema = "0.29"
-chrono = { version = "0.4", default-features = false, features = ["clock"] }
-tokio = { version = "1.40", features = ["sync"] }
-
-[features]
-default = []
-remote-catalogs = ["reqwest"]
-adk-core = ["dep:adk-core"]
-awp = ["dep:awp-types", "dep:uuid"]
-
-[dependencies.reqwest]
-version = "0.12"
-optional = true
 
 [dev-dependencies]
-tokio = { version = "1.40", features = ["macros", "rt-multi-thread"] }
-anyhow = "1.0"
-dotenvy = "0.15"
-adk-agent = "2"
-# OpenAI + Gemini so demos default to OpenAI and users can switch providers.
-adk-model = { version = "2", features = ["openai", "gemini"] }
-adk-cli = "2"
-adk-runner = "2"
-adk-server = "2"
-adk-session = "2"
-axum = "0.8"
-base64 = "0.22"
-futures = "0.3"
-proptest = "1.5"
-tracing = "0.1"
-tempfile = "3"
-
-[[example]]
-name = "ui_server"
-path = "examples/ui_server/main.rs"
-required-features = ["adk-core"]
-
-[[example]]
-name = "agentic_ui"
-path = "examples/agentic_ui/main.rs"
-required-features = ["adk-core"]
+adk-core = "3.0.0"

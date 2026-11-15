@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — 3.0.0
+
+adk-ui 3 is an extension of ADK-Rust 3's agent-drawn UI (`adk-surface`, feature `genui`), not
+a second render stack. `genui` draws, versions and proves every drawing, keeps approval
+controls, secrets and links out of it (spec 3.3 §7.4 rule 5), and turns a form's **Send** into
+a call the person decides. adk-ui 3 adds extension catalogs `genui` checks and draws.
+
+### Removed
+
+- Every render tool and `UiToolset` (`render_form`, `render_card`, `render_table`,
+  `render_chart`, `render_layout`, `render_page`, `render_app`, `render_screen`,
+  `render_confirm`, `render_alert`, `render_toast`, `render_modal`, `render_progress`,
+  `render_kit`, `patch_surface` and the surface persistence tools): agents draw with
+  `genui`'s render tools; a confirm dialog an agent draws is never an approval.
+- The protocol adapters and profiles (`interop` for AG-UI, MCP Apps and AWP, the legacy
+  `adk_ui` profile, `protocol_capabilities`), the A2UI model (`a2ui`), the HTML renderer
+  (`html`), templates (some asked for passwords), notifications, the legacy schema and
+  validation, the catalog registry and the 2.x catalogs: `genui` owns A2UI v0.9.1, AG-UI and
+  MCP Apps.
+- The `adk-core`, `awp` and `remote-catalogs` features, and the 2.x examples (`ui_server`,
+  `agentic_ui`). The protocol migration notes move to `docs/archive/2.x/`.
+
+### Changed
+
+- Builds on `adk-surface` 3 (`genui`) and `schemars` 1.0. Until ADK-Rust 3.0 is on crates.io,
+  build against an adk-rust checkout with `.cargo/config.toml.example`.
+- A brand kit generates its manifest, tokens and CSS only, never a catalog or instructions for
+  the model; its recipes use the `forms` names (`TextField` for 2.x's `TextInput`).
+
 ## [2.2.0] - 2026-08-22
 
 ### Added

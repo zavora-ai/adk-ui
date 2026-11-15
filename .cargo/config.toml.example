@@ -1,0 +1,10 @@
+# Build adk-ui 3 against an adk-rust checkout until ADK-Rust 3.0 is on crates.io.
+#
+#   cp .cargo/config.toml.example .cargo/config.toml   # untracked
+#
+# Set the paths to an adk-rust checkout of the branch that carries genui extension
+# catalogs (`feat/genui-extension-catalogs`, until it merges).
+
+[patch.crates-io]
+adk-core = { path = "../adk-rust/adk-core" }
+adk-surface = { path = "../adk-rust/adk-surface" }

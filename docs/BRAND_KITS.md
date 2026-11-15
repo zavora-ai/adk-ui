@@ -56,11 +56,12 @@ This follows the useful separation seen in current generative-UI systems: contro
 The result contains:
 
 - `manifest`: versioned tokens, assets, recipes, provenance, and lifecycle state
-- `catalog`: every component supported by the renderer, not an empty placeholder
 - `tokens`: web-ready semantic token values
-- `templates`: named workflow starting points
-- `agent_context`: allowed components and anti-brand-invention instructions
 - `theme_css`: static, kit-scoped CSS for non-React hosts
+
+In adk-ui 3 a kit never defines a catalog or instructs the model: the components a drawing
+may use come from adk-ui's catalogs, and the host, not the model, chooses and applies the kit.
+Kits style custom hosts only; the ADK-Rust web home keeps its own tokens.
 
 ## Existing And Generated Assets
 
