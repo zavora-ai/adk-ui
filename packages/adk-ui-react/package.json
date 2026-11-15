@@ -1,6 +1,6 @@
 {
     "name": "@zavora-ai/adk-ui-react",
-    "version": "2.2.0",
+    "version": "2.2.1",
     "description": "React components for rendering ADK-UI agent interfaces",
     "main": "dist/index.js",
     "module": "dist/index.mjs",

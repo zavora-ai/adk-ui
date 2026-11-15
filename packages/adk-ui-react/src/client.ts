@@ -272,7 +272,7 @@ export function buildMcpAppsInitializeRequest(
             protocolVersion: options.protocolVersion ?? MCP_APPS_PROTOCOL_VERSION,
             appInfo: {
                 name: options.appInfo?.name ?? 'adk-ui-react',
-                version: options.appInfo?.version ?? '2.2.0',
+                version: options.appInfo?.version ?? '2.2.1',
                 title: options.appInfo?.title,
                 description: options.appInfo?.description,
                 websiteUrl: options.appInfo?.websiteUrl,

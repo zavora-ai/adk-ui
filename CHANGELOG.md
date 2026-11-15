@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.1] - Unreleased
+
+The 2.x line is in maintenance for ADK-Rust 2: security fixes only, until the `adk_ui` server
+profile's sunset on 2026-12-31. ADK-Rust 3 users should follow adk-ui 3.0.
+
+### Fixed
+
+- `ApplicationRenderer` passes the application's `state` to every rendered component as its data
+  model, so tables, charts and key-value views bound with `data_source.binding_path` show the
+  application's data instead of an empty view.
+
 ## [2.2.0] - 2026-08-22
 
 ### Added
