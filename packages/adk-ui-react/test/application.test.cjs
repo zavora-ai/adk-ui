@@ -1,6 +1,9 @@
 const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
+const React = require('react');
+const { renderToStaticMarkup } = require('react-dom/server');
 const {
+    ApplicationRenderer,
     applyUiApplicationUpdate,
     parseUiApplication,
     validateUiApplication,
@@ -44,5 +47,22 @@ describe('Application graph', () => {
         assert.equal(app.state.filters, 1);
         assert.deepEqual(stateUpdate.state, { filters: 2, query: 'open' });
         assert.equal(pageUpdate.pages.length, 2);
+    });
+
+    it('hydrates application component bindings from application state', () => {
+        const app = application();
+        app.state = { findings: [{ title: 'Disk space is low', severity: 'warning' }] };
+        app.pages[0].regions[0].components = [{
+            type: 'table',
+            columns: [
+                { header: 'Finding', accessor_key: 'title', sortable: true },
+                { header: 'Severity', accessor_key: 'severity', sortable: true },
+            ],
+            data: [],
+            data_source: { binding_path: '/findings', refresh: { mode: 'push' } },
+        }];
+        const html = renderToStaticMarkup(React.createElement(ApplicationRenderer, { application: app }));
+        assert.match(html, /Disk space is low/);
+        assert.match(html, /warning/);
     });
 });

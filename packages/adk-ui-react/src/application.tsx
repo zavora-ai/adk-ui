@@ -155,8 +155,8 @@ export interface ApplicationRendererProps {
     onNavigate?: (route: string, page: UiApplicationPage) => void;
 }
 
-function ComponentSet({ components, onAction }: { components: Component[]; onAction?: (event: UiEvent) => void }) {
-    return <>{components.map((component, index) => <Renderer key={component.id ?? `${component.type}-${index}`} component={component} onAction={onAction} />)}</>;
+function ComponentSet({ components, onAction, dataModel }: { components: Component[]; onAction?: (event: UiEvent) => void; dataModel?: unknown }) {
+    return <>{components.map((component, index) => <Renderer key={component.id ?? `${component.type}-${index}`} component={component} onAction={onAction} dataModel={dataModel} />)}</>;
 }
 
 export function ApplicationRenderer({
@@ -267,11 +267,11 @@ export function ApplicationRenderer({
                                         {page.eyebrow && <span className="adk-app-eyebrow">{page.eyebrow}</span>}
                                         <h1>{page.hero.title}</h1>
                                         {page.hero.description && <p>{page.hero.description}</p>}
-                                        <ComponentSet components={page.hero.content ?? []} onAction={handleAction} />
-                                        {page.hero.actions && <div className="adk-app-hero__actions"><ComponentSet components={page.hero.actions} onAction={handleAction} /></div>}
+                                        <ComponentSet components={page.hero.content ?? []} onAction={handleAction} dataModel={runtime.state} />
+                                        {page.hero.actions && <div className="adk-app-hero__actions"><ComponentSet components={page.hero.actions} onAction={handleAction} dataModel={runtime.state} /></div>}
                                     </div>
                                     {page.hero.visual && page.hero.visual.length > 0 && (
-                                        <div className="adk-app-hero__visual"><ComponentSet components={page.hero.visual} onAction={handleAction} /></div>
+                                        <div className="adk-app-hero__visual"><ComponentSet components={page.hero.visual} onAction={handleAction} dataModel={runtime.state} /></div>
                                     )}
                                 </section>
                             ) : (
@@ -287,14 +287,14 @@ export function ApplicationRenderer({
                                         <section key={region.id} className={`adk-app-region adk-app-region--${region.layout ?? 'stack'} adk-app-region-tone--${region.tone ?? 'default'}`}>
                                             {(region.title || region.description) && <header><div>{region.title && <h2>{region.title}</h2>}{region.description && <p>{region.description}</p>}</div><span>{String(page.regions.indexOf(region) + 1).padStart(2, '0')}</span></header>}
                                             <div className="adk-app-region__content" style={{ '--adk-app-columns': Math.min(6, Math.max(1, region.columns ?? 3)) } as React.CSSProperties}>
-                                                <ComponentSet components={region.components} onAction={handleAction} />
+                                                <ComponentSet components={region.components} onAction={handleAction} dataModel={runtime.state} />
                                             </div>
                                         </section>
                                     ))}
                                 </div>
-                                {page.aside && page.aside.length > 0 && <aside className="adk-app-page__aside"><ComponentSet components={page.aside} onAction={handleAction} /></aside>}
+                                {page.aside && page.aside.length > 0 && <aside className="adk-app-page__aside"><ComponentSet components={page.aside} onAction={handleAction} dataModel={runtime.state} /></aside>}
                             </div>
-                            {page.footer && page.footer.length > 0 && <footer className="adk-app-page__footer"><ComponentSet components={page.footer} onAction={handleAction} /></footer>}
+                            {page.footer && page.footer.length > 0 && <footer className="adk-app-page__footer"><ComponentSet components={page.footer} onAction={handleAction} dataModel={runtime.state} /></footer>}
                         </main>
                     ))}
                 </div>
