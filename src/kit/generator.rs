@@ -231,7 +231,7 @@ fn density_spacing(density: &KitDensity) -> u8 {
     }
 }
 
-fn radius_value(radius: &KitRadius) -> &'static str {
+pub(crate) fn radius_value(radius: &KitRadius) -> &'static str {
     match radius {
         KitRadius::None => "0px",
         KitRadius::Sm => "4px",
@@ -271,7 +271,7 @@ fn color_or(value: &str, fallback: &str) -> String {
     }
 }
 
-fn css_string(value: &str) -> String {
+pub(crate) fn css_string(value: &str) -> String {
     value
         .replace('\\', "\\\\")
         .replace('"', "\\\"")

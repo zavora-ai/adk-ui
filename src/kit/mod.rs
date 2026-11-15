@@ -1,5 +1,6 @@
 pub mod generator;
 pub mod spec;
+mod surface;
 
 pub use generator::{KitArtifacts, KitGenerator};
 pub use spec::{
@@ -8,3 +9,4 @@ pub use spec::{
     KitSemanticTokens, KitSemanticTypography, KitSource, KitSpec, KitStatus, KitTemplate,
     KitTypography, KitValidationError,
 };
+pub use surface::{ApprovedKit, KitNotApproved};

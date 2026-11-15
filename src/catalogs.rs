@@ -34,9 +34,36 @@ pub fn insight() -> &'static Catalog {
     &INSIGHT
 }
 
-/// Every adk-ui catalog, for a home to register.
+/// The studio catalog's id.
+pub const STUDIO_ID: &str = "https://zavora.ai/a2ui/catalogs/adk-ui-studio/1.0/catalog.json";
+
+static STUDIO: LazyLock<Catalog> = LazyLock::new(|| {
+    let mut components = crate::insight::components();
+    components.extend(crate::studio::components());
+    Catalog::extend(ExtensionSpec {
+        id: STUDIO_ID,
+        name: "studio",
+        version: "1.0",
+        components,
+    })
+    .unwrap_or_else(|error| panic!("adk-ui's studio catalog does not compile: {error}"))
+});
+
+/// The studio catalog: the insight catalog plus apps of pages, regions and primitive 3D
+/// scenes, for hosts that embed agent-drawn applications.
+///
+/// ```rust
+/// let studio = adk_ui::catalogs::studio();
+/// assert_eq!(studio.label(), "studio 1.0");
+/// assert!(studio.has_component("App") && studio.has_component("Chart"));
+/// ```
+pub fn studio() -> &'static Catalog {
+    &STUDIO
+}
+
+/// Every adk-ui catalog, for a home to register: drawings made in any of them are shown.
 pub fn all() -> Vec<&'static Catalog> {
-    vec![insight()]
+    vec![insight(), studio()]
 }
 
 /// `builder` showing drawings in every adk-ui catalog.

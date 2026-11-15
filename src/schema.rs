@@ -38,6 +38,21 @@ pub(crate) fn value() -> Value {
     json!({ "$ref": format!("{COMMON}/DynamicValue") })
 }
 
+/// A component id another component holds.
+pub(crate) fn component_id() -> Value {
+    json!({ "$ref": format!("{COMMON}/ComponentId") })
+}
+
+/// Three numbers: a point or a rotation in a scene.
+pub(crate) fn vector(min: f64, max: f64) -> Value {
+    json!({
+        "type": "array",
+        "items": { "type": "number", "minimum": min, "maximum": max },
+        "minItems": 3,
+        "maxItems": 3
+    })
+}
+
 /// Data: a binding into the data model, or a literal list of `items`.
 pub(crate) fn data(items: Value, max: usize) -> Value {
     json!({

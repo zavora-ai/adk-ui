@@ -24,6 +24,17 @@ a call the person decides. adk-ui 3 adds extension catalogs `genui` checks and d
 - `toolset()` and `toolset_for()`: `genui`'s render tools drawing in an adk-ui catalog, under
   their usual names; `catalogs::register` and `catalogs::ag_ui` register the catalogs with a
   home and with AG-UI.
+- **The studio catalog** (`catalogs::studio`, id
+  `https://zavora.ai/a2ui/catalogs/adk-ui-studio/1.0/catalog.json`): the insight catalog plus
+  `App` (pages the host navigates; the web home shows them as tabs), `Page`, `Region` and
+  `Scene3D` (primitive shapes with checked labels and `#rrggbb` colours, at most 64; no models,
+  textures or actions; the home lists what a scene holds). The containers declare what they
+  hold, so `genui` checks every held component, its fields and buttons included. Builders in
+  `studio`.
+- `kit::ApprovedKit`: only an approved, valid kit applies. `surface_css` sets the adk-surface
+  tokens a custom host's `DrawnView` and adk-ui's renderers read (card, border, text, accent,
+  focus, fonts, radius, the eight chart colours), never a decision's or a status's;
+  `a2ui_theme` gives a third-party A2UI renderer the primary colour alone.
 - Builders for every insight component (`insight::Chart`, `Metric`, …, `bind`), a `Screen`
   that is checked as `genui` checks it and gives `render_screen`'s arguments, and
   `prompts::instructions` for the model.

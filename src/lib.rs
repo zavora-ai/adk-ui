@@ -10,12 +10,13 @@
 //!
 //! | Part | What |
 //! |---|---|
-//! | [`catalogs`] | The catalogs: [`catalogs::insight`] (charts, sparklines, metrics, key-value lists, progress, badges) |
+//! | [`catalogs`] | The catalogs: [`catalogs::insight`] (charts, sparklines, metrics, key-value lists, progress, badges) and [`catalogs::studio`] (insight, plus apps of pages, regions and primitive 3D scenes) |
 //! | [`insight`] | Builders for the insight components |
+//! | [`studio`] | Builders for the studio components |
 //! | [`draft`] | A screen under construction, checked as `genui` checks it |
 //! | [`toolset`] | `genui`'s render tools drawing in an adk-ui catalog |
 //! | [`prompts`] | What to tell a model that draws in one |
-//! | [`kit`] | Brand kits: approved design tokens a host applies to its own pages |
+//! | [`kit`] | Brand kits: approved design tokens a host applies to its own pages ([`kit::ApprovedKit`]) |
 //!
 //! adk-ui adds no render tool name, protocol, provenance record or approval path: an agent
 //! draws with `genui`'s `render_screen`, the drawing is recorded and checked by `genui`, and a
@@ -43,6 +44,7 @@ pub mod insight;
 pub mod kit;
 pub mod prompts;
 mod schema;
+pub mod studio;
 
 use adk_surface::genui::{Catalog, DrawToolset, Validator};
 
