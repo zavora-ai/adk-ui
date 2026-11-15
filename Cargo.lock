@@ -469,6 +469,7 @@ version = "3.0.0"
 dependencies = [
  "adk-core",
  "adk-surface",
+ "chrono",
  "schemars",
  "serde",
  "serde_json",

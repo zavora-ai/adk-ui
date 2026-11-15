@@ -12,6 +12,22 @@ a second render stack. `genui` draws, versions and proves every drawing, keeps a
 controls, secrets and links out of it (spec 3.3 §7.4 rule 5), and turns a form's **Send** into
 a call the person decides. adk-ui 3 adds extension catalogs `genui` checks and draws.
 
+### Added
+
+- **The insight catalog** (`catalogs::insight`, id
+  `https://zavora.ai/a2ui/catalogs/adk-ui-insight/1.0/catalog.json`): `forms` 1.0 plus
+  `Chart` (bar, line, area, pie, scatter over category, number or time axes), `Sparkline`,
+  `Metric` (value, unit, currency or percent, change, status, trend), `KeyValue`, `Progress`
+  and `Badge`. Every one only shows, binds its data with `{"path"}`, and says what the
+  ADK-Rust web home and terminal show for it: charts as the home's native chart, the rest as
+  `forms` components. `genui` checks every string in them and in the data they bind.
+- `toolset()` and `toolset_for()`: `genui`'s render tools drawing in an adk-ui catalog, under
+  their usual names; `catalogs::register` and `catalogs::ag_ui` register the catalogs with a
+  home and with AG-UI.
+- Builders for every insight component (`insight::Chart`, `Metric`, …, `bind`), a `Screen`
+  that is checked as `genui` checks it and gives `render_screen`'s arguments, and
+  `prompts::instructions` for the model.
+
 ### Removed
 
 - Every render tool and `UiToolset` (`render_form`, `render_card`, `render_table`,

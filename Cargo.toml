@@ -19,6 +19,7 @@ readme = "README.md"
 
 [dependencies]
 adk-surface = { version = "3.0.0", default-features = false, features = ["genui"] }
+chrono = { version = "0.4", default-features = false, features = ["std"] }
 schemars = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
