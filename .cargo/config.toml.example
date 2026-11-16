@@ -2,8 +2,8 @@
 #
 #   cp .cargo/config.toml.example .cargo/config.toml   # untracked
 #
-# Set the paths to an adk-rust checkout of the branch that carries genui extension
-# catalogs (`feat/genui-extension-catalogs`, until it merges).
+# Set the paths to an adk-rust checkout of `main` (genui extension catalogs landed in
+# zavora-ai/adk-rust#1393). Remove this file once ADK-Rust 3.0 is on crates.io.
 
 [patch.crates-io]
 adk-core = { path = "../adk-rust/adk-core" }
