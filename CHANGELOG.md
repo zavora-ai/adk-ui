@@ -50,6 +50,9 @@ a call the person decides. adk-ui 3 adds extension catalogs `genui` checks and d
 - Six sample drawings (`fixtures/drawings/`), the `insight_home` example (the ADK-Rust web home
   over a scripted agent that draws them), and `examples/custom_host` (a Vite app drawing them
   with `DrawnView`, adk-ui's renderers and two approved kits).
+- The `insight_agent` example: a harness agent on an Anthropic model (adaptive thinking, prompt
+  caching) that studies a directory with its own workspace tools and answers with adk-ui's
+  catalogs, everything configured from the environment and nothing scripted.
 - End-to-end tests: a harness agent draws every sample through `toolset_for`, a home that
   registers the catalogs shows every one, and a form inside a drawing is held for the person
   with only its fields.

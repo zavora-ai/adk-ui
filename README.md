@@ -96,6 +96,7 @@ draws it. See [packages/adk-ui-react](packages/adk-ui-react/README.md) and
 
 | | |
 |---|---|
+| [`examples/insight_agent.rs`](examples/insight_agent.rs) | A real agent on Claude that studies a directory with its own tools and answers with adk-ui's charts, metrics and pages; configured from the environment (`ANTHROPIC_MODEL`, `ANTHROPIC_EFFORT`, `AGENT_WORKSPACE`, `AGENT_MODE`, `PORT`): `ANTHROPIC_MODEL=claude-opus-5-5 AGENT_WORKSPACE=$PWD cargo run --example insight_agent` |
 | [`examples/insight_home.rs`](examples/insight_home.rs) | The ADK-Rust web home over a scripted agent that draws the six sample drawings: `cargo run --example insight_home -- 8806 /tmp/insight-home`, open `http://127.0.0.1:8806/ui/` and send a message |
 | [`examples/custom_host`](examples/custom_host) | A Vite app drawing the same drawings with `DrawnView`: the home's view, adk-ui's renderers, and two approved brand kits |
 | [`fixtures/drawings`](fixtures/drawings) | The six sample drawings: incident command, support request, release room, store week, warehouse bays, live throughput |
