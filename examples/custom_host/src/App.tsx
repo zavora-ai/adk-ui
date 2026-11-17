@@ -7,7 +7,7 @@ import { kits } from "./kits";
 type Mode = "home" | "rich" | number;
 
 /**
- * A host of your own: the six sample drawings as the ADK-Rust home projected them
+ * A host of your own: the eleven sample drawings as the ADK-Rust home projected them
  * (`public/surfaces.json`, written by adk-ui's `home_tests`), drawn by `DrawnView` with the
  * home's own view, with adk-ui's renderers, or with those under an approved brand kit. Sending a
  * form here only logs it: a host of your own posts `submitDrawn` to its engine, which asks the

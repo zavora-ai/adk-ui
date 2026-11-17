@@ -38,7 +38,7 @@ let app = ServerBuilder::new(config).with_ag_ui_extension(Arc::new(adk_ui::catal
 | `render_progress` | `Progress`, then `patch_surface` as the work moves |
 | `render_page`, `render_app` | `render_screen` with `App`, `Page`, `Region` (studio catalog) |
 | `render_screen` | `render_screen` in an adk-ui catalog |
-| Scene3D components | `Scene3D` (studio): primitives and checked labels only; no models, textures or object actions |
+| Scene3D components | `Scene3D` (studio): primitives and checked labels only; no models, textures or object actions. For 3D charts, globes, networks and scenes a person can pick from, the spatial catalog (`Bar3D`, `Globe`, `Graph3D`, `Scene`, …) |
 | `render_confirm`, `render_modal` | None: a drawing never asks for a yes. A call that needs one is held by the agent's policy and decided on the home's card |
 | `render_alert`, `render_toast` | The agent's reply, or a `Badge` or `Text` |
 | `render_kit`, `kit_id` | None in a drawing: the host applies an approved kit (`kit::ApprovedKit`, React `KitProvider`); see [BRAND_KITS.md](BRAND_KITS.md) |
@@ -82,7 +82,7 @@ import { adkUiRenderers } from "@zavora-ai/adk-ui-react";
 | `ApplicationRenderer` | `AppShell` (in a drawing, the `App` renderer) |
 | `AdkUiKitProvider`, `resolveApprovedUiKit`, slots | `KitProvider` (approved kits only), `kitStyleVariables` |
 | `ReasoningPanel` | Gone |
-| `react-markdown`, `lucide-react`, `clsx` | No runtime dependencies; `recharts` and `three` stay optional peers |
+| `react-markdown`, `lucide-react`, `clsx` | No runtime dependencies; `recharts` stays an optional peer. `DrawnView` draws 3D itself, and `three` is a peer only of the deprecated standalone `Scene3D` |
 
 Charts, metrics and the rest are also exported as components (`Chart`, `Metric`,
 `KeyValueList`, …) for data a host owns.

@@ -1,8 +1,9 @@
 # @zavora-ai/adk-ui-react
 
 Renderers of [adk-ui](https://github.com/zavora-ai/adk-ui)'s extension catalogs (charts,
-metrics, key-value lists, progress, badges, apps of pages, regions and primitive 3D scenes) for
+metrics, key-value lists, progress, badges, apps of pages and regions) for
 `@zavora-ai/adk-surface-react`'s `DrawnView`, and the same components for a host's own data.
+3D scenes, cards with depth and 3D layouts need no renderer: `DrawnView` draws them itself.
 
 ADK-Rust 3 draws agent UI with `adk-surface`'s `genui`: every drawing is recorded, checked by
 rule 5 (no approval controls, secrets or links) and shown by `DrawnView`. In a drawing, a
@@ -13,12 +14,14 @@ server, and with the home's own view of it as a fallback. These renderers draw i
 
 ```bash
 npm install @zavora-ai/adk-ui-react @zavora-ai/adk-surface-react
-# Optional: rich charts and 3D scenes
-npm install recharts three
+# Optional: rich charts
+npm install recharts
 ```
 
-Without `recharts` or `three`, a chart or a scene in a drawing is drawn as the ADK-Rust home
-draws it (an SVG chart, a list of what a scene holds).
+Without `recharts`, a chart in a drawing is drawn as the ADK-Rust home draws it (an SVG chart).
+Studio's `Scene3D` and every 3D component of the spatial catalog are drawn by `DrawnView`
+natively, with WebGL loaded only for a drawing that has one, in the home's palette, with picking
+into the drawing's form, and in words where WebGL is missing.
 
 ## In a DrawnView
 
@@ -40,7 +43,8 @@ never gets a way to send or change a value. Forms inside an app's pages are draw
 |---|---|
 | `insightRenderers` | `https://zavora.ai/a2ui/catalogs/adk-ui-insight/1.0/catalog.json` |
 | `studioRenderers` | `https://zavora.ai/a2ui/catalogs/adk-ui-studio/1.0/catalog.json` |
-| `adkUiRenderers` | Both |
+| `spatialRenderers` | `https://zavora.ai/a2ui/catalogs/adk-ui-spatial/1.0/catalog.json` (its 2D components) |
+| `adkUiRenderers` | All three |
 
 ## With your own data
 
@@ -53,8 +57,9 @@ import { Chart, Metric } from "@zavora-ai/adk-ui-react";
 <Chart kind="line" data={rows} x={{ key: "time", type: "time" }} series={[{ key: "p95", label: "p95 latency" }]} />
 ```
 
-`Chart`, `Sparkline`, `Metric`, `KeyValueList`, `ProgressBar`, `Badge`, `AppShell`, `PageView`,
-`RegionView` and `Scene3D` take the catalog's properties (see the exported types).
+`Chart`, `Sparkline`, `Metric`, `KeyValueList`, `ProgressBar`, `Badge`, `AppShell`, `PageView`
+and `RegionView` take the catalog's properties (see the exported types). The standalone
+`Scene3D` (with `three` as an optional peer) is deprecated and goes in 4.0.
 
 ## Brand kits
 

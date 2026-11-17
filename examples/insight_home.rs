@@ -1,13 +1,13 @@
 //! The ADK-Rust web home over a scripted agent that draws in adk-ui's catalogs.
 //!
 //! A kernel hosts the harness agent Operations in "Ask first", with `genui`'s render tools
-//! drawing in adk-ui's studio catalog (`adk_ui::toolset_for`) and three tools a drawing may ask
-//! for: `start_rollback`, `open_ticket` and `reserve_dock`, each appending its calls to
-//! `calls.txt` in the workspace. Its model is `ScriptedLlm`: the first turn draws the six
-//! sample drawings of `fixtures/drawings/` and patches the throughput one twice. The home
-//! registers adk-ui's catalogs (`adk_ui::catalogs::register`), so it shows charts natively and
-//! the rest as its own components; pressing **Start rollback** asks you first, on the home's
-//! card.
+//! drawing in adk-ui's spatial catalog (`adk_ui::toolset_for`), which holds studio and insight,
+//! and three tools a drawing may ask for: `start_rollback`, `open_ticket` and `reserve_dock`,
+//! each appending its calls to `calls.txt` in the workspace. Its model is `ScriptedLlm`: the
+//! first turn draws the eleven sample drawings of `fixtures/drawings/` and their patches. The
+//! home registers adk-ui's catalogs (`adk_ui::catalogs::register`), so it shows charts and 3D
+//! scenes natively and the rest as its own components; pressing **Start rollback**, or
+//! **Reserve this dock** after picking a dock in the yard, asks you first, on the home's card.
 //!
 //! ```sh
 //! cargo run --example insight_home -- 8806 /tmp/insight-home
@@ -48,6 +48,11 @@ const FIXTURES: &[&str] = &[
     include_str!("../fixtures/drawings/support-workflow.json"),
     include_str!("../fixtures/drawings/spatial-logistics.json"),
     include_str!("../fixtures/drawings/streaming-operations.json"),
+    include_str!("../fixtures/drawings/spatial-revenue-bars.json"),
+    include_str!("../fixtures/drawings/spatial-fleet-globe.json"),
+    include_str!("../fixtures/drawings/spatial-service-graph.json"),
+    include_str!("../fixtures/drawings/spatial-warehouse-pick.json"),
+    include_str!("../fixtures/drawings/spatial-terrain.json"),
 ];
 
 /// Admits every request as the owner, as a loopback-only server's extractor does.
@@ -169,7 +174,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             ))
             .tool(tool("open_ticket", "Opens a support ticket."))
             .tool(tool("reserve_dock", "Reserves a loading dock."))
-            .toolset(Arc::new(adk_ui::toolset_for(adk_ui::catalogs::studio())))
+            .toolset(Arc::new(adk_ui::toolset_for(adk_ui::catalogs::spatial())))
             .build()?,
     );
     let sessions: Arc<dyn SessionService> = Arc::new(InMemorySessionService::new());

@@ -254,7 +254,8 @@ impl ExtensionComponent for Bar3DComponent {
                 series: indices,
             },
         ));
-        let front = z0 - spacing * 0.9;
+        // The camera starts on the +x, +z side: categories read along the near edge.
+        let front = -z0 + spacing * 0.9;
         for (r, row) in rows.iter().enumerate() {
             let text = cell(row.get(&x_key));
             if !text.trim().is_empty() && r < MAX_LABELS {
@@ -816,12 +817,15 @@ impl ExtensionComponent for GlobeComponent {
             Ok((lat, lon))
         };
         let mut scene = DrawnScene::new(SceneKind::Globe);
-        scene.objects.push(SceneObject::new(
+        let mut sphere = SceneObject::new(
             "globe",
             SceneShape::Globe {
                 radius: num(GLOBE)?,
             },
-        ));
+        );
+        // A plain globe, so the places and routes on it carry the colour.
+        sphere.look.color = SceneColor::Neutral;
+        scene.objects.push(sphere);
         let mut groups: BTreeMap<String, usize> = BTreeMap::new();
         let mut at = Vec::with_capacity(points.len());
         let mut series = Vec::with_capacity(points.len());
@@ -849,7 +853,7 @@ impl ExtensionComponent for GlobeComponent {
                 "places",
                 SceneShape::Points {
                     at: flat(&at)?,
-                    size: num(0.08)?,
+                    size: num(0.13)?,
                     series,
                 },
             ));

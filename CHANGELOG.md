@@ -28,7 +28,8 @@ a call the person decides. adk-ui 3 adds extension catalogs `genui` checks and d
   `https://zavora.ai/a2ui/catalogs/adk-ui-studio/1.0/catalog.json`): the insight catalog plus
   `App` (pages the host navigates; the web home shows them as tabs), `Page`, `Region` and
   `Scene3D` (primitive shapes with checked labels and `#rrggbb` colours, at most 64; no models,
-  textures or actions; the home lists what a scene holds). The containers declare what they
+  textures or actions). The home draws a scene in 3D: each hex colour as the nearest chart
+  colour, and a plane upright in x-y as three.js draws one. The containers declare what they
   hold, so `genui` checks every held component, its fields and buttons included. Builders in
   `studio`.
 - `kit::ApprovedKit`: only an approved, valid kit applies. `surface_css` sets the adk-surface
@@ -38,24 +39,46 @@ a call the person decides. adk-ui 3 adds extension catalogs `genui` checks and d
 - Builders for every insight component (`insight::Chart`, `Metric`, …, `bind`), a `Screen`
   that is checked as `genui` checks it and gives `render_screen`'s arguments, and
   `prompts::instructions` for the model.
-- **`@zavora-ai/adk-ui-react` 3**: renderers of both catalogs for `@zavora-ai/adk-surface-react`'s
-  `DrawnView` (`adkUiRenderers`, `insightRenderers`, `studioRenderers`). A renderer draws from
-  the server's resolved, checked properties and never gets a way to send; forms inside an app's
-  pages stay `DrawnView`'s own. `Chart` (recharts) and `Scene3D` (three, primitives only) load
-  lazily as optional peers and fall back to the home's own view; `Sparkline`, `Metric`,
-  `KeyValueList`, `ProgressBar`, `Badge`, `AppShell`, `PageView` and `RegionView` need no peer
-  and also draw a host's own data. `KitProvider` applies approved kits only.
+- **The spatial catalog** (`catalogs::spatial`, id
+  `https://zavora.ai/a2ui/catalogs/adk-ui-spatial/1.0/catalog.json`): the studio catalog plus
+  - 3D charts: `Bar3D`, `Scatter3D`, `SurfacePlot`, `Graph3D` and `Globe`;
+  - `Scene`: groups, lines, arrows, text, palette colours and states, lights, cameras,
+    motion, panels beside objects, and `pickInto`, where picking an object fills a choice
+    field the drawing shows and never sends;
+  - `DepthCard` (tilt, flip, layers) and `Stage` (stage, wall, carousel).
+
+  Each one projects onto `genui`'s own scenes and depth effects. The ADK-Rust web home draws
+  them natively (WebGL, in its palette), and the terminal shows their words. Every limit is
+  checked again on bound data, which the schema can't see. Builders are in `spatial`.
+  `catalogs::HOME_DRAWN` lists what the home draws, and `prompts::instructions` tells a spatial
+  agent when 3D carries information.
+- **`@zavora-ai/adk-ui-react` 3**: renderers for `@zavora-ai/adk-surface-react`'s `DrawnView`
+  (`adkUiRenderers`, `insightRenderers`, `studioRenderers`, and `spatialRenderers` for the
+  spatial catalog's 2D components).
+  - A renderer draws from the server's resolved, checked properties and never gets a way to
+    send; forms inside an app's pages stay `DrawnView`'s own.
+  - `Chart` (recharts) loads lazily as an optional peer and falls back to the home's own view.
+  - 3D scenes, cards with depth and 3D layouts have no renderer: `DrawnView` draws them.
+  - `Sparkline`, `Metric`, `KeyValueList`, `ProgressBar`, `Badge`, `AppShell`, `PageView` and
+    `RegionView` need no peer and also draw a host's own data. The standalone `Scene3D` is
+    deprecated.
+  - `KitProvider` applies approved kits only.
 - `catalogs/`: the catalog documents and an index, written from the Rust catalogs and
   drift-checked by `cargo test`; the React registry is checked against them.
-- Six sample drawings (`fixtures/drawings/`), the `insight_home` example (the ADK-Rust web home
-  over a scripted agent that draws them), and `examples/custom_host` (a Vite app drawing them
-  with `DrawnView`, adk-ui's renderers and two approved kits).
+- Eleven sample drawings (`fixtures/drawings/`, six in studio and five in spatial), the
+  `insight_home` example (the ADK-Rust web home over a scripted agent that draws them), and
+  `examples/custom_host` (a Vite app drawing them with `DrawnView`, adk-ui's renderers and two
+  approved kits).
 - The `insight_agent` example: a harness agent on an Anthropic model (adaptive thinking, prompt
   caching) that studies a directory with its own workspace tools and answers with adk-ui's
-  catalogs, everything configured from the environment and nothing scripted.
-- End-to-end tests: a harness agent draws every sample through `toolset_for`, a home that
-  registers the catalogs shows every one, and a form inside a drawing is held for the person
-  with only its fields.
+  catalogs (spatial by default), everything configured from the environment and nothing
+  scripted.
+- End-to-end tests:
+  - a harness agent draws every sample through `toolset_for`, in studio and in spatial;
+  - a home that registers the catalogs shows every one, its scenes with the server's
+    summaries;
+  - a form inside a drawing is held for the person with only its fields;
+  - a dock picked in a 3D scene is sent as a field and asks first.
 - `docs/MIGRATING_TO_3.md` maps every 2.x tool, module and React export to its replacement.
 
 ### Removed

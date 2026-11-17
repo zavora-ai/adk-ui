@@ -1,6 +1,6 @@
 # A host of your own
 
-The six sample drawings of `fixtures/drawings/`, as the ADK-Rust home projected them
+The eleven sample drawings of `fixtures/drawings/`, as the ADK-Rust home projected them
 (`public/surfaces.json`, written by `cargo test --test home_tests`), drawn by
 `@zavora-ai/adk-surface-react`'s `DrawnView`:
 
