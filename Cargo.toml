@@ -11,6 +11,7 @@ documentation = "https://docs.rs/adk-ui"
 keywords = ["ai", "agent", "ui", "generative", "a2ui"]
 categories = ["gui", "web-programming"]
 readme = "README.md"
+exclude = [".cargo", "packages", "examples/custom_host", "docs/archive", "package.json", "package-lock.json"]
 
 # adk-ui 3 adds catalogs to adk-surface's `genui`; it owns no render tool, protocol,
 # provenance or approval path (spec 3.3 decision 11, as amended). Until ADK-Rust 3.0 is on
