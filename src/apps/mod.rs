@@ -128,7 +128,8 @@ fn description() -> String {
          components can't declare (motion, particles, procedural shapes); for charts, \
          networks, globes and laid-out scenes draw with render_screen instead.\n\
          `code` is the body of an async function given {{ THREE, addons, scene, camera, \
-         renderer, controls, onFrame, label, size, theme, reducedMotion }}:\n\
+         renderer, controls, onFrame, label, size, theme, reducedMotion }}, already in scope \
+         by those names: use them as they are, without importing or declaring them:\n\
          - add objects to `scene`; the camera starts at (6, 5, 8) looking at the origin, with \
          orbit controls and soft lights already in place;\n\
          - `onFrame((dt, t) => ...)` animates; the page runs the loop, pauses it off screen and \
@@ -250,6 +251,21 @@ mod tests {
         assert!(
             !PAGE.contains("import("),
             "the page imports nothing at run time"
+        );
+    }
+
+    /// Claude's first solar system began `const { THREE } = arguments[0] ...`: beside an arrow
+    /// function's parameter that is a syntax error. The code runs in a block of its own inside
+    /// an ordinary function, so a given name declared again shadows it.
+    #[test]
+    fn the_code_runs_in_a_block_where_a_given_name_may_be_declared_again() {
+        assert!(
+            PAGE.contains("window.__adk.run(async function ({ THREE,"),
+            "an ordinary function, so `arguments[0]` is what the code is given"
+        );
+        assert!(
+            PAGE.contains("reducedMotion }) {\\n{\\n\" +\n    input.code +\n    \"\\n}\\n});\""),
+            "the code in a block of its own"
         );
     }
 

@@ -53,7 +53,8 @@ const SPATIAL: &str = "\n\
      routes (Globe), a physical layout (Scene). Otherwise use Chart.\n\
      - Limits: Bar3D 50 rows by 8 series; Scatter3D 2000 points; SurfacePlot 64 by 64; Graph3D \
      200 nodes and 400 edges; Globe 500 places and 200 routes; Scene 128 objects, 3 lights, 4 \
-     panels, 32 moving. Aggregate or sample first and say so in the title.\n\
+     panels, 32 moving, each motion taking 0.2 to 120 seconds (scale slow periods down and \
+     say so). Aggregate or sample first and say so in the title.\n\
      - Colours are names, never codes: chart1 to chart8, ink, neutral, muted; a state (ok, \
      warning, critical, info) needs a label too.\n\
      - Bind data and change it with patch_surface; keep object ids so things move smoothly. \

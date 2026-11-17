@@ -63,6 +63,17 @@ a call the person decides. adk-ui 3 adds extension catalogs `genui` checks and d
     `RegionView` need no peer and also draw a host's own data. The standalone `Scene3D` is
     deprecated.
   - `KitProvider` applies approved kits only.
+- **3D apps** (feature `apps`): `apps::ThreeApps`, an MCP server whose one tool,
+  `show_3d_app`, shows three.js the model writes in genui-apps' sandbox, on its own origin
+  (`adk-ui-apps` serves it over stdio).
+  - The page loads three.js 0.185.1 from its one declared site. It runs the code in a block
+    of its own, given `THREE`, `scene`, `camera`, `onFrame`, `label`, `theme` and more, so
+    code that declares a given name again still runs.
+  - The page owns the render loop and its Pause button.
+  - The server refuses code that shows a decision's words or reaches outside its frame.
+  - `insight_agent` serves it with `ADK_UI_3D_APPS=1`. The spatial prompt states every scene
+    limit, a motion's 0.2 to 120 seconds included, so a model knows when to use an app
+    instead.
 - `catalogs/`: the catalog documents and an index, written from the Rust catalogs and
   drift-checked by `cargo test`; the React registry is checked against them.
 - Eleven sample drawings (`fixtures/drawings/`, six in studio and five in spatial), the

@@ -463,3 +463,32 @@ fn the_home_gets_genuis_own_scenes() {
     let card = home("DepthCard", DepthCard::new("x", "f").flip("b").build(), 2).unwrap();
     assert!(matches!(card, HomeNode::Depth { ref children, .. } if children.len() == 2));
 }
+
+/// What Claude drew for "an animated solar system" in a live run: Uranus's orbit is slower than
+/// a scene moves. The refusal names the object and the rule, not the whole list, so the agent
+/// can fix it.
+#[test]
+fn a_refused_scene_says_which_object_broke_which_rule() {
+    let planet = |id: &str, seconds: f64| json!({ "id": id, "shape": "sphere", "label": id, "motion": { "kind": "orbit", "seconds": seconds } });
+    let solar = screen_of(vec![json!({
+        "id": "root", "component": "Scene",
+        "objects": [planet("Earth", 4.0), planet("Saturn", 117.8), planet("Uranus", 336.0)]
+    })]);
+    let refused = refusal(&solar);
+    assert_eq!(refused.kind, RefusalKind::CannotShow);
+    assert!(
+        refused.detail.contains("/objects/2/motion/seconds"),
+        "{}",
+        refused.technical()
+    );
+    assert!(
+        refused.detail.contains("maximum of 120"),
+        "{}",
+        refused.technical()
+    );
+    assert!(
+        !refused.detail.contains("Saturn"),
+        "{}",
+        refused.technical()
+    );
+}

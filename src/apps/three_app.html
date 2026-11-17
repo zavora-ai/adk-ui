@@ -211,11 +211,13 @@ function start(input) {
     if (moving) schedule();
   });
 
+  // The code runs in a block of its own inside an ordinary function: a name it declares again,
+  // such as `const { THREE } = arguments[0]`, shadows the one it is given rather than failing.
   const script = document.createElement("script");
   script.textContent =
-    "window.__adk.run(async ({ THREE, addons, scene, camera, renderer, controls, onFrame, label, size, theme, reducedMotion }) => {\n" +
+    "window.__adk.run(async function ({ THREE, addons, scene, camera, renderer, controls, onFrame, label, size, theme, reducedMotion }) {\n{\n" +
     input.code +
-    "\n});";
+    "\n}\n});";
   document.body.append(script);
   fit();
 }
