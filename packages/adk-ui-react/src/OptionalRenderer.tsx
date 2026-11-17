@@ -3,10 +3,13 @@ import React, { Suspense } from 'react';
 interface OptionalRendererProps {
     /** Peer package that must be installed for the wrapped renderer to load. */
     peerDependency: string;
-    /** Human-readable name of the capability, used in the fallback message. */
+    /** Human-readable name of the capability, used in the console message. */
     capability: string;
-    /** Placeholder rendered while the lazy chunk is still loading. */
-    loading: React.ReactNode;
+    /**
+     * What is drawn while the lazy chunk loads, and instead of it when the peer is missing:
+     * the ADK-Rust home's own view of the component, which shows the same checked content.
+     */
+    fallback: React.ReactNode;
     children: React.ReactNode;
 }
 
@@ -15,12 +18,10 @@ interface OptionalRendererState {
 }
 
 /**
- * `three` and `recharts` are optional peer dependencies: hosts that never render
- * 3D scenes or charts should not pay to install them. Their renderers are loaded
- * from separate chunks, so a missing peer surfaces as a rejected dynamic import.
- * Without a boundary that rejection would propagate to the host application, so
- * this component degrades to an accessible explanation instead of unmounting the
- * surrounding surface.
+ * `three` and `recharts` are optional peer dependencies: hosts that never render 3D scenes or
+ * rich charts need not install them. Their renderers load from separate chunks, so a missing
+ * peer surfaces as a rejected dynamic import. This boundary keeps that rejection from taking
+ * down the drawing and draws the fallback instead.
  */
 export class OptionalRenderer extends React.Component<OptionalRendererProps, OptionalRendererState> {
     state: OptionalRendererState = { failed: false };
@@ -31,26 +32,16 @@ export class OptionalRenderer extends React.Component<OptionalRendererProps, Opt
 
     componentDidCatch(error: unknown) {
         if (typeof console !== 'undefined') {
-            console.error(
-                `[adk-ui-react] ${this.props.capability} could not be rendered. ` +
-                    `Install the optional peer dependency "${this.props.peerDependency}" to enable it.`,
+            console.warn(
+                `[adk-ui-react] ${this.props.capability} fell back to the home's view. ` +
+                    `Install the optional peer dependency "${this.props.peerDependency}" to draw it richly.`,
                 error,
             );
         }
     }
 
     render() {
-        if (this.state.failed) {
-            return (
-                <div className="adk-ui-optional-renderer" role="note">
-                    <p className="adk-ui-optional-renderer__title">{this.props.capability} is unavailable</p>
-                    <p className="adk-ui-optional-renderer__hint">
-                        Install the optional peer dependency <code>{this.props.peerDependency}</code> to enable it.
-                    </p>
-                </div>
-            );
-        }
-
-        return <Suspense fallback={this.props.loading}>{this.props.children}</Suspense>;
+        if (this.state.failed) return <>{this.props.fallback}</>;
+        return <Suspense fallback={this.props.fallback}>{this.props.children}</Suspense>;
     }
 }

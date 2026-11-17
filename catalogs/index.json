@@ -1,0 +1,34 @@
+{
+  "catalogs": [
+    {
+      "extensions": [
+        "Badge",
+        "Chart",
+        "KeyValue",
+        "Metric",
+        "Progress",
+        "Sparkline"
+      ],
+      "file": "adk-ui-insight-1.0.json",
+      "id": "https://zavora.ai/a2ui/catalogs/adk-ui-insight/1.0/catalog.json",
+      "label": "insight 1.0"
+    },
+    {
+      "extensions": [
+        "App",
+        "Badge",
+        "Chart",
+        "KeyValue",
+        "Metric",
+        "Page",
+        "Progress",
+        "Region",
+        "Scene3D",
+        "Sparkline"
+      ],
+      "file": "adk-ui-studio-1.0.json",
+      "id": "https://zavora.ai/a2ui/catalogs/adk-ui-studio/1.0/catalog.json",
+      "label": "studio 1.0"
+    }
+  ]
+}

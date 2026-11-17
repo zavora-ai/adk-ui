@@ -2,8 +2,7 @@
   "name": "adk-ui-workspace",
   "private": true,
   "workspaces": [
-    "packages/*",
-    "examples/ui_react_client"
+    "packages/*"
   ],
   "scripts": {
     "build": "npm run build --workspaces --if-present",
