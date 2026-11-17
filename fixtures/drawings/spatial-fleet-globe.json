@@ -1,0 +1,209 @@
+{
+  "catalog": "spatial",
+  "summary": "Hubs, ports and the shipments between them on a globe; a patch moves a shipment on to its next leg.",
+  "screen": {
+    "surfaceId": "fleet",
+    "title": "Shipments in flight",
+    "components": [
+      {
+        "id": "root",
+        "component": "Column",
+        "children": [
+          "globe",
+          "status"
+        ]
+      },
+      {
+        "id": "globe",
+        "component": "Globe",
+        "title": "Fleet",
+        "description": "4 shipments in flight",
+        "points": {
+          "path": "/places"
+        },
+        "arcs": {
+          "path": "/routes"
+        },
+        "focus": {
+          "lat": 10,
+          "lon": 40
+        },
+        "spin": true,
+        "height": 420
+      },
+      {
+        "id": "status",
+        "component": "KeyValue",
+        "title": "Status",
+        "items": [
+          {
+            "key": "In flight",
+            "value": {
+              "path": "/inFlight"
+            }
+          },
+          {
+            "key": "Late",
+            "value": {
+              "path": "/late"
+            }
+          }
+        ]
+      }
+    ],
+    "dataModel": {
+      "places": [
+        {
+          "lat": -1.29,
+          "lon": 36.82,
+          "label": "Nairobi",
+          "group": "hub"
+        },
+        {
+          "lat": 51.51,
+          "lon": -0.13,
+          "label": "London",
+          "group": "hub"
+        },
+        {
+          "lat": 1.35,
+          "lon": 103.82,
+          "label": "Singapore",
+          "group": "port"
+        },
+        {
+          "lat": 40.71,
+          "lon": -74.01,
+          "label": "New York",
+          "group": "port"
+        },
+        {
+          "lat": 25.2,
+          "lon": 55.27,
+          "label": "Dubai",
+          "group": "port"
+        },
+        {
+          "lat": -23.55,
+          "lon": -46.63,
+          "label": "São Paulo",
+          "group": "port"
+        },
+        {
+          "lat": 35.68,
+          "lon": 139.69,
+          "label": "Tokyo",
+          "group": "port"
+        }
+      ],
+      "routes": [
+        {
+          "from": [
+            -1.29,
+            36.82
+          ],
+          "to": [
+            51.51,
+            -0.13
+          ],
+          "label": "SH-201 · Nairobi to London"
+        },
+        {
+          "from": [
+            -1.29,
+            36.82
+          ],
+          "to": [
+            25.2,
+            55.27
+          ],
+          "label": "SH-202 · Nairobi to Dubai"
+        },
+        {
+          "from": [
+            25.2,
+            55.27
+          ],
+          "to": [
+            1.35,
+            103.82
+          ],
+          "label": "SH-118 · Dubai to Singapore"
+        },
+        {
+          "from": [
+            51.51,
+            -0.13
+          ],
+          "to": [
+            40.71,
+            -74.01
+          ],
+          "label": "SH-330 · London to New York"
+        }
+      ],
+      "inFlight": 4,
+      "late": 1
+    }
+  },
+  "patches": [
+    {
+      "surfaceId": "fleet",
+      "data": [
+        {
+          "path": "/routes",
+          "value": [
+            {
+              "from": [
+                -1.29,
+                36.82
+              ],
+              "to": [
+                51.51,
+                -0.13
+              ],
+              "label": "SH-201 · Nairobi to London"
+            },
+            {
+              "from": [
+                -1.29,
+                36.82
+              ],
+              "to": [
+                25.2,
+                55.27
+              ],
+              "label": "SH-202 · Nairobi to Dubai"
+            },
+            {
+              "from": [
+                1.35,
+                103.82
+              ],
+              "to": [
+                35.68,
+                139.69
+              ],
+              "label": "SH-118 · Singapore to Tokyo"
+            },
+            {
+              "from": [
+                51.51,
+                -0.13
+              ],
+              "to": [
+                40.71,
+                -74.01
+              ],
+              "label": "SH-330 · London to New York"
+            }
+          ]
+        },
+        {
+          "path": "/late",
+          "value": 0
+        }
+      ]
+    }
+  ]
+}

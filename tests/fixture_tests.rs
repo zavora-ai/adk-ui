@@ -9,7 +9,11 @@ use common::{draft, fixtures};
 #[test]
 fn every_sample_drawing_is_accepted_in_its_catalog_before_and_after_its_patches() {
     let fixtures = fixtures();
-    assert_eq!(fixtures.len(), 6, "the six sample drawings");
+    assert_eq!(
+        fixtures.len(),
+        11,
+        "six studio and insight drawings, five spatial ones"
+    );
     for fixture in fixtures {
         let validator = Validator::new(fixture.catalog);
         let mut draft = draft(&fixture.screen);

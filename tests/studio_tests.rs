@@ -6,7 +6,8 @@
 use std::sync::Arc;
 
 use adk_surface::genui::{
-    Catalog, DrawRefusal, ExtensionComponent, HomeNode, RefusalKind, ResolvedComponent, Validator,
+    Catalog, DrawRefusal, ExtensionComponent, HomeNode, RefusalKind, ResolvedComponent, SceneColor,
+    Validator,
 };
 use adk_ui::catalogs::{self, STUDIO_ID};
 use adk_ui::draft::{Screen, text};
@@ -234,7 +235,7 @@ fn home(name: &str, props: Value, children: usize) -> HomeNode {
 }
 
 #[test]
-fn the_home_shows_apps_as_tabs_and_scenes_as_what_they_hold() {
+fn the_home_shows_apps_as_tabs_and_scenes_in_3d() {
     assert_eq!(
         home(
             "App",
@@ -262,25 +263,40 @@ fn the_home_shows_apps_as_tabs_and_scenes_as_what_they_hold() {
         home("Region", json!({ "children": ["x", "y"] }), 2),
         HomeNode::Card(vec![HomeNode::Child(0), HomeNode::Child(1)])
     );
+    // A scene is drawn in 3D: genui's own scene, in the home's colours.
     let objects: Vec<Value> = (0..30)
-        .map(|i| json!({ "id": format!("o{i}"), "shape": "sphere", "label": format!("Crate {i}") }))
+        .map(|i| {
+            json!({ "id": format!("o{i}"), "shape": "sphere", "label": format!("Crate {i}"),
+                         "color": "#c03a00" })
+        })
         .collect();
-    let HomeNode::Column(parts) = home("Scene3D", json!({ "title": "Bay", "objects": objects }), 0)
-    else {
-        panic!("a scene is a column");
+    let HomeNode::Column(parts) = home(
+        "Scene3D",
+        json!({ "title": "Bay", "objects": objects, "autoRotate": true }),
+        0,
+    ) else {
+        panic!("a titled scene is a column");
     };
     assert_eq!(parts[0], HomeNode::heading(4, "Bay"));
-    assert_eq!(parts[1], HomeNode::text("Crate 0 · sphere"));
-    assert_eq!(parts.last(), Some(&HomeNode::caption("and 6 more shapes")));
-    assert!(parts.len() <= 64, "within genui's home view limit");
+    let HomeNode::Scene(drawn) = &parts[1] else {
+        panic!("then the scene itself");
+    };
+    assert_eq!(drawn.scene.objects.len(), 30);
+    assert_eq!(drawn.scene.objects[0].label.as_deref(), Some("Crate 0"));
     assert_eq!(
-        home(
-            "Scene3D",
-            json!({ "objects": [{ "id": "a", "shape": "box" }] }),
-            0
-        ),
-        HomeNode::Column(vec![HomeNode::caption("A 3D scene of 1 shape")])
+        drawn.scene.objects[0].look.color,
+        SceneColor::Chart4,
+        "an agent's colour becomes the nearest chart colour, never a decision's"
     );
+    assert!(drawn.scene.camera.spin, "autoRotate turns the camera");
+    let HomeNode::Scene(untitled) = home(
+        "Scene3D",
+        json!({ "objects": [{ "id": "a", "shape": "box" }] }),
+        0,
+    ) else {
+        panic!("an untitled scene is the scene alone");
+    };
+    assert_eq!(untitled.scene.objects[0].id, "a");
 }
 
 #[test]

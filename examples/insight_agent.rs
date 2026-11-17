@@ -21,7 +21,7 @@
 //! | `AGENT_WORKSPACE` | The directory the agent studies | the current directory |
 //! | `AGENT_MODE` | `read-only`, `plan`, `ask` or `auto` | `ask` |
 //! | `AGENT_INSTRUCTIONS` | Extra instructions appended to adk-ui's | none |
-//! | `AGENT_CATALOG` | `insight` or `studio` | `studio` |
+//! | `AGENT_CATALOG` | `insight`, `studio` or `spatial` | `spatial` |
 //! | `ADK_UI_3D_APPS` | `1` to give the agent `show_3d_app` (needs `--features apps`) | off |
 //! | `PORT` | Where the home listens on 127.0.0.1 | `8807` |
 //! | `APPS_PORT` | Where the apps origin listens, with `ADK_UI_3D_APPS` | `PORT` + 1 |
@@ -101,7 +101,10 @@ fn catalog(name: &str) -> Result<&'static Catalog, String> {
     match name {
         "insight" => Ok(adk_ui::catalogs::insight()),
         "studio" => Ok(adk_ui::catalogs::studio()),
-        other => Err(format!("AGENT_CATALOG '{other}' is not insight or studio")),
+        "spatial" => Ok(adk_ui::catalogs::spatial()),
+        other => Err(format!(
+            "AGENT_CATALOG '{other}' is not insight, studio or spatial"
+        )),
     }
 }
 
@@ -155,7 +158,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .map_or_else(std::env::current_dir, |path| Ok(PathBuf::from(path)))?;
     let mode: HarnessMode = env("AGENT_MODE").as_deref().unwrap_or("ask").parse()?;
     let port: u16 = env("PORT").as_deref().unwrap_or("8807").parse()?;
-    let catalog = catalog(env("AGENT_CATALOG").as_deref().unwrap_or("studio"))?;
+    let catalog = catalog(env("AGENT_CATALOG").as_deref().unwrap_or("spatial"))?;
     let apps = env("ADK_UI_3D_APPS").is_some_and(|value| value == "1" || value == "true");
     #[cfg(not(feature = "apps"))]
     if apps {

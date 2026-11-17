@@ -10,9 +10,10 @@
 //!
 //! | Part | What |
 //! |---|---|
-//! | [`catalogs`] | The catalogs: [`catalogs::insight`] (charts, sparklines, metrics, key-value lists, progress, badges) and [`catalogs::studio`] (insight, plus apps of pages, regions and primitive 3D scenes) |
+//! | [`catalogs`] | The catalogs: [`catalogs::insight`] (charts, sparklines, metrics, key-value lists, progress, badges), [`catalogs::studio`] (insight, plus apps of pages, regions and primitive 3D scenes) and [`catalogs::spatial`] (studio, plus 3D charts, scenes, cards with depth and 3D layouts) |
 //! | [`insight`] | Builders for the insight components |
 //! | [`studio`] | Builders for the studio components |
+//! | [`spatial`] | Builders for the spatial components: 3D charts, scenes, cards with depth and 3D layouts |
 //! | [`draft`] | A screen under construction, checked as `genui` checks it |
 //! | [`toolset`] | `genui`'s render tools drawing in an adk-ui catalog |
 //! | [`prompts`] | What to tell a model that draws in one |
@@ -41,12 +42,15 @@
 
 #[cfg(feature = "apps")]
 pub mod apps;
+mod build;
 pub mod catalogs;
 pub mod draft;
 pub mod insight;
 pub mod kit;
 pub mod prompts;
+mod scene;
 mod schema;
+pub mod spatial;
 pub mod studio;
 
 use adk_surface::genui::{Catalog, DrawToolset, Validator};

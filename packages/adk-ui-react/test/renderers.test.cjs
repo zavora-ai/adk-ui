@@ -80,16 +80,6 @@ describe('the studio renderers', () => {
         assert.match(region, /--adk-ui-columns:3/);
     });
 
-    it('list a scene as text, with nothing to press', () => {
-        const markup = draw(STUDIO_CATALOG_ID, 'Scene3D', {
-            title: 'Bay 4',
-            objects: [{ id: 'dock', shape: 'box', label: 'Dock' }, { id: 'crate', shape: 'sphere' }],
-        });
-        assertInert(markup, 'Scene3D');
-        assert.doesNotMatch(markup, /<button/);
-        assert.match(markup, /<li>Dock<\/li>/);
-    });
-
     it('include the insight renderers', () => {
         assertInert(draw(STUDIO_CATALOG_ID, 'Metric', samples.Metric), 'studio Metric');
     });

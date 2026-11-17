@@ -1,0 +1,177 @@
+{
+  "catalog": "spatial",
+  "summary": "Services as a network in layers (edge, core, data) beside a card whose back holds the details.",
+  "screen": {
+    "surfaceId": "services",
+    "title": "Checkout and its dependencies",
+    "components": [
+      {
+        "id": "root",
+        "component": "Row",
+        "children": [
+          "graph",
+          "latency-card"
+        ]
+      },
+      {
+        "id": "graph",
+        "component": "Graph3D",
+        "title": "Services",
+        "description": "Edge above core above data",
+        "nodes": {
+          "path": "/nodes"
+        },
+        "edges": {
+          "path": "/edges"
+        },
+        "layout": "layers",
+        "height": 400
+      },
+      {
+        "id": "latency-card",
+        "component": "DepthCard",
+        "title": "Checkout latency",
+        "effect": "flip",
+        "front": "latency",
+        "back": "latency-detail"
+      },
+      {
+        "id": "latency",
+        "component": "Metric",
+        "label": "p95 latency",
+        "value": {
+          "path": "/p95"
+        },
+        "unit": "ms",
+        "delta": {
+          "value": 430,
+          "goodWhen": "down"
+        }
+      },
+      {
+        "id": "latency-detail",
+        "component": "KeyValue",
+        "title": "Since 09:00",
+        "items": [
+          {
+            "key": "Slowest call",
+            "value": "payments.authorize"
+          },
+          {
+            "key": "Error rate",
+            "value": "0.8%"
+          },
+          {
+            "key": "Deploy",
+            "value": "checkout 4.12.0 at 08:55"
+          }
+        ]
+      }
+    ],
+    "dataModel": {
+      "nodes": [
+        {
+          "id": "gateway",
+          "label": "Gateway",
+          "group": "edge"
+        },
+        {
+          "id": "web",
+          "label": "Web",
+          "group": "edge"
+        },
+        {
+          "id": "auth",
+          "label": "Auth",
+          "group": "core"
+        },
+        {
+          "id": "checkout",
+          "label": "Checkout",
+          "group": "core"
+        },
+        {
+          "id": "search",
+          "label": "Search",
+          "group": "core"
+        },
+        {
+          "id": "payments",
+          "label": "Payments",
+          "group": "core"
+        },
+        {
+          "id": "inventory",
+          "label": "Inventory",
+          "group": "core"
+        },
+        {
+          "id": "orders-db",
+          "label": "Orders DB",
+          "group": "data"
+        },
+        {
+          "id": "cache",
+          "label": "Cache",
+          "group": "data"
+        },
+        {
+          "id": "queue",
+          "label": "Queue",
+          "group": "data"
+        }
+      ],
+      "edges": [
+        {
+          "from": "gateway",
+          "to": "auth"
+        },
+        {
+          "from": "gateway",
+          "to": "checkout"
+        },
+        {
+          "from": "gateway",
+          "to": "search"
+        },
+        {
+          "from": "web",
+          "to": "gateway"
+        },
+        {
+          "from": "checkout",
+          "to": "payments"
+        },
+        {
+          "from": "checkout",
+          "to": "inventory"
+        },
+        {
+          "from": "checkout",
+          "to": "orders-db"
+        },
+        {
+          "from": "checkout",
+          "to": "queue"
+        },
+        {
+          "from": "search",
+          "to": "cache"
+        },
+        {
+          "from": "inventory",
+          "to": "orders-db"
+        },
+        {
+          "from": "payments",
+          "to": "queue"
+        },
+        {
+          "from": "auth",
+          "to": "cache"
+        }
+      ],
+      "p95": 840
+    }
+  }
+}

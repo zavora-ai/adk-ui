@@ -27,6 +27,7 @@ pub fn fixtures() -> Vec<Fixture> {
             let catalog = match value["catalog"].as_str() {
                 Some("insight") => adk_ui::catalogs::insight(),
                 Some("studio") => adk_ui::catalogs::studio(),
+                Some("spatial") => adk_ui::catalogs::spatial(),
                 other => panic!("{}: unknown catalog {other:?}", path.display()),
             };
             Fixture {
@@ -50,5 +51,47 @@ pub fn draft(screen: &Value) -> SurfaceDraft {
         components: screen["components"].as_array().cloned().unwrap(),
         data_model: screen["dataModel"].clone(),
         actions: serde_json::from_value(screen["actions"].clone()).unwrap_or_default(),
+    }
+}
+
+/// The paths of every text property (`DynamicString`) in `schema`, reaching into nested
+/// objects, array items, and the list branch of a `oneOf` or `anyOf` (a data property that is a
+/// binding or a literal list), so rule 5 is tested on every one.
+pub fn text_properties(schema: &Value, at: &str, out: &mut Vec<String>) {
+    if let Some(parts) = schema.get("allOf").and_then(Value::as_array) {
+        for part in parts {
+            text_properties(part, at, out);
+        }
+    }
+    let Some(properties) = schema.get("properties").and_then(Value::as_object) else {
+        return;
+    };
+    for (name, property) in properties {
+        let here = format!("{at}/{name}");
+        text_property(property, &here, out);
+    }
+}
+
+fn text_property(property: &Value, here: &str, out: &mut Vec<String>) {
+    if property
+        .get("$ref")
+        .and_then(Value::as_str)
+        .is_some_and(|r| r.ends_with("/DynamicString"))
+    {
+        out.push(here.to_string());
+    } else if property.get("type") == Some(&Value::String("array".into())) {
+        if let Some(items) = property.get("items") {
+            text_properties(items, &format!("{here}/0"), out);
+        }
+    } else if property.get("type") == Some(&Value::String("object".into())) {
+        text_properties(property, here, out);
+    } else if let Some(branches) = property
+        .get("oneOf")
+        .or_else(|| property.get("anyOf"))
+        .and_then(Value::as_array)
+    {
+        for branch in branches {
+            text_property(branch, here, out);
+        }
     }
 }

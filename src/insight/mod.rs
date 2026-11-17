@@ -5,7 +5,7 @@
 
 mod build;
 mod components;
-mod format;
+pub(crate) mod format;
 
 pub use build::{
     Badge, Chart, ChartKind, KeyValue, Metric, Progress, Sparkline, Tone, XAxis, bind,

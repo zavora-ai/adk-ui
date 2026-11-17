@@ -72,7 +72,5 @@ describe('optional peer dependencies', () => {
             );
         const chart = draw(pkg.INSIGHT_CATALOG_ID, 'Chart', { kind: 'bar', data: [], x: { key: 'm' }, series: [{ key: 'v' }] });
         assert.match(chart, /data-node="c#1">home view/);
-        const scene = draw(pkg.STUDIO_CATALOG_ID, 'Scene3D', { objects: [{ id: 'a', shape: 'box' }] });
-        assert.match(scene, /data-node="c#1">home view/);
     });
 });

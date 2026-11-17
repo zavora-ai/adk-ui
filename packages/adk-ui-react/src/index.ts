@@ -2,8 +2,8 @@
 // @zavora-ai/adk-surface-react's DrawnView, and the same components for a host's own data.
 import './styles.css';
 
-export { INSIGHT_CATALOG_ID, STUDIO_CATALOG_ID } from './catalogs';
-export { adkUiRenderers, insightRenderers, studioRenderers } from './registry';
+export { INSIGHT_CATALOG_ID, SPATIAL_CATALOG_ID, STUDIO_CATALOG_ID } from './catalogs';
+export { adkUiRenderers, insightRenderers, spatialRenderers, studioRenderers } from './registry';
 export {
     AppShell,
     Badge,

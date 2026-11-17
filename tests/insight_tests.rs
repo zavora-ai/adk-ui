@@ -145,7 +145,7 @@ fn the_insight_catalog_is_forms_and_its_six_components() {
             "Sparkline"
         ]
     );
-    assert_eq!(catalogs::all().len(), 2, "insight and studio");
+    assert_eq!(catalogs::all().len(), 3, "insight, studio and spatial");
 
     let tools = adk_ui::toolset().tools();
     let names: Vec<&str> = tools.iter().map(|tool| tool.name()).collect();

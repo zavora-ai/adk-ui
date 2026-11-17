@@ -36,11 +36,18 @@ fn the_catalog_documents_match_the_rust_catalogs() {
         "catalogs": catalogs.iter().map(|catalog| {
             let mut extensions: Vec<&str> = catalog.extensions().collect();
             extensions.sort_unstable();
+            // What the home draws natively (3D scenes, depth): a host renderer is never needed.
+            let home_drawn: Vec<&str> = extensions
+                .iter()
+                .copied()
+                .filter(|name| adk_ui::catalogs::HOME_DRAWN.contains(name))
+                .collect();
             json!({
                 "id": catalog.id(),
                 "label": catalog.label(),
                 "file": file_name(catalog),
                 "extensions": extensions,
+                "homeDrawn": home_drawn,
             })
         }).collect::<Vec<_>>()
     });

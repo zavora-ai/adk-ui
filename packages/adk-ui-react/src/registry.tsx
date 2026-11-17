@@ -1,5 +1,5 @@
-import { INSIGHT_CATALOG_ID, STUDIO_CATALOG_ID } from './catalogs';
-import { AppShell, Badge, Chart, KeyValueList, Metric, PageView, ProgressBar, RegionView, Scene3D, Sparkline } from './components';
+import { INSIGHT_CATALOG_ID, SPATIAL_CATALOG_ID, STUDIO_CATALOG_ID } from './catalogs';
+import { AppShell, Badge, Chart, KeyValueList, Metric, PageView, ProgressBar, RegionView, Sparkline } from './components';
 import type {
     AppProps,
     BadgeProps,
@@ -12,7 +12,6 @@ import type {
     Renderer,
     RendererProps,
     Renderers,
-    Scene3DProps,
     SparklineProps,
 } from './types';
 
@@ -69,14 +68,20 @@ const studio: Record<string, Renderer> = {
             />
         );
     },
-    Scene3D: (renderer) => <Scene3D {...as<Scene3DProps>(renderer.props)} fallback={homeView(renderer)} />,
 };
+
+// 3D scenes (studio's Scene3D and every spatial 3D component), cards with depth and 3D layouts
+// have no renderer here: the home's own DrawnView draws them natively from genui's checked
+// scene, with picking into the drawing's form, panels, motion and its text view.
 
 /** Renderers of the insight catalog, for `DrawnView`'s `renderers`. */
 export const insightRenderers: Renderers = { [INSIGHT_CATALOG_ID]: insight };
 
 /** Renderers of the studio catalog, for `DrawnView`'s `renderers`. */
 export const studioRenderers: Renderers = { [STUDIO_CATALOG_ID]: studio };
+
+/** Renderers of the spatial catalog's 2D components; the home draws its 3D ones. */
+export const spatialRenderers: Renderers = { [SPATIAL_CATALOG_ID]: studio };
 
 /**
  * Renderers of every adk-ui catalog, for `DrawnView`'s `renderers`:
@@ -85,4 +90,4 @@ export const studioRenderers: Renderers = { [STUDIO_CATALOG_ID]: studio };
  * <DrawnView surface={surface} onSend={send} renderers={adkUiRenderers} />
  * ```
  */
-export const adkUiRenderers: Renderers = { ...insightRenderers, ...studioRenderers };
+export const adkUiRenderers: Renderers = { ...insightRenderers, ...studioRenderers, ...spatialRenderers };

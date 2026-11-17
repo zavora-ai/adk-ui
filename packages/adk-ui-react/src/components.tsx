@@ -269,6 +269,10 @@ export function RegionView({ title, layout, columns, tone, variant, content }: O
  * A scene of primitive shapes, drawn with `three` (an optional peer). Its labels are listed
  * beside it as text; nothing in it can be pressed. Until it loads, or without `three` or a
  * capable device, `fallback` is drawn, or the list alone.
+ *
+ * @deprecated For a host's own data only. Drawings in adk-ui's catalogs are drawn by
+ * `DrawnView` itself, natively, from genui's checked scene; this component is frozen and goes in
+ * 4.0.
  */
 export function Scene3D({ fallback, ...scene }: Scene3DProps & Fallback) {
     const [unavailable, setUnavailable] = useState(false);

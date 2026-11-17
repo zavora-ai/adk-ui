@@ -3,3 +3,10 @@ export const INSIGHT_CATALOG_ID = 'https://zavora.ai/a2ui/catalogs/adk-ui-insigh
 
 /** The studio catalog's id: insight plus apps of pages, regions and primitive 3D scenes. */
 export const STUDIO_CATALOG_ID = 'https://zavora.ai/a2ui/catalogs/adk-ui-studio/1.0/catalog.json';
+
+/**
+ * The spatial catalog's id: studio plus 3D charts, scenes, cards with depth and 3D layouts. The
+ * home draws its 3D components natively (`homeDrawn` in `catalogs/index.json`), so they have no
+ * renderer here.
+ */
+export const SPATIAL_CATALOG_ID = 'https://zavora.ai/a2ui/catalogs/adk-ui-spatial/1.0/catalog.json';

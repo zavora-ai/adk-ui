@@ -1,7 +1,8 @@
-//! adk-ui end to end on ADK-Rust: a harness agent draws the six sample drawings with
-//! `genui`'s render tools in adk-ui's studio catalog, a home that registers adk-ui's catalogs
-//! shows every one (charts natively, extension components as their home views), and a form
-//! inside a drawing is held for the person with only its fields. The projected drawings are
+//! adk-ui end to end on ADK-Rust: a harness agent draws the sample drawings with `genui`'s
+//! render tools, in adk-ui's studio catalog in one thread and its spatial catalog in another; a
+//! home that registers adk-ui's catalogs shows every one (charts and 3D scenes natively,
+//! extension components as their home views); a form inside a drawing is held for the person
+//! with only its fields, and a dock picked in a 3D scene is sent as a field. The projected drawings are
 //! what `examples/custom_host` shows offline (`examples/custom_host/public/surfaces.json`,
 //! written with `ADK_UI_WRITE_SURFACES=1`).
 
@@ -33,6 +34,8 @@ use serde_json::{Map, Value, json};
 
 const APP: &str = "home";
 const SESSION: &str = "thread-1";
+/// The thread the spatial drawings are drawn in.
+const SPATIAL_SESSION: &str = "thread-2";
 
 /// A source over the session the agent drew in, keeping every call asked for, never running it.
 struct Sending {
@@ -121,12 +124,16 @@ struct Home {
     _dir: tempfile::TempDir,
 }
 
-/// The agent draws every sample drawing, and the throughput one's patches, in one turn.
-async fn home() -> Home {
-    let dir = tempfile::tempdir().unwrap();
-    let sessions: Arc<dyn SessionService> = Arc::new(InMemorySessionService::new());
+/// An agent drawing in `catalog` draws `fixtures`, and their patches, in one turn of `session`.
+async fn draw(
+    sessions: &Arc<dyn SessionService>,
+    dir: &std::path::Path,
+    catalog: &'static adk_surface::genui::Catalog,
+    fixtures: Vec<common::Fixture>,
+    session: &str,
+) {
     let mut script = Vec::new();
-    for fixture in common::fixtures() {
+    for fixture in fixtures {
         script.push(ScriptedResponse::function_call(
             "render_screen",
             fixture.screen.clone(),
@@ -141,14 +148,14 @@ async fn home() -> Home {
     script.push(ScriptedResponse::text("Here is where things stand."));
     let agent = HarnessAgent::builder("operations")
         .model(Arc::new(ScriptedLlm::new("scripted", script)))
-        .workspace(adk_devtools::Workspace::new(dir.path()))
+        .workspace(adk_devtools::Workspace::new(dir))
         .project_instructions(InstructionsConfig {
             user_file: None,
             require_trust: false,
             ..InstructionsConfig::default()
         })
         .without_compaction()
-        .toolset(Arc::new(adk_ui::toolset_for(adk_ui::catalogs::studio())))
+        .toolset(Arc::new(adk_ui::toolset_for(catalog)))
         .tool(Arc::new(Asked("start_rollback")))
         .tool(Arc::new(Asked("open_ticket")))
         .tool(Arc::new(Asked("reserve_dock")))
@@ -167,7 +174,7 @@ async fn home() -> Home {
     let harness = Harness::with_runner(agent, runner).unwrap();
     let user = UserId::new("ana").unwrap();
     let session = harness
-        .open_session(&user, Some(&SessionId::new(SESSION).unwrap()))
+        .open_session(&user, Some(&SessionId::new(session).unwrap()))
         .await
         .unwrap();
     let stream = harness
@@ -177,6 +184,31 @@ async fn home() -> Home {
     tokio::time::timeout(Duration::from_secs(20), stream.collect::<Vec<_>>())
         .await
         .expect("the drawing turn finishes");
+}
+
+/// The studio drawings in one thread and the spatial ones in another, and a home over both.
+async fn home() -> Home {
+    let dir = tempfile::tempdir().unwrap();
+    let sessions: Arc<dyn SessionService> = Arc::new(InMemorySessionService::new());
+    let (spatial, studio): (Vec<_>, Vec<_>) = common::fixtures()
+        .into_iter()
+        .partition(|fixture| fixture.catalog.id() == adk_ui::catalogs::SPATIAL_ID);
+    draw(
+        &sessions,
+        dir.path(),
+        adk_ui::catalogs::studio(),
+        studio,
+        SESSION,
+    )
+    .await;
+    draw(
+        &sessions,
+        dir.path(),
+        adk_ui::catalogs::spatial(),
+        spatial,
+        SPATIAL_SESSION,
+    )
+    .await;
 
     let approvals: Arc<dyn ApprovalService> = Arc::new(StoreApprovalService::new(Arc::new(
         InMemoryApprovalStore::new(),
@@ -209,13 +241,18 @@ fn web() -> Caller {
 }
 
 async fn items(home: &Home) -> Vec<ThreadItem> {
-    home.engine
-        .thread(&web(), SESSION)
-        .await
-        .unwrap()
-        .into_iter()
-        .flat_map(|entry| entry.items)
-        .collect()
+    let mut items = Vec::new();
+    for session in [SESSION, SPATIAL_SESSION] {
+        items.extend(
+            home.engine
+                .thread(&web(), session)
+                .await
+                .unwrap()
+                .into_iter()
+                .flat_map(|entry| entry.items),
+        );
+    }
+    items
 }
 
 /// The latest version of every drawn surface, by surface id.
@@ -262,12 +299,16 @@ async fn a_home_shows_every_sample_drawing_in_adk_uis_catalogs() {
         .collect();
     assert!(refused.is_empty(), "refused: {refused:?}");
     let drawn = latest(&items);
-    assert_eq!(drawn.len(), 6, "{:?}", drawn.keys().collect::<Vec<_>>());
-    assert!(
-        drawn
-            .values()
-            .all(|surface| surface.catalog == "studio 1.0")
-    );
+    assert_eq!(drawn.len(), 11, "{:?}", drawn.keys().collect::<Vec<_>>());
+    for fixture in common::fixtures() {
+        let id = fixture.screen["surfaceId"].as_str().unwrap();
+        let expected = if fixture.catalog.id() == adk_ui::catalogs::SPATIAL_ID {
+            "spatial 1.0"
+        } else {
+            "studio 1.0"
+        };
+        assert_eq!(drawn[id].catalog, expected, "{id}");
+    }
     assert_eq!(drawn["throughput"].version, 3, "drawn, then patched twice");
 
     // The release room is an app whose home view is tabs over its pages.
@@ -299,18 +340,78 @@ async fn a_home_shows_every_sample_drawing_in_adk_uis_catalogs() {
     );
     assert!(!chart.ticks.is_empty(), "a time axis has ticks");
 
-    // The warehouse scene's home view names what it holds; its form keeps its field.
+    // The warehouse scene is drawn in 3D, its docks labelled; its form keeps its field.
     let warehouse = nodes(&drawn["warehouse-bays"]);
-    assert!(
-        warehouse
-            .iter()
-            .any(|node| node.text.as_deref() == Some("Dock 3 · free · box"))
-    );
+    assert!(warehouse.iter().any(|node| {
+        node.scene.as_ref().is_some_and(|scene| {
+            scene
+                .objects
+                .iter()
+                .any(|object| object.label.as_deref() == Some("Dock 3 · free"))
+        })
+    }));
     assert!(warehouse.iter().any(|node| {
         node.field
             .as_ref()
             .is_some_and(|field| field.path == "/dock")
     }));
+
+    // The spatial drawings: scenes the home draws natively, with the server's words.
+    let scene_in = |id: &str| {
+        nodes(&drawn[id])
+            .into_iter()
+            .find_map(|node| node.scene.clone())
+            .unwrap_or_else(|| panic!("{id} draws a scene"))
+    };
+    assert_eq!(
+        drawn["revenue-3d"].version, 2,
+        "drawn, then a quarter added"
+    );
+    let revenue = scene_in("revenue-3d");
+    assert_eq!(
+        revenue.summary,
+        "3D bar chart of Revenue, 15 bars, from 2.4 to 6.3"
+    );
+    let fleet = scene_in("fleet");
+    assert_eq!(fleet.summary, "Globe, 7 places and 4 routes");
+    assert!(
+        fleet.text_view.is_some(),
+        "a globe says in words what it shows"
+    );
+    let services = scene_in("services");
+    assert_eq!(services.summary, "3D network, 10 nodes and 12 links");
+    assert_eq!(
+        scene_in("terrain").summary,
+        "3D surface of Signal, 168 values, from 10.1 to 38.1"
+    );
+    let yard = scene_in("yard");
+    assert_eq!(
+        yard.select.as_ref().unwrap().note,
+        "Picking one fills Dock. Nothing is sent."
+    );
+    assert_eq!(yard.panels.len(), 1);
+    assert_eq!(yard.panels[0].anchor, "dock-3");
+    assert_eq!(
+        yard.motion.len(),
+        2,
+        "the free dock pulses and the truck bobs"
+    );
+    // Depth: a wall of headline figures, a card that turns over, a carousel.
+    let effects: Vec<String> = drawn
+        .values()
+        .flat_map(|surface| {
+            nodes(surface)
+                .into_iter()
+                .filter_map(|node| node.depth.as_ref())
+        })
+        .map(|depth| format!("{:?}", depth.effect))
+        .collect();
+    for effect in ["Wall", "Flip", "Carousel"] {
+        assert!(
+            effects.iter().any(|known| known == effect),
+            "{effect} in {effects:?}"
+        );
+    }
 
     surfaces_for_the_custom_host(&drawn);
 }
@@ -353,6 +454,40 @@ fn surfaces_for_the_custom_host(drawn: &BTreeMap<String, DrawnSurface>) {
         text,
         "{} is stale: run ADK_UI_WRITE_SURFACES=1 cargo test --test home_tests",
         path.display()
+    );
+}
+
+/// A dock picked in the yard's 3D scene fills the dock picker, and Reserve asks for one
+/// `reserve_dock` call with that dock, never running it.
+#[tokio::test]
+async fn a_dock_picked_in_a_scene_is_sent_as_a_field_and_asks_first() {
+    let home = home().await;
+    let mut values = Map::new();
+    values.insert("/dock".into(), json!(["dock-3"]));
+    let outcome = home
+        .engine
+        .execute(
+            &web(),
+            Command::SubmitDrawn {
+                session_id: SPATIAL_SESSION.into(),
+                surface_id: "yard".into(),
+                version: 1,
+                action_id: "reserve".into(),
+                values,
+            },
+        )
+        .await
+        .expect("the form is sent");
+    assert!(
+        matches!(outcome, CommandOutcome::FormSent { .. }),
+        "{outcome:?}"
+    );
+    let asked = home.source.asked.lock().unwrap();
+    assert_eq!(asked.len(), 1);
+    assert_eq!(asked[0].tool_name, "reserve_dock");
+    assert_eq!(
+        asked[0].args,
+        json!({ "dock": ["dock-3"], "from": "14:00" })
     );
 }
 

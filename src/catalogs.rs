@@ -61,9 +61,52 @@ pub fn studio() -> &'static Catalog {
     &STUDIO
 }
 
+/// The spatial catalog's id.
+pub const SPATIAL_ID: &str = "https://zavora.ai/a2ui/catalogs/adk-ui-spatial/1.0/catalog.json";
+
+static SPATIAL: LazyLock<Catalog> = LazyLock::new(|| {
+    let mut components = crate::insight::components();
+    components.extend(crate::studio::components());
+    components.extend(crate::spatial::components());
+    Catalog::extend(ExtensionSpec {
+        id: SPATIAL_ID,
+        name: "spatial",
+        version: "1.0",
+        components,
+    })
+    .unwrap_or_else(|error| panic!("adk-ui's spatial catalog does not compile: {error}"))
+});
+
+/// The spatial catalog: the studio catalog plus 3D charts, laid-out scenes with motion, panels
+/// and picking into a form, cards with depth and components arranged in 3D, which the home
+/// draws natively.
+///
+/// ```rust
+/// let spatial = adk_ui::catalogs::spatial();
+/// assert_eq!(spatial.label(), "spatial 1.0");
+/// assert!(spatial.has_component("Globe") && spatial.has_component("App"));
+/// ```
+pub fn spatial() -> &'static Catalog {
+    &SPATIAL
+}
+
+/// The components whose home view the home draws natively as a 3D scene or with depth, so a
+/// host needs no renderer of its own for them.
+pub const HOME_DRAWN: &[&str] = &[
+    "Scene3D",
+    "Bar3D",
+    "Scatter3D",
+    "SurfacePlot",
+    "Graph3D",
+    "Globe",
+    "Scene",
+    "DepthCard",
+    "Stage",
+];
+
 /// Every adk-ui catalog, for a home to register: drawings made in any of them are shown.
 pub fn all() -> Vec<&'static Catalog> {
-    vec![insight(), studio()]
+    vec![insight(), studio(), spatial()]
 }
 
 /// `builder` showing drawings in every adk-ui catalog.

@@ -5,9 +5,14 @@
 
 use std::sync::Arc;
 
-use adk_surface::genui::{ChildSlot, ExtensionComponent, HomeNode, ResolvedComponent};
-use serde_json::{Map, Value, json};
+use adk_surface::genui::{
+    ChildSlot, DrawnScene, ExtensionComponent, HomeNode, HomeScene, ResolvedComponent, SceneKind,
+    SceneObject as DrawnObject, SceneShape,
+};
+use serde_json::{Value, json};
 
+use crate::build::{Props, component_builder};
+use crate::scene;
 use crate::schema::{TONES, component, component_id, key, one_of, text, vector};
 
 /// The most pages an app has.
@@ -16,8 +21,6 @@ pub const MAX_PAGES: usize = 24;
 pub const MAX_SCENE_OBJECTS: usize = 64;
 /// The most components a page or region holds.
 const MAX_HELD: usize = 32;
-/// The most of a scene's objects the home names; the rest are counted.
-const NAMED_OBJECTS: usize = 24;
 
 /// Every studio component beyond the insight ones, for
 /// [`Catalog::extend`](adk_surface::genui::Catalog::extend).
@@ -256,83 +259,85 @@ impl ExtensionComponent for SceneComponent {
          \"shape\": \"box|sphere|cylinder|cone|plane|torus\", \"position\": [x, y, z], \
          \"rotation\", \"scale\", \"color\": \"#rrggbb\", \"label\"}] (1 to 64), \"camera\", \
          \"height\", \"autoRotate\", \"controls\": \"none|orbit\"}; primitives only, no models; the \
-         home lists what it holds."
+         home draws it in 3D in its own colours."
     }
 
-    fn home(&self, scene: &ResolvedComponent<'_>) -> Result<HomeNode, String> {
-        let objects = scene
+    fn home(&self, spec: &ResolvedComponent<'_>) -> Result<HomeNode, String> {
+        let objects = spec
             .get("objects")
             .and_then(Value::as_array)
             .ok_or("it has no objects")?;
-        let mut nodes: Vec<HomeNode> = heading(4, scene.str("title"))
-            .into_iter()
-            .chain(caption(scene.str("description")))
-            .collect();
-        let named: Vec<String> = objects
-            .iter()
-            .filter_map(|object| {
-                let label = object.get("label")?.as_str()?.trim();
-                let shape = object
-                    .get("shape")
-                    .and_then(Value::as_str)
-                    .unwrap_or("shape");
-                (!label.is_empty()).then(|| format!("{label} · {shape}"))
-            })
-            .collect();
-        let shown = named.len().min(NAMED_OBJECTS);
-        nodes.extend(named.iter().take(shown).cloned().map(HomeNode::text));
-        let rest = objects.len() - shown;
-        if rest > 0 {
-            let shapes = if rest == 1 { "shape" } else { "shapes" };
-            nodes.push(HomeNode::caption(if shown == 0 {
-                format!("A 3D scene of {rest} {shapes}")
+        if objects.len() > MAX_SCENE_OBJECTS {
+            return Err(format!(
+                "it has {} objects; at most {MAX_SCENE_OBJECTS}",
+                objects.len()
+            ));
+        }
+        let mut scene = DrawnScene::new(SceneKind::Space);
+        for (index, object) in objects.iter().enumerate() {
+            let id = object
+                .get("id")
+                .and_then(Value::as_str)
+                .ok_or_else(|| format!("object {index} has no id"))?;
+            let shape = object.get("shape").and_then(Value::as_str).unwrap_or("box");
+            // A studio plane stands upright in x-y, as three.js draws one: a floor is a plane
+            // turned -90 degrees about x. It is drawn as a thin box so it keeps that meaning.
+            let unit = if shape == "plane" {
+                SceneShape::Box {
+                    size: [scene::num(1.0)?, scene::num(1.0)?, scene::num(0.01)?],
+                }
             } else {
-                format!("and {rest} more {shapes}")
-            }));
-        }
-        Ok(HomeNode::Column(nodes))
-    }
-}
-
-/// A component under construction.
-#[derive(Debug, Clone, PartialEq)]
-struct Props(Map<String, Value>);
-
-impl Props {
-    fn new(id: impl Into<String>, component: &str) -> Self {
-        let mut map = Map::new();
-        map.insert("id".into(), Value::String(id.into()));
-        map.insert("component".into(), Value::String(component.into()));
-        Self(map)
-    }
-
-    fn set(&mut self, name: &str, value: impl Into<Value>) {
-        self.0.insert(name.into(), value.into());
-    }
-
-    fn push(&mut self, name: &str, value: Value) {
-        match self.0.get_mut(name) {
-            Some(Value::Array(items)) => items.push(value),
-            _ => self.set(name, json!([value])),
-        }
-    }
-}
-
-macro_rules! component_builder {
-    ($name:ident) => {
-        impl From<$name> for Value {
-            fn from(builder: $name) -> Value {
-                builder.build()
+                scene::unit_shape(shape).ok_or_else(|| format!("{id} has an unknown shape"))?
+            };
+            let mut drawn = DrawnObject::new(id, unit);
+            if let Some(position) = object.get("position") {
+                drawn.at = scene::xyz(scene::point(Some(position), "a position")?)?;
             }
-        }
-
-        impl $name {
-            /// The component, as A2UI JSON.
-            pub fn build(self) -> Value {
-                Value::Object(self.0.0)
+            if let Some(rotation) = object.get("rotation") {
+                drawn.turn = Some(scene::xyz(scene::point(Some(rotation), "a rotation")?)?);
             }
+            if let Some(size) = object.get("scale") {
+                drawn.scale = Some(scene::xyz(scene::point(Some(size), "a scale")?)?);
+            }
+            if let Some(hex) = object.get("color").and_then(Value::as_str) {
+                drawn.look.color = scene::nearest_chart(hex);
+            }
+            drawn.label = object
+                .get("label")
+                .and_then(Value::as_str)
+                .map(str::trim)
+                .filter(|label| !label.is_empty())
+                .map(scene::short);
+            scene.objects.push(drawn);
         }
-    };
+        if let Some(camera) = spec.get("camera") {
+            scene.camera.at = camera
+                .get("position")
+                .map(|p| scene::point(Some(p), "the camera's position").and_then(scene::xyz))
+                .transpose()?;
+            scene.camera.target = camera
+                .get("target")
+                .map(|p| scene::point(Some(p), "the camera's target").and_then(scene::xyz))
+                .transpose()?;
+            scene.camera.fov = camera
+                .get("fov")
+                .and_then(Value::as_f64)
+                .map(scene::num)
+                .transpose()?;
+        }
+        scene.camera.spin = spec.get("autoRotate") == Some(&Value::Bool(true));
+        scene::framed(
+            &mut scene,
+            spec.get("height").and_then(Value::as_u64),
+            spec.str("controls"),
+        );
+        let body = HomeNode::Scene(Box::new(HomeScene::new(scene)));
+        Ok(scene::titled(
+            spec.str("title"),
+            spec.str("description"),
+            body,
+        ))
+    }
 }
 
 /// An application of pages.
