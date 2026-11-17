@@ -12,6 +12,7 @@ The six sample drawings of `fixtures/drawings/`, as the ADK-Rust home projected 
 npm install
 # Until ADK-Rust 3.0 publishes @zavora-ai/adk-surface-react, point at an adk-rust checkout:
 ADK_SURFACE_ROOT=../../../adk-rust/adk-surface npm run dev
+npm run typecheck   # tsconfig.json maps @zavora-ai/adk-surface-react to ../../../adk-rust
 ```
 
 A form's Send only logs here. A real host posts `submitDrawn` to its engine

@@ -186,6 +186,11 @@
     padding-top: 12px;
 }
 
+/* An inactive page stays out of sight: `hidden` loses to the display rule above otherwise. */
+.adk-ui-app__page[hidden] {
+    display: none;
+}
+
 .adk-ui-page[data-layout='grid'] .adk-ui-page__content,
 .adk-ui-region[data-layout='grid'] .adk-ui-region__content {
     display: grid;

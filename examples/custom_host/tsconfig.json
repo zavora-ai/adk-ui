@@ -1,0 +1,49 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "allowImportingTsExtensions": true,
+    "isolatedModules": true,
+    "baseUrl": ".",
+    "paths": {
+      "@zavora-ai/adk-surface-react": [
+        "../../../adk-rust/adk-surface/react/src/index.ts"
+      ],
+      "@zavora-ai/adk-ui-react": [
+        "../../packages/adk-ui-react/src/index.ts"
+      ],
+      "react": [
+        "./node_modules/@types/react"
+      ],
+      "react/*": [
+        "./node_modules/@types/react/*"
+      ],
+      "recharts": [
+        "./node_modules/recharts"
+      ],
+      "three": [
+        "./node_modules/@types/three"
+      ],
+      "three/webgpu": [
+        "./node_modules/@types/three/build/three.webgpu.d.ts"
+      ],
+      "three/*": [
+        "./node_modules/@types/three/*"
+      ]
+    }
+  },
+  "include": [
+    "src",
+    "vite.config.ts"
+  ]
+}
