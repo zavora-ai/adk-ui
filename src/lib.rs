@@ -17,6 +17,7 @@
 //! | [`toolset`] | `genui`'s render tools drawing in an adk-ui catalog |
 //! | [`prompts`] | What to tell a model that draws in one |
 //! | [`kit`] | Brand kits: approved design tokens a host applies to its own pages ([`kit::ApprovedKit`]) |
+//! | `apps` | With the `apps` feature: an MCP server that shows model-written three.js in genui-apps' sandbox |
 //!
 //! adk-ui adds no render tool name, protocol, provenance record or approval path: an agent
 //! draws with `genui`'s `render_screen`, the drawing is recorded and checked by `genui`, and a
@@ -38,6 +39,8 @@
 //! adk-ui 2.x, with its own render tools and protocol adapters, stays on crates.io for
 //! ADK-Rust 2.
 
+#[cfg(feature = "apps")]
+pub mod apps;
 pub mod catalogs;
 pub mod draft;
 pub mod insight;

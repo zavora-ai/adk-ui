@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3D app</title>
+<style>
+  :root { color-scheme: light dark; --bg: #f6f7f9; --text: #0f172a; --muted: #64748b; --line: #e6e8ec; }
+  :root[data-scheme="dark"] { --bg: #111418; --text: #e6e8ec; --muted: #94a3b8; --line: #2a2f37; }
+  html, body { margin: 0; background: transparent; color: var(--text); font: 13px/1.4 system-ui, sans-serif; }
+  #app { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px 12px; }
+  #head { display: flex; align-items: baseline; gap: 10px; }
+  #title { margin: 0; font-size: 15px; font-weight: 600; }
+  #about { margin: 0; color: var(--muted); }
+  #motion { margin-left: auto; padding: 2px 10px; border: 1px solid var(--line); border-radius: 999px;
+            background: none; color: var(--muted); font: inherit; cursor: pointer; }
+  #stage { position: relative; border-radius: 10px; overflow: hidden; background: var(--bg); }
+  #stage canvas { display: block; width: 100%; height: 100%; }
+  #labels { position: absolute; inset: 0; pointer-events: none; }
+  .label { padding: 1px 6px; border-radius: 6px; background: color-mix(in srgb, var(--bg) 82%, transparent);
+           color: var(--text); font-size: 12px; white-space: nowrap; }
+  #note { margin: 0; color: var(--muted); min-height: 1em; }
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.185.1/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+<div id="app">
+  <div id="head"><h1 id="title">3D app</h1><button id="motion" type="button" hidden>Pause motion</button></div>
+  <p id="about" hidden></p>
+  <div id="stage"><div id="labels"></div></div>
+  <p id="note" aria-live="polite"></p>
+</div>
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { CSS2DRenderer, CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
+import * as BufferGeometryUtils from "three/addons/utils/BufferGeometryUtils.js";
+import { ParametricGeometry } from "three/addons/geometries/ParametricGeometry.js";
+import { ConvexGeometry } from "three/addons/geometries/ConvexGeometry.js";
+import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
+import { ImprovedNoise } from "three/addons/math/ImprovedNoise.js";
+import { SimplexNoise } from "three/addons/math/SimplexNoise.js";
+import { Line2 } from "three/addons/lines/Line2.js";
+import { LineMaterial } from "three/addons/lines/LineMaterial.js";
+import { LineGeometry } from "three/addons/lines/LineGeometry.js";
+
+// The app runs in the home's sandbox: its own origin, no network, no workers. It shows what its
+// code draws and asks nothing of the home.
+const addons = Object.freeze({ OrbitControls, CSS2DRenderer, CSS2DObject, BufferGeometryUtils,
+  ParametricGeometry, ConvexGeometry, RoundedBoxGeometry, ImprovedNoise, SimplexNoise, Line2,
+  LineMaterial, LineGeometry });
+const palettes = {
+  light: ["#2563eb", "#0d9488", "#d97706", "#db2777", "#7c3aed", "#0891b2", "#65a30d", "#dc2626"],
+  dark: ["#60a5fa", "#2dd4bf", "#fbbf24", "#f472b6", "#a78bfa", "#22d3ee", "#a3e635", "#f87171"],
+};
+const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const $ = (id) => document.getElementById(id);
+let scheme = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+let started = false;
+
+function post(message) {
+  window.parent.postMessage(message, "*");
+}
+
+function resized() {
+  post({ jsonrpc: "2.0", method: "ui/notifications/size-changed",
+         params: { height: Math.ceil(document.documentElement.scrollHeight) } });
+}
+
+function note(text) {
+  $("note").textContent = text;
+  resized();
+}
+
+function start(input) {
+  if (started || !input || typeof input.code !== "string") return;
+  started = true;
+  const height = Math.min(640, Math.max(240, Number(input.height) || 420)) - 72;
+  $("title").textContent = String(input.title || "3D app");
+  if (input.description) {
+    $("about").textContent = String(input.description);
+    $("about").hidden = false;
+  }
+  const stage = $("stage");
+  stage.style.height = `${height}px`;
+
+  const css = getComputedStyle(document.documentElement);
+  const theme = Object.freeze({
+    scheme,
+    background: css.getPropertyValue("--bg").trim(),
+    text: css.getPropertyValue("--text").trim(),
+    muted: css.getPropertyValue("--muted").trim(),
+    palette: palettes[scheme],
+  });
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  stage.prepend(renderer.domElement);
+  const labels = new CSS2DRenderer({ element: $("labels") });
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 2000);
+  camera.position.set(6, 5, 8);
+  scene.add(new THREE.HemisphereLight(0xffffff, scheme === "dark" ? 0x223344 : 0xb8c4d6, 1.6));
+  const sun = new THREE.DirectionalLight(0xffffff, 1.6);
+  sun.position.set(5, 10, 7);
+  scene.add(sun);
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = !reducedMotion;
+  const size = { width: stage.clientWidth, height };
+
+  function fit() {
+    size.width = stage.clientWidth;
+    renderer.setSize(size.width, size.height, false);
+    labels.setSize(size.width, size.height);
+    camera.aspect = size.width / size.height;
+    camera.updateProjectionMatrix();
+    draw();
+  }
+
+  const frames = [];
+  const onFrame = (callback) => { if (typeof callback === "function") frames.push(callback); };
+  const label = (text, at, parent) => {
+    const tag = document.createElement("span");
+    tag.className = "label";
+    tag.textContent = String(text);
+    const object = new CSS2DObject(tag);
+    if (at) object.position.copy(at);
+    (parent || scene).add(object);
+    return object;
+  };
+
+  let moving = !reducedMotion;
+  let visible = true;
+  let slow = 0;
+  let last = performance.now();
+  let elapsed = 0;
+  let pending = false;
+
+  function draw() {
+    controls.update();
+    renderer.render(scene, camera);
+    labels.render(scene, camera);
+  }
+
+  function tick(now) {
+    pending = false;
+    const dt = Math.min((now - last) / 1000, 0.1);
+    last = now;
+    if (moving && visible) {
+      elapsed += dt;
+      for (const callback of frames) {
+        try { callback(dt, elapsed); } catch (error) { failed(error); return; }
+      }
+    }
+    draw();
+    const spent = performance.now() - now;
+    slow = spent > 200 ? slow + 1 : 0;
+    if (slow > 20 && moving) {
+      moving = false;
+      $("motion").textContent = "Play motion";
+      note("Motion paused: this scene is heavy for this device.");
+    }
+    if (moving && visible) schedule();
+  }
+
+  function schedule() {
+    if (!pending) {
+      pending = true;
+      last = performance.now();
+      requestAnimationFrame(tick);
+    }
+  }
+
+  controls.addEventListener("change", () => { if (!moving) requestAnimationFrame(draw); });
+  new ResizeObserver(fit).observe(stage);
+  new IntersectionObserver(([entry]) => {
+    visible = entry.isIntersecting;
+    if (visible && moving) schedule();
+  }).observe(stage);
+  document.addEventListener("visibilitychange", () => {
+    visible = document.visibilityState === "visible";
+    if (visible && moving) schedule();
+  });
+
+  window.__adk = Object.freeze({
+    THREE, addons, scene, camera, renderer, controls, onFrame, label, size, theme, reducedMotion,
+    run(body) {
+      Promise.resolve()
+        .then(() => body(window.__adk))
+        .then(() => {
+          fit();
+          if (frames.length && !reducedMotion) {
+            $("motion").hidden = false;
+            schedule();
+          }
+          resized();
+        })
+        .catch(failed);
+    },
+  });
+  $("motion").addEventListener("click", () => {
+    moving = !moving;
+    $("motion").textContent = moving ? "Pause motion" : "Play motion";
+    note("");
+    if (moving) schedule();
+  });
+
+  const script = document.createElement("script");
+  script.textContent =
+    "window.__adk.run(async ({ THREE, addons, scene, camera, renderer, controls, onFrame, label, size, theme, reducedMotion }) => {\n" +
+    input.code +
+    "\n});";
+  document.body.append(script);
+  fit();
+}
+
+function failed(error) {
+  note(`The app's code failed: ${error && error.message ? error.message : String(error)}`);
+}
+
+window.addEventListener("error", (event) => failed(event.error || event.message));
+window.addEventListener("message", (event) => {
+  if (event.source !== window.parent) return;
+  const message = event.data;
+  if (!message || message.jsonrpc !== "2.0") return;
+  if (message.id === 1 && message.result) {
+    const host = message.result.hostContext || {};
+    if (host.theme === "dark" || host.theme === "light") scheme = host.theme;
+    document.documentElement.dataset.scheme = scheme;
+    post({ jsonrpc: "2.0", method: "ui/notifications/initialized", params: {} });
+  } else if (message.method === "ui/notifications/tool-input") {
+    start((message.params || {}).arguments);
+  }
+});
+document.documentElement.dataset.scheme = scheme;
+post({ jsonrpc: "2.0", id: 1, method: "ui/initialize",
+       params: { protocolVersion: "2026-01-26", appInfo: { name: "adk-ui 3D", version: "1" },
+                 appCapabilities: {} } });
+resized();
+</script>
+</body>
+</html>

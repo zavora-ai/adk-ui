@@ -15,3 +15,4 @@ adk-runner = { path = "../adk-rust/adk-runner" }
 adk-server = { path = "../adk-rust/adk-server" }
 adk-session = { path = "../adk-rust/adk-session" }
 adk-surface = { path = "../adk-rust/adk-surface" }
+adk-tool = { path = "../adk-rust/adk-tool" }

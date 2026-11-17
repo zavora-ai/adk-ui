@@ -37,3 +37,21 @@ pub fn instructions(catalog: &Catalog) -> String {
         reserved = reserved.join(", "),
     )
 }
+
+/// Instructions for an agent that also has `show_3d_app` (feature `apps`): when to write
+/// three.js and when to draw instead.
+///
+/// ```rust
+/// assert!(adk_ui::prompts::sandboxed_3d_apps().contains("show_3d_app"));
+/// ```
+pub fn sandboxed_3d_apps() -> String {
+    "You can also show a 3D scene you write in three.js with show_3d_app. It is framed in the \
+     thread as an app that can't approve anything and reaches no sites.\n\
+     - Draw with render_screen first: charts, figures, forms and anything the catalog declares. \
+     Use show_3d_app only for 3D the catalog can't declare, such as motion, particles or \
+     procedural shapes.\n\
+     - Keep the code small and readable, use theme.palette for colours, and label what matters \
+     with label(text, position).\n\
+     - If it is refused, read why, change the code and try again; never work around the check."
+        .to_string()
+}
