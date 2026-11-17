@@ -408,14 +408,17 @@ dependencies = [
  "adk-server",
  "adk-session",
  "async-trait",
+ "axum",
  "chrono",
  "futures",
  "http-body-util",
  "hyper",
  "hyper-util",
  "jsonschema",
+ "mime_guess",
  "regex",
  "reqwest",
+ "rust-embed",
  "schemars",
  "serde",
  "serde_json",
@@ -462,12 +465,24 @@ name = "adk-ui"
 version = "3.0.0"
 dependencies = [
  "adk-core",
+ "adk-devtools",
+ "adk-harness",
+ "adk-kernel",
+ "adk-model",
+ "adk-runner",
+ "adk-server",
+ "adk-session",
  "adk-surface",
+ "async-trait",
+ "axum",
  "chrono",
+ "futures",
  "schemars",
  "serde",
  "serde_json",
+ "tempfile",
  "thiserror",
+ "tokio",
 ]
 
 [[package]]
@@ -2529,6 +2544,41 @@ dependencies = [
  "quote",
  "serde_json",
  "syn 3.0.3",
+]
+
+[[package]]
+name = "rust-embed"
+version = "8.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e98f580cf7a2863aeb6827800283f52cbe6fb3f3bb7c1843783f903c16dcb8ad"
+dependencies = [
+ "rust-embed-impl",
+ "rust-embed-utils",
+ "walkdir",
+]
+
+[[package]]
+name = "rust-embed-impl"
+version = "8.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a93e2f69cf224a6c7df7509aa5ba4a23f56828ee41b040e92ac8762371eb9ba7"
+dependencies = [
+ "mime_guess",
+ "proc-macro2",
+ "quote",
+ "rust-embed-utils",
+ "syn 2.0.119",
+ "walkdir",
+]
+
+[[package]]
+name = "rust-embed-utils"
+version = "8.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "915e33dccbe7deb2b8a342dc4c517503fe85e0230ddbae40a4fb0220493dad9b"
+dependencies = [
+ "sha2 0.11.0",
+ "walkdir",
 ]
 
 [[package]]

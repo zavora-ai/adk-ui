@@ -1,0 +1,159 @@
+{
+  "catalog": "studio",
+  "summary": "A warehouse in 3D, primitives with labels only, and a dock the person asks to reserve.",
+  "screen": {
+    "surfaceId": "warehouse-bays",
+    "title": "Warehouse 4 · loading bays",
+    "components": [
+      {
+        "id": "root",
+        "component": "Column",
+        "children": [
+          "scene",
+          "zone",
+          "reserve"
+        ]
+      },
+      {
+        "id": "scene",
+        "component": "Scene3D",
+        "title": "Bays",
+        "description": "Dock 3 is free from 14:00",
+        "height": 360,
+        "controls": "orbit",
+        "camera": {
+          "position": [
+            8,
+            6,
+            10
+          ],
+          "target": [
+            0,
+            0,
+            0
+          ],
+          "fov": 45
+        },
+        "objects": [
+          {
+            "id": "floor",
+            "shape": "plane",
+            "position": [
+              0,
+              -0.6,
+              0
+            ],
+            "rotation": [
+              -90,
+              0,
+              0
+            ],
+            "scale": [
+              6,
+              4,
+              1
+            ],
+            "color": "#e2e8f0"
+          },
+          {
+            "id": "dock1",
+            "shape": "box",
+            "position": [
+              -4,
+              0,
+              -2
+            ],
+            "color": "#2563eb",
+            "label": "Dock 1 · loading"
+          },
+          {
+            "id": "dock2",
+            "shape": "box",
+            "position": [
+              0,
+              0,
+              -2
+            ],
+            "color": "#2563eb",
+            "label": "Dock 2 · loading"
+          },
+          {
+            "id": "dock3",
+            "shape": "box",
+            "position": [
+              4,
+              0,
+              -2
+            ],
+            "color": "#0d9488",
+            "label": "Dock 3 · free"
+          },
+          {
+            "id": "truck",
+            "shape": "cylinder",
+            "position": [
+              -4,
+              0,
+              2
+            ],
+            "rotation": [
+              0,
+              0,
+              90
+            ],
+            "color": "#7c3aed",
+            "label": "Truck TR-114"
+          }
+        ]
+      },
+      {
+        "id": "zone",
+        "component": "ChoicePicker",
+        "label": "Dock",
+        "value": {
+          "path": "/dock"
+        },
+        "options": [
+          {
+            "label": "Dock 3",
+            "value": "dock-3"
+          }
+        ]
+      },
+      {
+        "id": "reserve",
+        "component": "Button",
+        "child": "reserve-label",
+        "variant": "primary",
+        "action": {
+          "event": {
+            "name": "reserve"
+          }
+        }
+      },
+      {
+        "id": "reserve-label",
+        "component": "Text",
+        "text": "Reserve this dock"
+      }
+    ],
+    "dataModel": {
+      "dock": [
+        "dock-3"
+      ]
+    },
+    "actions": [
+      {
+        "id": "reserve",
+        "label": "Reserve this dock",
+        "tool": "reserve_dock",
+        "args": {
+          "dock": {
+            "path": "/dock"
+          },
+          "from": "14:00"
+        }
+      }
+    ]
+  }
+}

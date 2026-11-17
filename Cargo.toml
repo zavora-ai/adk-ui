@@ -27,3 +27,21 @@ thiserror = "2.0"
 
 [dev-dependencies]
 adk-core = "3.0.0"
+adk-devtools = "3.0.0"
+adk-harness = { version = "3.0.0", features = ["kernel"] }
+adk-kernel = "3.0.0"
+adk-model = { version = "3.0.0", default-features = false }
+adk-runner = "3.0.0"
+adk-server = { version = "3.0.0", features = ["approvals"] }
+adk-session = "3.0.0"
+adk-surface = { version = "3.0.0", features = ["web", "genui"] }
+async-trait = "0.1"
+axum = "0.8"
+futures = "0.3"
+tempfile = "3"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "net", "time"] }
+
+# The web home over a scripted agent that draws in adk-ui's catalogs.
+[[example]]
+name = "insight_home"
+path = "examples/insight_home.rs"

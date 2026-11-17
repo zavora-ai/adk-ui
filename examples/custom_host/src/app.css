@@ -1,0 +1,36 @@
+body {
+  margin: 0;
+  background: var(--bg, #fff);
+  color: var(--text, #0f172a);
+  font-family: var(--font, system-ui);
+}
+
+.host {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 24px 16px 64px;
+}
+
+.host-header nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 20px;
+}
+
+.host-header button[aria-pressed="true"] {
+  font-weight: 600;
+}
+
+.host-sent {
+  color: var(--text-2, #475569);
+  font-size: 13px;
+}
+
+.host-drawings {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  background: var(--bg, #fff);
+  padding: 4px;
+}

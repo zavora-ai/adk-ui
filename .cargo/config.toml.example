@@ -7,4 +7,11 @@
 
 [patch.crates-io]
 adk-core = { path = "../adk-rust/adk-core" }
+adk-devtools = { path = "../adk-rust/adk-devtools" }
+adk-harness = { path = "../adk-rust/adk-harness" }
+adk-kernel = { path = "../adk-rust/adk-kernel" }
+adk-model = { path = "../adk-rust/adk-model" }
+adk-runner = { path = "../adk-rust/adk-runner" }
+adk-server = { path = "../adk-rust/adk-server" }
+adk-session = { path = "../adk-rust/adk-session" }
 adk-surface = { path = "../adk-rust/adk-surface" }

@@ -1,0 +1,106 @@
+{
+  "catalog": "insight",
+  "summary": "Live throughput: one drawing, then the data changes patch_surface sends as the numbers move.",
+  "screen": {
+    "surfaceId": "throughput",
+    "title": "Queue throughput",
+    "components": [
+      {
+        "id": "root",
+        "component": "Column",
+        "children": [
+          "now",
+          "trend",
+          "backlog"
+        ]
+      },
+      {
+        "id": "now",
+        "component": "Metric",
+        "label": "Messages per second",
+        "value": {
+          "path": "/rate"
+        },
+        "trend": {
+          "path": "/history"
+        }
+      },
+      {
+        "id": "trend",
+        "component": "Sparkline",
+        "label": "Last minute",
+        "data": {
+          "path": "/history"
+        }
+      },
+      {
+        "id": "backlog",
+        "component": "Progress",
+        "label": "Backlog drained",
+        "value": {
+          "path": "/drained"
+        }
+      }
+    ],
+    "dataModel": {
+      "rate": 1180,
+      "history": [
+        900,
+        950,
+        1010,
+        1080,
+        1180
+      ],
+      "drained": 20
+    },
+    "actions": []
+  },
+  "patches": [
+    {
+      "surfaceId": "throughput",
+      "data": [
+        {
+          "path": "/rate",
+          "value": 1320
+        },
+        {
+          "path": "/history",
+          "value": [
+            950,
+            1010,
+            1080,
+            1180,
+            1320
+          ]
+        },
+        {
+          "path": "/drained",
+          "value": 45
+        }
+      ]
+    },
+    {
+      "surfaceId": "throughput",
+      "data": [
+        {
+          "path": "/rate",
+          "value": 1405
+        },
+        {
+          "path": "/history",
+          "value": [
+            1010,
+            1080,
+            1180,
+            1320,
+            1405
+          ]
+        },
+        {
+          "path": "/drained",
+          "value": 80
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,2090 @@
+[
+  {
+    "agent": {
+      "avatar": {
+        "color": "#BE185D",
+        "monogram": "O"
+      },
+      "displayName": "Operations",
+      "name": "operations"
+    },
+    "atText": "10:02",
+    "catalog": "studio 1.0",
+    "changedText": "Operations changed this form at 10:02",
+    "drawnAt": "2026-11-16T10:02:00Z",
+    "drawnText": "Drawn by Operations · 10:02",
+    "earlierText": "Earlier version · 10:02",
+    "kind": "screen",
+    "root": {
+      "children": [
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "children": [
+                    {
+                      "component": "Text",
+                      "key": "revenue#2",
+                      "text": "Revenue",
+                      "variant": "caption"
+                    },
+                    {
+                      "component": "Text",
+                      "key": "revenue#3",
+                      "text": "USD 48,210",
+                      "variant": "h2"
+                    },
+                    {
+                      "component": "Text",
+                      "key": "revenue#4",
+                      "text": "+8.5 · better",
+                      "variant": "body"
+                    },
+                    {
+                      "chart": {
+                        "kind": "sparkline",
+                        "series": [
+                          {
+                            "name": "Revenue",
+                            "x": [
+                              0,
+                              1,
+                              2,
+                              3,
+                              4,
+                              5,
+                              6
+                            ],
+                            "y": [
+                              6100,
+                              6400,
+                              7200,
+                              6900,
+                              7700,
+                              6800,
+                              7110
+                            ]
+                          }
+                        ],
+                        "summary": "Trend chart of Revenue, 7 points, from 6100 to 7700",
+                        "x": {
+                          "type": "number"
+                        }
+                      },
+                      "component": "Chart",
+                      "key": "revenue#5"
+                    }
+                  ],
+                  "component": "Card",
+                  "key": "revenue#1"
+                }
+              ],
+              "component": "Metric",
+              "extension": {
+                "catalog": "https://zavora.ai/a2ui/catalogs/adk-ui-studio/1.0/catalog.json",
+                "component": "Metric",
+                "props": {
+                  "component": "Metric",
+                  "currency": "USD",
+                  "delta": {
+                    "goodWhen": "up",
+                    "value": 8.5
+                  },
+                  "format": "currency",
+                  "id": "revenue",
+                  "label": "Revenue",
+                  "trend": [
+                    6100,
+                    6400,
+                    7200,
+                    6900,
+                    7700,
+                    6800,
+                    7110
+                  ],
+                  "value": 48210
+                }
+              },
+              "key": "revenue"
+            },
+            {
+              "children": [
+                {
+                  "children": [
+                    {
+                      "component": "Text",
+                      "key": "orders#2",
+                      "text": "Orders",
+                      "variant": "caption"
+                    },
+                    {
+                      "component": "Text",
+                      "key": "orders#3",
+                      "text": "1,284",
+                      "variant": "h2"
+                    },
+                    {
+                      "component": "Text",
+                      "key": "orders#4",
+                      "text": "+96 · better",
+                      "variant": "body"
+                    }
+                  ],
+                  "component": "Card",
+                  "key": "orders#1"
+                }
+              ],
+              "component": "Metric",
+              "extension": {
+                "catalog": "https://zavora.ai/a2ui/catalogs/adk-ui-studio/1.0/catalog.json",
+                "component": "Metric",
+                "props": {
+                  "component": "Metric",
+                  "delta": {
+                    "goodWhen": "up",
+                    "value": 96
+                  },
+                  "id": "orders",
+                  "label": "Orders",
+                  "value": 1284
+                }
+              },
+              "key": "orders"
+            },
+            {
+              "children": [
+                {
+                  "children": [
+                    {
+                      "component": "Text",
+                      "key": "conversion#2",
+                      "text": "Conversion",
+                      "variant": "caption"
+                    },
+                    {
+                      "component": "Text",
+                      "key": "conversion#3",
+                      "text": "3.1%",
+                      "variant": "h2"
+                    }
+                  ],
+                  "component": "Card",
+                  "key": "conversion#1"
+                }
+              ],
+              "component": "Metric",
+              "extension": {
+                "catalog": "https://zavora.ai/a2ui/catalogs/adk-ui-studio/1.0/catalog.json",
+                "component": "Metric",
+                "props": {
+                  "component": "Metric",
+                  "format": "percent",
+                  "id": "conversion",
+                  "label": "Conversion",
+                  "value": 3.1
+                }
+              },
+              "key": "conversion"
+            }
+          ],
+          "component": "Row",
+          "key": "kpis"
+        },
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "component": "Text",
+                  "key": "channels#2",
+                  "text": "Sales by channel",
+                  "variant": "h4"
+                },
+                {
+                  "chart": {
+                    "kind": "pie",
+                    "series": [
+                      {
+                        "name": "Share",
+                        "y": [
+                          54,
+                          31,
+                          15
+                        ]
+                      }
+                    ],
+                    "summary": "Pie chart of Share, 3 points, from 15 to 54",
+                    "x": {
+                      "labels": [
+                        "Web",
+                        "App",
+                        "Marketplace"
+                      ],
+                      "type": "category"
+                    }
+                  },
+                  "component": "Chart",
+                  "key": "channels#3"
+                }
+              ],
+              "component": "Column",
+              "key": "channels#1"
+            }
+          ],
+          "component": "Chart",
+          "extension": {
+            "catalog": "https://zavora.ai/a2ui/catalogs/adk-ui-studio/1.0/catalog.json",
+            "component": "Chart",
+            "props": {
+              "component": "Chart",
+              "data": [
+                {
+                  "channel": "Web",
+                  "share": 54
+                },
+                {
+                  "channel": "App",
+                  "share": 31
+                },
+                {
+                  "channel": "Marketplace",
+                  "share": 15
+                }
+              ],
+              "id": "channels",
+              "kind": "pie",
+              "series": [
+                {
+                  "key": "share",
+                  "label": "Share"
+                }
+              ],
+              "title": "Sales by channel",
+              "valueFormat": "percent",
+              "x": {
+                "key": "channel"
+              }
+            }
+          },
+          "key": "channels"
+        },
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "component": "Text",
+                  "key": "order#2",
+                  "text": "Largest order",
+                  "variant": "h4"
+                },
+                {
+                  "children": [
+                    {
+                      "children": [
+                        {
+                          "component": "Text",
+                          "key": "order#5",
+                          "text": "Order",
+                          "variant": "caption"
+                        },
+                        {
+                          "component": "Text",
+                          "key": "order#6",
+                          "text": "SO-88213",
+                          "variant": "body"
+                        }
+                      ],
+                      "component": "Row",
+                      "key": "order#4"
+                    },
+                    {
+                      "children": [
+                        {
+                          "component": "Text",
+                          "key": "order#8",
+                          "text": "Items",
+                          "variant": "caption"
+                        },
+                        {
+                          "component": "Text",
+                          "key": "order#9",
+                          "text": "14",
+                          "variant": "body"
+                        }
+                      ],
+                      "component": "Row",
+                      "key": "order#7"
+                    },
+                    {
+                      "children": [
+                        {
+                          "component": "Text",
+                          "key": "order#11",
+                          "text": "Total",
+                          "variant": "caption"
+                        },
+                        {
+                          "component": "Text",
+                          "key": "order#12",
+                          "text": "USD 2,940",
+                          "variant": "body"
+                        }
+                      ],
+                      "component": "Row",
+                      "key": "order#10"
+                    }
+                  ],
+                  "component": "Column",
+                  "key": "order#3"
+                }
+              ],
+              "component": "Column",
+              "key": "order#1"
+            }
+          ],
+          "component": "KeyValue",
+          "extension": {
+            "catalog": "https://zavora.ai/a2ui/catalogs/adk-ui-studio/1.0/catalog.json",
+            "component": "KeyValue",
+            "props": {
+              "component": "KeyValue",
+              "id": "order",
+              "items": [
+                {
+                  "key": "Order",
+                  "value": "SO-88213"
+                },
+                {
+                  "key": "Items",
+                  "value": 14
+                },
+                {
+                  "key": "Total",
+                  "value": "USD 2,940"
+                }
+              ],
+              "title": "Largest order"
+            }
+          },
+          "key": "order"
+        }
+      ],
+      "component": "Column",
+      "key": "root"
+    },
+    "surfaceId": "store-week",
+    "title": "This week in the store",
+    "version": 1
+  },
+  {
+    "actions": [
+      {
+        "args": [
+          {
+            "name": "reason",
+            "path": "/reason"
+          },
+          {
+            "name": "service",
+            "value": "checkout-api"
+          },
+          {
+            "name": "toVersion",
+            "value": "2026.11.16-1"
+          }
+        ],
+        "id": "rollback",
+        "label": "Start rollback",
+        "note": "Sending runs start_rollback and asks you first",
+        "tool": "start_rollback"
+      }
+    ],
+    "agent": {
+      "avatar": {
+        "color": "#BE185D",
+        "monogram": "O"
+      },
+      "displayName": "Operations",
+      "name": "operations"
+    },
+    "atText": "10:02",
+    "catalog": "studio 1.0",
+    "changedText": "Operations changed this form at 10:02",
+    "drawnAt": "2026-11-16T10:02:00Z",
+    "drawnText": "Drawn by Operations · 10:02",
+    "earlierText": "Earlier version · 10:02",
+    "kind": "screen",
+    "root": {
+      "children": [
+        {
+          "children": [
+            {
+              "component": "Text",
+              "key": "status#1",
+              "text": "Investigating",
+              "variant": "caption"
+            }
+          ],
+          "component": "Badge",
+          "extension": {
+            "catalog": "https://zavora.ai/a2ui/catalogs/adk-ui-studio/1.0/catalog.json",
+            "component": "Badge",
+            "props": {
+              "component": "Badge",
+              "id": "status",
+              "text": "Investigating",
+              "tone": "warning"
+            }
+          },
+          "key": "status"
+        },
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "children": [
+                    {
+                      "component": "Text",
+                      "key": "p95#2",
+                      "text": "p95 latency",
+                      "variant": "caption"
+                    },
+                    {
+                      "component": "Text",
+                      "key": "p95#3",
+                      "text": "840 ms",
+                      "variant": "h2"
+                    },
+                    {
+                      "component": "Text",
+                      "key": "p95#4",
+                      "text": "+180 · worse",
+                      "variant": "body"
+                    },
+                    {
+                      "component": "Text",
+                      "key": "p95#5",
+                      "text": "Critical",
+                      "variant": "caption"
+                    },
+                    {
+                      "chart": {
+                        "kind": "sparkline",
+                        "series": [
+                          {
+                            "name": "p95 latency",
+                            "x": [
+                              0,
+                              1,
+                              2,
+                              3,
+                              4,
+                              5
+                            ],
+                            "y": [
+                              410,
+                              430,
+                              520,
+                              690,
+                              780,
+                              840
+                            ]
+                          }
+                        ],
+                        "summary": "Trend chart of p95 latency, 6 points, from 410 to 840",
+                        "x": {
+                          "type": "number"
+                        }
+                      },
+                      "component": "Chart",
+                      "key": "p95#6"
+                    }
+                  ],
+                  "component": "Card",
+                  "key": "p95#1"
+                }
+              ],
+              "component": "Metric",
+              "extension": {
+                "catalog": "https://zavora.ai/a2ui/catalogs/adk-ui-studio/1.0/catalog.json",
+                "component": "Metric",
+                "props": {
+                  "component": "Metric",
+                  "delta": {
+                    "goodWhen": "down",
+                    "value": 180
+                  },
+                  "id": "p95",
+                  "label": "p95 latency",
+                  "status": "critical",
+                  "trend": [
+                    410,
+                    430,
+                    520,
+                    690,
+                    780,
+                    840
+                  ],
+                  "unit": "ms",
+                  "value": 840
+                }
+              },
+              "key": "p95"
+            },
+            {
+              "children": [
+                {
+                  "children": [
+                    {
+                      "component": "Text",
+                      "key": "errors#2",
+                      "text": "Error rate",
+                      "variant": "caption"
+                    },
+                    {
+                      "component": "Text",
+                      "key": "errors#3",
+                      "text": "2.4%",
+                      "variant": "h2"
+                    },
+                    {
+                      "component": "Text",
+                      "key": "errors#4",
+                      "text": "Warning",
+                      "variant": "caption"
+                    }
+                  ],
+                  "component": "Card",
+                  "key": "errors#1"
+                }
+              ],
+              "component": "Metric",
+              "extension": {
+                "catalog": "https://zavora.ai/a2ui/catalogs/adk-ui-studio/1.0/catalog.json",
+                "component": "Metric",
+                "props": {
+                  "component": "Metric",
+                  "format": "percent",
+                  "id": "errors",
+                  "label": "Error rate",
+                  "status": "warning",
+                  "value": 2.4
+                }
+              },
+              "key": "errors"
+            },
+            {
+              "children": [
+                {
+                  "children": [
+                    {
+                      "component": "Text",
+                      "key": "open#2",
+                      "text": "Open incidents",
+                      "variant": "caption"
+                    },
+                    {
+                      "component": "Text",
+                      "key": "open#3",
+                      "text": "3",
+                      "variant": "h2"
+                    },
+                    {
+                      "component": "Text",
+                      "key": "open#4",
+                      "text": "+1 · worse",
+                      "variant": "body"
+                    }
+                  ],
+                  "component": "Card",
+                  "key": "open#1"
+                }
+              ],
+              "component": "Metric",
+              "extension": {
+                "catalog": "https://zavora.ai/a2ui/catalogs/adk-ui-studio/1.0/catalog.json",
+                "component": "Metric",
+                "props": {
+                  "component": "Metric",
+                  "delta": {
+                    "goodWhen": "down",
+                    "value": 1
+                  },
+                  "id": "open",
+                  "label": "Open incidents",
+                  "value": 3
+                }
+              },
+              "key": "open"
+            }
+          ],
+          "component": "Row",
+          "key": "metrics"
+        },
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "component": "Text",
+                  "key": "latency#2",
+                  "text": "p95 latency, last 6 hours",
+                  "variant": "h4"
+                },
+                {
+                  "chart": {
+                    "kind": "line",
+                    "series": [
+                      {
+                        "name": "Checkout",
+                        "x": [
+                          1794819600000,
+                          1794823200000,
+                          1794826800000,
+                          1794830400000,
+                          1794834000000,
+                          1794837600000
+                        ],
+                        "y": [
+                          410,
+                          430,
+                          520,
+                          690,
+                          780,
+                          840
+                        ]
+                      },
+                      {
+                        "name": "Search",
+                        "x": [
+                          1794819600000,
+                          1794823200000,
+                          1794826800000,
+                          1794830400000,
+                          1794834000000,
+                          1794837600000
+                        ],
+                        "y": [
+                          220,
+                          225,
+                          230,
+                          228,
+                          240,
+                          238
+                        ]
+                      }
+                    ],
+                    "summary": "Line chart of Checkout and Search, 12 points, from 220 to 840",
+                    "ticks": [
+                      {
+                        "at": 1794819600000,
+                        "text": "09:00"
+                      },
+                      {
+                        "at": 1794824100000,
+                        "text": "10:15"
+                      },
+                      {
+                        "at": 1794828600000,
+                        "text": "11:30"
+                      },
+                      {
+                        "at": 1794833100000,
+                        "text": "12:45"
+                      },
+                      {
+                        "at": 1794837600000,
+                        "text": "14:00"
+                      }
+                    ],
+                    "x": {
+                      "type": "time"
+                    },
+                    "yLabel": "ms"
+                  },
+                  "component": "Chart",
+                  "key": "latency#3"
+                }
+              ],
+              "component": "Column",
+              "key": "latency#1"
+            }
+          ],
+          "component": "Chart",
+          "extension": {
+            "catalog": "https://zavora.ai/a2ui/catalogs/adk-ui-studio/1.0/catalog.json",
+            "component": "Chart",
+            "props": {
+              "component": "Chart",
+              "data": [
+                {
+                  "at": "2026-11-16T09:00:00Z",
+                  "checkout": 410,
+                  "search": 220
+                },
+                {
+                  "at": "2026-11-16T10:00:00Z",
+                  "checkout": 430,
+                  "search": 225
+                },
+                {
+                  "at": "2026-11-16T11:00:00Z",
+                  "checkout": 520,
+                  "search": 230
+                },
+                {
+                  "at": "2026-11-16T12:00:00Z",
+                  "checkout": 690,
+                  "search": 228
+                },
+                {
+                  "at": "2026-11-16T13:00:00Z",
+                  "checkout": 780,
+                  "search": 240
+                },
+                {
+                  "at": "2026-11-16T14:00:00Z",
+                  "checkout": 840,
+                  "search": 238
+                }
+              ],
+              "id": "latency",
+              "kind": "line",
+              "series": [
+                {
+                  "key": "checkout",
+                  "label": "Checkout"
+                },
+                {
+                  "key": "search",
+                  "label": "Search"
+                }
+              ],
+              "timeUnit": "hour",
+              "title": "p95 latency, last 6 hours",
+              "x": {
+                "key": "at",
+                "type": "time"
+              },
+              "yLabel": "ms"
+            }
+          },
+          "key": "latency"
+        },
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "component": "Text",
+                  "key": "facts#2",
+                  "text": "Context",
+                  "variant": "h4"
+                },
+                {
+                  "children": [
+                    {
+                      "children": [
+                        {
+                          "component": "Text",
+                          "key": "facts#5",
+                          "text": "Service",
+                          "variant": "caption"
+                        },
+                        {
+                          "component": "Text",
+                          "key": "facts#6",
+                          "text": "checkout-api",
+                          "variant": "body"
+                        }
+                      ],
+                      "component": "Row",
+                      "key": "facts#4"
+                    },
+                    {
+                      "children": [
+                        {
+                          "component": "Text",
+                          "key": "facts#8",
+                          "text": "Region",
+                          "variant": "caption"
+                        },
+                        {
+                          "component": "Text",
+                          "key": "facts#9",
+                          "text": "eu-west-1",
+                          "variant": "body"
+                        }
+                      ],
+                      "component": "Row",
+                      "key": "facts#7"
+                    },
+                    {
+                      "children": [
+                        {
+                          "component": "Text",
+                          "key": "facts#11",
+                          "text": "On call",
+                          "variant": "caption"
+                        },
+                        {
+                          "component": "Text",
+                          "key": "facts#12",
+                          "text": "Platform team",
+                          "variant": "body"
+                        }
+                      ],
+                      "component": "Row",
+                      "key": "facts#10"
+                    },
+                    {
+                      "children": [
+                        {
+                          "component": "Text",
+                          "key": "facts#14",
+                          "text": "Last deploy",
+                          "variant": "caption"
+                        },
+                        {
+                          "component": "Text",
+                          "key": "facts#15",
+                          "text": "2026.11.16-2",
+                          "variant": "body"
+                        }
+                      ],
+                      "component": "Row",
+                      "key": "facts#13"
+                    }
+                  ],
+                  "component": "Column",
+                  "key": "facts#3"
+                }
+              ],
+              "component": "Column",
+              "key": "facts#1"
+            }
+          ],
+          "component": "KeyValue",
+          "extension": {
+            "catalog": "https://zavora.ai/a2ui/catalogs/adk-ui-studio/1.0/catalog.json",
+            "component": "KeyValue",
+            "props": {
+              "component": "KeyValue",
+              "id": "facts",
+              "items": [
+                {
+                  "key": "Service",
+                  "value": "checkout-api"
+                },
+                {
+                  "key": "Region",
+                  "value": "eu-west-1"
+                },
+                {
+                  "key": "On call",
+                  "value": "Platform team"
+                },
+                {
+                  "key": "Last deploy",
+                  "value": "2026.11.16-2"
+                }
+              ],
+              "title": "Context"
+            }
+          },
+          "key": "facts"
+        },
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "component": "TextField",
+                  "field": {
+                    "input": "longText",
+                    "path": "/reason",
+                    "value": ""
+                  },
+                  "key": "reason",
+                  "text": "Why roll back",
+                  "variant": "longText"
+                },
+                {
+                  "action": "rollback",
+                  "component": "Button",
+                  "key": "start",
+                  "text": "Start rollback",
+                  "variant": "primary"
+                }
+              ],
+              "component": "Column",
+              "key": "rollback-form"
+            }
+          ],
+          "component": "Card",
+          "key": "rollback"
+        }
+      ],
+      "component": "Column",
+      "key": "root"
+    },
+    "surfaceId": "incident-2041",
+    "title": "Incident INC-2041 · checkout latency",
+    "version": 1
+  },
+  {
+    "agent": {
+      "avatar": {
+        "color": "#BE185D",
+        "monogram": "O"
+      },
+      "displayName": "Operations",
+      "name": "operations"
+    },
+    "atText": "10:02",
+    "catalog": "studio 1.0",
+    "changedText": "Operations changed this form at 10:02",
+    "drawnAt": "2026-11-16T10:02:00Z",
+    "drawnText": "Drawn by Operations · 10:02",
+    "earlierText": "Earlier version · 10:02",
+    "kind": "screen",
+    "root": {
+      "children": [
+        {
+          "children": [
+            {
+              "component": "Text",
+              "key": "root#2",
+              "text": "Release 2026.11",
+              "variant": "h3"
+            },
+            {
+              "children": [
+                {
+                  "children": [
+                    {
+                      "children": [
+                        {
+                          "component": "Text",
+                          "key": "overview#2",
+                          "text": "Where we are",
+                          "variant": "h3"
+                        },
+                        {
+                          "component": "Text",
+                          "key": "overview#3",
+                          "text": "Updated every hour",
+                          "variant": "caption"
+                        },
+                        {
+                          "children": [
+                            {
+                              "children": [
+                                {
+                                  "component": "Text",
+                                  "key": "health#2",
+                                  "text": "Health",
+                                  "variant": "h4"
+                                },
+                                {
+                                  "children": [
+                                    {
+                                      "children": [
+                                        {
+                                          "component": "Text",
+                                          "key": "readiness#2",
+                                          "text": "Readiness",
+                                          "variant": "caption"
+                                        },
+                                        {
+                                          "component": "Text",
+                                          "key": "readiness#3",
+                                          "text": "86%",
+                                          "variant": "h2"
+                                        },
+                                        {
+                                          "component": "Text",
+                                          "key": "readiness#4",
+                                          "text": "OK",
+                                          "variant": "caption"
+                                        }
+                                      ],
+                                      "component": "Card",
+                                      "key": "readiness#1"
+                                    }
+                                  ],
+                                  "component": "Metric",
+                                  "extension": {
+                                    "catalog": "https://zavora.ai/a2ui/catalogs/adk-ui-studio/1.0/catalog.json",
+                                    "component": "Metric",
+                                    "props": {
+                                      "component": "Metric",
+                                      "format": "percent",
+                                      "id": "readiness",
+                                      "label": "Readiness",
+                                      "status": "ok",
+                                      "value": 86
+                                    }
+                                  },
+                                  "key": "readiness"
+                                },
+                                {
+                                  "children": [
+                                    {
+                                      "children": [
+                                        {
+                                          "component": "Text",
+                                          "key": "blockers#2",
+                                          "text": "Blockers",
+                                          "variant": "caption"
+                                        },
+                                        {
+                                          "component": "Text",
+                                          "key": "blockers#3",
+                                          "text": "1",
+                                          "variant": "h2"
+                                        },
+                                        {
+                                          "component": "Text",
+                                          "key": "blockers#4",
+                                          "text": "Warning",
+                                          "variant": "caption"
+                                        }
+                                      ],
+                                      "component": "Card",
+                                      "key": "blockers#1"
+                                    }
+                                  ],
+                                  "component": "Metric",
+                                  "extension": {
+                                    "catalog": "https://zavora.ai/a2ui/catalogs/adk-ui-studio/1.0/catalog.json",
+                                    "component": "Metric",
+                                    "props": {
+                                      "component": "Metric",
+                                      "id": "blockers",
+                                      "label": "Blockers",
+                                      "status": "warning",
+                                      "value": 1
+                                    }
+                                  },
+                                  "key": "blockers"
+                                }
+                              ],
+                              "component": "Card",
+                              "key": "health#1"
+                            }
+                          ],
+                          "component": "Region",
+                          "extension": {
+                            "catalog": "https://zavora.ai/a2ui/catalogs/adk-ui-studio/1.0/catalog.json",
+                            "children": [
+                              "readiness",
+                              "blockers"
+                            ],
+                            "component": "Region",
+                            "props": {
+                              "children": [
+                                "readiness",
+                                "blockers"
+                              ],
+                              "columns": 2,
+                              "component": "Region",
+                              "id": "health",
+                              "layout": "grid",
+                              "title": "Health"
+                            }
+                          },
+                          "key": "health"
+                        },
+                        {
+                          "children": [
+                            {
+                              "children": [
+                                {
+                                  "component": "Text",
+                                  "key": "risks#2",
+                                  "text": "Risks",
+                                  "variant": "h4"
+                                },
+                                {
+                                  "children": [
+                                    {
+                                      "children": [
+                                        {
+                                          "children": [
+                                            {
+                                              "component": "Text",
+                                              "key": "risk-list#3",
+                                              "text": "Payments migration",
+                                              "variant": "caption"
+                                            },
+                                            {
+                                              "component": "Text",
+                                              "key": "risk-list#4",
+                                              "text": "Testing in staging",
+                                              "variant": "body"
+                                            }
+                                          ],
+                                          "component": "Row",
+                                          "key": "risk-list#2"
+                                        },
+                                        {
+                                          "children": [
+                                            {
+                                              "component": "Text",
+                                              "key": "risk-list#6",
+                                              "text": "Search index",
+                                              "variant": "caption"
+                                            },
+                                            {
+                                              "component": "Text",
+                                              "key": "risk-list#7",
+                                              "text": "Rebuild scheduled",
+                                              "variant": "body"
+                                            }
+                                          ],
+                                          "component": "Row",
+                                          "key": "risk-list#5"
+                                        }
+                                      ],
+                                      "component": "Column",
+                                      "key": "risk-list#1"
+                                    }
+                                  ],
+                                  "component": "KeyValue",
+                                  "extension": {
+                                    "catalog": "https://zavora.ai/a2ui/catalogs/adk-ui-studio/1.0/catalog.json",
+                                    "component": "KeyValue",
+                                    "props": {
+                                      "component": "KeyValue",
+                                      "id": "risk-list",
+                                      "items": [
+                                        {
+                                          "key": "Payments migration",
+                                          "value": "Testing in staging"
+                                        },
+                                        {
+                                          "key": "Search index",
+                                          "value": "Rebuild scheduled"
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  "key": "risk-list"
+                                }
+                              ],
+                              "component": "Card",
+                              "key": "risks#1"
+                            }
+                          ],
+                          "component": "Region",
+                          "extension": {
+                            "catalog": "https://zavora.ai/a2ui/catalogs/adk-ui-studio/1.0/catalog.json",
+                            "children": [
+                              "risk-list"
+                            ],
+                            "component": "Region",
+                            "props": {
+                              "children": [
+                                "risk-list"
+                              ],
+                              "component": "Region",
+                              "id": "risks",
+                              "title": "Risks"
+                            }
+                          },
+                          "key": "risks"
+                        }
+                      ],
+                      "component": "Column",
+                      "key": "overview#1"
+                    }
+                  ],
+                  "component": "Page",
+                  "extension": {
+                    "catalog": "https://zavora.ai/a2ui/catalogs/adk-ui-studio/1.0/catalog.json",
+                    "children": [
+                      "health",
+                      "risks"
+                    ],
+                    "component": "Page",
+                    "props": {
+                      "children": [
+                        "health",
+                        "risks"
+                      ],
+                      "component": "Page",
+                      "description": "Updated every hour",
+                      "id": "overview",
+                      "title": "Where we are"
+                    }
+                  },
+                  "key": "overview"
+                },
+                {
+                  "children": [
+                    {
+                      "children": [
+                        {
+                          "component": "Text",
+                          "key": "checklist#2",
+                          "text": "Checklist",
+                          "variant": "h3"
+                        },
+                        {
+                          "children": [
+                            {
+                              "component": "Text",
+                              "key": "progress#1",
+                              "text": "Checklist · 72%",
+                              "variant": "body"
+                            }
+                          ],
+                          "component": "Progress",
+                          "extension": {
+                            "catalog": "https://zavora.ai/a2ui/catalogs/adk-ui-studio/1.0/catalog.json",
+                            "component": "Progress",
+                            "props": {
+                              "component": "Progress",
+                              "id": "progress",
+                              "label": "Checklist",
+                              "value": 72
+                            }
+                          },
+                          "key": "progress"
+                        },
+                        {
+                          "children": [
+                            {
+                              "children": [
+                                {
+                                  "component": "Text",
+                                  "key": "b1#1",
+                                  "text": "Docs ready",
+                                  "variant": "caption"
+                                }
+                              ],
+                              "component": "Badge",
+                              "extension": {
+                                "catalog": "https://zavora.ai/a2ui/catalogs/adk-ui-studio/1.0/catalog.json",
+                                "component": "Badge",
+                                "props": {
+                                  "component": "Badge",
+                                  "id": "b1",
+                                  "text": "Docs ready",
+                                  "tone": "success"
+                                }
+                              },
+                              "key": "b1"
+                            },
+                            {
+                              "children": [
+                                {
+                                  "component": "Text",
+                                  "key": "b2#1",
+                                  "text": "Load test running",
+                                  "variant": "caption"
+                                }
+                              ],
+                              "component": "Badge",
+                              "extension": {
+                                "catalog": "https://zavora.ai/a2ui/catalogs/adk-ui-studio/1.0/catalog.json",
+                                "component": "Badge",
+                                "props": {
+                                  "component": "Badge",
+                                  "id": "b2",
+                                  "text": "Load test running",
+                                  "tone": "info"
+                                }
+                              },
+                              "key": "b2"
+                            },
+                            {
+                              "children": [
+                                {
+                                  "component": "Text",
+                                  "key": "b3#1",
+                                  "text": "Payments blocked",
+                                  "variant": "caption"
+                                }
+                              ],
+                              "component": "Badge",
+                              "extension": {
+                                "catalog": "https://zavora.ai/a2ui/catalogs/adk-ui-studio/1.0/catalog.json",
+                                "component": "Badge",
+                                "props": {
+                                  "component": "Badge",
+                                  "id": "b3",
+                                  "text": "Payments blocked",
+                                  "tone": "danger"
+                                }
+                              },
+                              "key": "b3"
+                            }
+                          ],
+                          "component": "Row",
+                          "key": "badges"
+                        }
+                      ],
+                      "component": "Column",
+                      "key": "checklist#1"
+                    }
+                  ],
+                  "component": "Page",
+                  "extension": {
+                    "catalog": "https://zavora.ai/a2ui/catalogs/adk-ui-studio/1.0/catalog.json",
+                    "children": [
+                      "progress",
+                      "badges"
+                    ],
+                    "component": "Page",
+                    "props": {
+                      "children": [
+                        "progress",
+                        "badges"
+                      ],
+                      "component": "Page",
+                      "id": "checklist",
+                      "title": "Checklist"
+                    }
+                  },
+                  "key": "checklist"
+                },
+                {
+                  "children": [
+                    {
+                      "children": [
+                        {
+                          "component": "Text",
+                          "key": "deploys#2",
+                          "text": "Deploys per day",
+                          "variant": "h3"
+                        },
+                        {
+                          "children": [
+                            {
+                              "chart": {
+                                "kind": "bar",
+                                "series": [
+                                  {
+                                    "name": "Staging",
+                                    "y": [
+                                      6,
+                                      9,
+                                      4,
+                                      7,
+                                      3
+                                    ]
+                                  },
+                                  {
+                                    "name": "Production",
+                                    "y": [
+                                      2,
+                                      3,
+                                      1,
+                                      4,
+                                      0
+                                    ]
+                                  }
+                                ],
+                                "summary": "Bar chart of Staging and Production, 10 points, from 0 to 9",
+                                "x": {
+                                  "labels": [
+                                    "Mon",
+                                    "Tue",
+                                    "Wed",
+                                    "Thu",
+                                    "Fri"
+                                  ],
+                                  "type": "category"
+                                },
+                                "xLabel": "Day"
+                              },
+                              "component": "Chart",
+                              "key": "deploy-chart#1"
+                            }
+                          ],
+                          "component": "Chart",
+                          "extension": {
+                            "catalog": "https://zavora.ai/a2ui/catalogs/adk-ui-studio/1.0/catalog.json",
+                            "component": "Chart",
+                            "props": {
+                              "component": "Chart",
+                              "data": [
+                                {
+                                  "day": "Mon",
+                                  "production": 2,
+                                  "staging": 6
+                                },
+                                {
+                                  "day": "Tue",
+                                  "production": 3,
+                                  "staging": 9
+                                },
+                                {
+                                  "day": "Wed",
+                                  "production": 1,
+                                  "staging": 4
+                                },
+                                {
+                                  "day": "Thu",
+                                  "production": 4,
+                                  "staging": 7
+                                },
+                                {
+                                  "day": "Fri",
+                                  "production": 0,
+                                  "staging": 3
+                                }
+                              ],
+                              "id": "deploy-chart",
+                              "kind": "bar",
+                              "series": [
+                                {
+                                  "key": "staging",
+                                  "label": "Staging"
+                                },
+                                {
+                                  "key": "production",
+                                  "label": "Production"
+                                }
+                              ],
+                              "x": {
+                                "key": "day",
+                                "label": "Day"
+                              }
+                            }
+                          },
+                          "key": "deploy-chart"
+                        }
+                      ],
+                      "component": "Column",
+                      "key": "deploys#1"
+                    }
+                  ],
+                  "component": "Page",
+                  "extension": {
+                    "catalog": "https://zavora.ai/a2ui/catalogs/adk-ui-studio/1.0/catalog.json",
+                    "children": [
+                      "deploy-chart"
+                    ],
+                    "component": "Page",
+                    "props": {
+                      "children": [
+                        "deploy-chart"
+                      ],
+                      "component": "Page",
+                      "id": "deploys",
+                      "title": "Deploys per day"
+                    }
+                  },
+                  "key": "deploys"
+                }
+              ],
+              "component": "Tabs",
+              "key": "root#3",
+              "tabs": [
+                "Overview",
+                "Checklist",
+                "Deploys"
+              ]
+            }
+          ],
+          "component": "Column",
+          "key": "root#1"
+        }
+      ],
+      "component": "App",
+      "extension": {
+        "catalog": "https://zavora.ai/a2ui/catalogs/adk-ui-studio/1.0/catalog.json",
+        "children": [
+          "overview",
+          "checklist",
+          "deploys"
+        ],
+        "component": "App",
+        "props": {
+          "component": "App",
+          "id": "root",
+          "pages": [
+            {
+              "child": "overview",
+              "id": "overview",
+              "title": "Overview"
+            },
+            {
+              "child": "checklist",
+              "id": "checklist",
+              "title": "Checklist"
+            },
+            {
+              "child": "deploys",
+              "id": "deploys",
+              "title": "Deploys"
+            }
+          ],
+          "title": "Release 2026.11"
+        }
+      },
+      "key": "root"
+    },
+    "surfaceId": "release-room",
+    "title": "Release 2026.11",
+    "version": 1
+  },
+  {
+    "actions": [
+      {
+        "args": [
+          {
+            "name": "dock",
+            "path": "/dock"
+          },
+          {
+            "name": "from",
+            "value": "14:00"
+          }
+        ],
+        "id": "reserve",
+        "label": "Reserve this dock",
+        "note": "Sending runs reserve_dock and asks you first",
+        "tool": "reserve_dock"
+      }
+    ],
+    "agent": {
+      "avatar": {
+        "color": "#BE185D",
+        "monogram": "O"
+      },
+      "displayName": "Operations",
+      "name": "operations"
+    },
+    "atText": "10:02",
+    "catalog": "studio 1.0",
+    "changedText": "Operations changed this form at 10:02",
+    "drawnAt": "2026-11-16T10:02:00Z",
+    "drawnText": "Drawn by Operations · 10:02",
+    "earlierText": "Earlier version · 10:02",
+    "kind": "screen",
+    "root": {
+      "children": [
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "component": "Text",
+                  "key": "scene#2",
+                  "text": "Bays",
+                  "variant": "h4"
+                },
+                {
+                  "component": "Text",
+                  "key": "scene#3",
+                  "text": "Dock 3 is free from 14:00",
+                  "variant": "caption"
+                },
+                {
+                  "component": "Text",
+                  "key": "scene#4",
+                  "text": "Dock 1 · loading · box",
+                  "variant": "body"
+                },
+                {
+                  "component": "Text",
+                  "key": "scene#5",
+                  "text": "Dock 2 · loading · box",
+                  "variant": "body"
+                },
+                {
+                  "component": "Text",
+                  "key": "scene#6",
+                  "text": "Dock 3 · free · box",
+                  "variant": "body"
+                },
+                {
+                  "component": "Text",
+                  "key": "scene#7",
+                  "text": "Truck TR-114 · cylinder",
+                  "variant": "body"
+                },
+                {
+                  "component": "Text",
+                  "key": "scene#8",
+                  "text": "and 1 more shape",
+                  "variant": "caption"
+                }
+              ],
+              "component": "Column",
+              "key": "scene#1"
+            }
+          ],
+          "component": "Scene3D",
+          "extension": {
+            "catalog": "https://zavora.ai/a2ui/catalogs/adk-ui-studio/1.0/catalog.json",
+            "component": "Scene3D",
+            "props": {
+              "camera": {
+                "fov": 45,
+                "position": [
+                  8,
+                  6,
+                  10
+                ],
+                "target": [
+                  0,
+                  0,
+                  0
+                ]
+              },
+              "component": "Scene3D",
+              "controls": "orbit",
+              "description": "Dock 3 is free from 14:00",
+              "height": 360,
+              "id": "scene",
+              "objects": [
+                {
+                  "color": "#e2e8f0",
+                  "id": "floor",
+                  "position": [
+                    0,
+                    -0.6,
+                    0
+                  ],
+                  "rotation": [
+                    -90,
+                    0,
+                    0
+                  ],
+                  "scale": [
+                    6,
+                    4,
+                    1
+                  ],
+                  "shape": "plane"
+                },
+                {
+                  "color": "#2563eb",
+                  "id": "dock1",
+                  "label": "Dock 1 · loading",
+                  "position": [
+                    -4,
+                    0,
+                    -2
+                  ],
+                  "shape": "box"
+                },
+                {
+                  "color": "#2563eb",
+                  "id": "dock2",
+                  "label": "Dock 2 · loading",
+                  "position": [
+                    0,
+                    0,
+                    -2
+                  ],
+                  "shape": "box"
+                },
+                {
+                  "color": "#0d9488",
+                  "id": "dock3",
+                  "label": "Dock 3 · free",
+                  "position": [
+                    4,
+                    0,
+                    -2
+                  ],
+                  "shape": "box"
+                },
+                {
+                  "color": "#7c3aed",
+                  "id": "truck",
+                  "label": "Truck TR-114",
+                  "position": [
+                    -4,
+                    0,
+                    2
+                  ],
+                  "rotation": [
+                    0,
+                    0,
+                    90
+                  ],
+                  "shape": "cylinder"
+                }
+              ],
+              "title": "Bays"
+            }
+          },
+          "key": "scene"
+        },
+        {
+          "component": "ChoicePicker",
+          "field": {
+            "input": "choice",
+            "options": [
+              {
+                "label": "Dock 3",
+                "value": "dock-3"
+              }
+            ],
+            "path": "/dock",
+            "value": [
+              "dock-3"
+            ]
+          },
+          "key": "zone",
+          "text": "Dock"
+        },
+        {
+          "action": "reserve",
+          "component": "Button",
+          "key": "reserve",
+          "text": "Reserve this dock",
+          "variant": "primary"
+        }
+      ],
+      "component": "Column",
+      "key": "root"
+    },
+    "surfaceId": "warehouse-bays",
+    "title": "Warehouse 4 · loading bays",
+    "version": 1
+  },
+  {
+    "agent": {
+      "avatar": {
+        "color": "#BE185D",
+        "monogram": "O"
+      },
+      "displayName": "Operations",
+      "name": "operations"
+    },
+    "atText": "10:02",
+    "catalog": "studio 1.0",
+    "changedText": "Operations changed this form at 10:02",
+    "drawnAt": "2026-11-16T10:02:00Z",
+    "drawnText": "Drawn by Operations · 10:02",
+    "earlierText": "Earlier version · 10:02",
+    "kind": "screen",
+    "root": {
+      "children": [
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "component": "Text",
+                  "key": "now#2",
+                  "text": "Messages per second",
+                  "variant": "caption"
+                },
+                {
+                  "component": "Text",
+                  "key": "now#3",
+                  "text": "1,405",
+                  "variant": "h2"
+                },
+                {
+                  "chart": {
+                    "kind": "sparkline",
+                    "series": [
+                      {
+                        "name": "Messages per second",
+                        "x": [
+                          0,
+                          1,
+                          2,
+                          3,
+                          4
+                        ],
+                        "y": [
+                          1010,
+                          1080,
+                          1180,
+                          1320,
+                          1405
+                        ]
+                      }
+                    ],
+                    "summary": "Trend chart of Messages per second, 5 points, from 1010 to 1405",
+                    "x": {
+                      "type": "number"
+                    }
+                  },
+                  "component": "Chart",
+                  "key": "now#4"
+                }
+              ],
+              "component": "Card",
+              "key": "now#1"
+            }
+          ],
+          "component": "Metric",
+          "extension": {
+            "catalog": "https://zavora.ai/a2ui/catalogs/adk-ui-studio/1.0/catalog.json",
+            "component": "Metric",
+            "props": {
+              "component": "Metric",
+              "id": "now",
+              "label": "Messages per second",
+              "trend": [
+                1010,
+                1080,
+                1180,
+                1320,
+                1405
+              ],
+              "value": 1405
+            }
+          },
+          "key": "now"
+        },
+        {
+          "children": [
+            {
+              "children": [
+                {
+                  "component": "Text",
+                  "key": "trend#2",
+                  "text": "Last minute",
+                  "variant": "caption"
+                },
+                {
+                  "chart": {
+                    "kind": "sparkline",
+                    "series": [
+                      {
+                        "name": "Last minute",
+                        "x": [
+                          0,
+                          1,
+                          2,
+                          3,
+                          4
+                        ],
+                        "y": [
+                          1010,
+                          1080,
+                          1180,
+                          1320,
+                          1405
+                        ]
+                      }
+                    ],
+                    "summary": "Trend chart of Last minute, 5 points, from 1010 to 1405",
+                    "x": {
+                      "type": "number"
+                    }
+                  },
+                  "component": "Chart",
+                  "key": "trend#3"
+                }
+              ],
+              "component": "Column",
+              "key": "trend#1"
+            }
+          ],
+          "component": "Sparkline",
+          "extension": {
+            "catalog": "https://zavora.ai/a2ui/catalogs/adk-ui-studio/1.0/catalog.json",
+            "component": "Sparkline",
+            "props": {
+              "component": "Sparkline",
+              "data": [
+                1010,
+                1080,
+                1180,
+                1320,
+                1405
+              ],
+              "id": "trend",
+              "label": "Last minute"
+            }
+          },
+          "key": "trend"
+        },
+        {
+          "children": [
+            {
+              "component": "Text",
+              "key": "backlog#1",
+              "text": "Backlog drained · 80%",
+              "variant": "body"
+            }
+          ],
+          "component": "Progress",
+          "extension": {
+            "catalog": "https://zavora.ai/a2ui/catalogs/adk-ui-studio/1.0/catalog.json",
+            "component": "Progress",
+            "props": {
+              "component": "Progress",
+              "id": "backlog",
+              "label": "Backlog drained",
+              "value": 80
+            }
+          },
+          "key": "backlog"
+        }
+      ],
+      "component": "Column",
+      "key": "root"
+    },
+    "surfaceId": "throughput",
+    "title": "Queue throughput",
+    "version": 3
+  },
+  {
+    "actions": [
+      {
+        "args": [
+          {
+            "name": "email",
+            "path": "/email"
+          },
+          {
+            "name": "name",
+            "path": "/name"
+          },
+          {
+            "name": "topic",
+            "path": "/topic"
+          },
+          {
+            "name": "updates",
+            "path": "/updates"
+          }
+        ],
+        "id": "open",
+        "label": "Open the request",
+        "note": "Sending runs open_ticket and asks you first",
+        "tool": "open_ticket"
+      }
+    ],
+    "agent": {
+      "avatar": {
+        "color": "#BE185D",
+        "monogram": "O"
+      },
+      "displayName": "Operations",
+      "name": "operations"
+    },
+    "atText": "10:02",
+    "catalog": "studio 1.0",
+    "changedText": "Operations changed this form at 10:02",
+    "drawnAt": "2026-11-16T10:02:00Z",
+    "drawnText": "Drawn by Operations · 10:02",
+    "earlierText": "Earlier version · 10:02",
+    "kind": "screen",
+    "root": {
+      "children": [
+        {
+          "children": [
+            {
+              "component": "Text",
+              "key": "step#1",
+              "text": "Step 2 of 3 · 66%",
+              "variant": "body"
+            }
+          ],
+          "component": "Progress",
+          "extension": {
+            "catalog": "https://zavora.ai/a2ui/catalogs/adk-ui-studio/1.0/catalog.json",
+            "component": "Progress",
+            "props": {
+              "component": "Progress",
+              "id": "step",
+              "label": "Step 2 of 3",
+              "value": 66
+            }
+          },
+          "key": "step"
+        },
+        {
+          "component": "TextField",
+          "field": {
+            "input": "shortText",
+            "path": "/name",
+            "value": ""
+          },
+          "key": "name",
+          "text": "Your name"
+        },
+        {
+          "component": "TextField",
+          "field": {
+            "checks": [
+              {
+                "condition": {
+                  "args": {
+                    "value": {
+                      "path": "/email"
+                    }
+                  },
+                  "call": "email"
+                },
+                "message": "Enter an email address"
+              }
+            ],
+            "input": "shortText",
+            "path": "/email",
+            "value": ""
+          },
+          "key": "email",
+          "text": "Email"
+        },
+        {
+          "component": "ChoicePicker",
+          "field": {
+            "input": "choice",
+            "options": [
+              {
+                "label": "Billing",
+                "value": "billing"
+              },
+              {
+                "label": "Shipping",
+                "value": "shipping"
+              },
+              {
+                "label": "Something else",
+                "value": "other"
+              }
+            ],
+            "path": "/topic",
+            "value": [
+              "shipping"
+            ]
+          },
+          "key": "topic",
+          "text": "Topic"
+        },
+        {
+          "component": "CheckBox",
+          "field": {
+            "input": "checkbox",
+            "path": "/updates",
+            "value": true
+          },
+          "key": "updates",
+          "text": "Keep me updated by email"
+        },
+        {
+          "action": "open",
+          "component": "Button",
+          "key": "open",
+          "text": "Open the request",
+          "variant": "primary"
+        }
+      ],
+      "component": "Column",
+      "key": "root"
+    },
+    "surfaceId": "support-request",
+    "title": "Open a support request",
+    "version": 1
+  }
+]

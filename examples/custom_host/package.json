@@ -1,0 +1,25 @@
+{
+  "name": "adk-ui-custom-host",
+  "private": true,
+  "version": "3.0.0",
+  "type": "module",
+  "description": "A host of your own drawing adk-ui's extension components with adk-surface-react's DrawnView, adk-ui-react's renderers and approved brand kits",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "recharts": "3.10.1",
+    "three": "0.185.1"
+  },
+  "devDependencies": {
+    "@types/react": "18.3.31",
+    "@types/react-dom": "18.3.7",
+    "@vitejs/plugin-react": "4.7.0",
+    "typescript": "5.9.3",
+    "vite": "6.4.4"
+  }
+}

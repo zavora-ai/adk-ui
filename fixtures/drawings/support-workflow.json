@@ -1,0 +1,132 @@
+{
+  "catalog": "insight",
+  "summary": "A support request in steps: progress, the person's details and a ticket they ask for.",
+  "screen": {
+    "surfaceId": "support-request",
+    "title": "Open a support request",
+    "components": [
+      {
+        "id": "root",
+        "component": "Column",
+        "children": [
+          "step",
+          "name",
+          "email",
+          "topic",
+          "updates",
+          "open"
+        ]
+      },
+      {
+        "id": "step",
+        "component": "Progress",
+        "label": "Step 2 of 3",
+        "value": 66
+      },
+      {
+        "id": "name",
+        "component": "TextField",
+        "label": "Your name",
+        "value": {
+          "path": "/name"
+        }
+      },
+      {
+        "id": "email",
+        "component": "TextField",
+        "label": "Email",
+        "value": {
+          "path": "/email"
+        },
+        "checks": [
+          {
+            "condition": {
+              "call": "email",
+              "args": {
+                "value": {
+                  "path": "/email"
+                }
+              }
+            },
+            "message": "Enter an email address"
+          }
+        ]
+      },
+      {
+        "id": "topic",
+        "component": "ChoicePicker",
+        "label": "Topic",
+        "value": {
+          "path": "/topic"
+        },
+        "options": [
+          {
+            "label": "Billing",
+            "value": "billing"
+          },
+          {
+            "label": "Shipping",
+            "value": "shipping"
+          },
+          {
+            "label": "Something else",
+            "value": "other"
+          }
+        ]
+      },
+      {
+        "id": "updates",
+        "component": "CheckBox",
+        "label": "Keep me updated by email",
+        "value": {
+          "path": "/updates"
+        }
+      },
+      {
+        "id": "open",
+        "component": "Button",
+        "child": "open-label",
+        "variant": "primary",
+        "action": {
+          "event": {
+            "name": "open"
+          }
+        }
+      },
+      {
+        "id": "open-label",
+        "component": "Text",
+        "text": "Open the request"
+      }
+    ],
+    "dataModel": {
+      "name": "",
+      "email": "",
+      "topic": [
+        "shipping"
+      ],
+      "updates": true
+    },
+    "actions": [
+      {
+        "id": "open",
+        "label": "Open the request",
+        "tool": "open_ticket",
+        "args": {
+          "name": {
+            "path": "/name"
+          },
+          "email": {
+            "path": "/email"
+          },
+          "topic": {
+            "path": "/topic"
+          },
+          "updates": {
+            "path": "/updates"
+          }
+        }
+      }
+    ]
+  }
+}
