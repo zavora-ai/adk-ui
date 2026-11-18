@@ -14,9 +14,9 @@ readme = "README.md"
 exclude = [".cargo", "packages", "examples/custom_host", "docs/archive", "package.json", "package-lock.json"]
 
 # adk-ui 3 adds catalogs to adk-surface's `genui`; it owns no render tool, protocol,
-# provenance or approval path (spec 3.3 decision 11, as amended). Until ADK-Rust 3.0 is on
-# crates.io, point `adk-*` at an adk-rust checkout: copy `.cargo/config.toml.example` to
-# `.cargo/config.toml` (untracked) and set its paths.
+# provenance or approval path (spec 3.3 decision 11, as amended). To build against an
+# unreleased adk-rust, copy `.cargo/config.toml.example` to `.cargo/config.toml` (untracked)
+# and set its paths.
 
 [dependencies]
 adk-surface = { version = "3.0.0", default-features = false, features = ["genui"] }

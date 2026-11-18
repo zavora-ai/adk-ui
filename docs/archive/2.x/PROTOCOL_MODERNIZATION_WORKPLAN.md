@@ -636,7 +636,7 @@ Completed:
 - Added intent-aware quality retries so sparse forms are repaired as forms and weak decision surfaces are repaired as populated workspaces.
 - Added form quality checks for missing context, generic actions, and insufficient workflow depth.
 - Extended `render_layout` with an embedded `form` section so decision workspaces can combine structured evidence and editable proposals in one surface.
-- Added the durable market and acceptance-criteria brief in `docs/GENERATIVE_UI_MARKET_2026.md`.
+- Added the durable market and acceptance-criteria brief in `docs/archive/2.x/GENERATIVE_UI_MARKET_2026.md`.
 
 Validation completed for this slice:
 

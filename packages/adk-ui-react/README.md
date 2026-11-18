@@ -13,7 +13,7 @@ server, and with the home's own view of it as a fallback. These renderers draw i
 ## Install
 
 ```bash
-npm install @zavora-ai/adk-ui-react @zavora-ai/adk-surface-react
+npm install @zavora-ai/adk-ui-react@3 @zavora-ai/adk-surface-react@3
 # Optional: rich charts
 npm install recharts
 ```
@@ -77,7 +77,7 @@ and no kit sets a decision's colours. The ADK-Rust web home keeps its own tokens
 ## From 2.x
 
 2.x shipped its own renderer, protocol client and A2UI parser; 3.0 ships renderers for
-`DrawnView` instead. See [MIGRATING_TO_3.md](../../docs/MIGRATING_TO_3.md).
+`DrawnView` instead. See [MIGRATING_TO_3.md](https://github.com/zavora-ai/adk-ui/blob/main/docs/MIGRATING_TO_3.md).
 
 ## License
 

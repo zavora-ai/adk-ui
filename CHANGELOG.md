@@ -114,13 +114,25 @@ a call the person decides. adk-ui 3 adds extension catalogs `genui` checks and d
 
 ### Changed
 
-- Builds on `adk-surface` 3 (`genui`) and `schemars` 1.0. Until ADK-Rust 3.0 is on crates.io,
-  build against an adk-rust checkout with `.cargo/config.toml.example`.
+- Builds on `adk-surface` 3 (`genui`, with its scenes and depth effects) and `schemars` 1.0;
+  Rust 1.95. `.cargo/config.toml.example` builds against an unreleased adk-rust checkout.
 - A brand kit generates its manifest, tokens and CSS only, never a catalog or instructions for
   the model; its recipes use the `forms` names (`TextField` for 2.x's `TextInput`). A kit is the
   host's: the agent never picks one and a drawing never carries one (`docs/BRAND_KITS.md`).
 - The crate and `@zavora-ai/adk-ui-react` are both 3.0.0, released after ADK-Rust 3.0
-  (`adk-surface`, `@zavora-ai/adk-surface-react`) is published.
+  (`adk-surface`, `@zavora-ai/adk-surface-react`) is published ([RELEASING.md](RELEASING.md)).
+- The 2026 generative UI market brief, written for 2.x, moves to `docs/archive/2.x/`.
+
+## [2.2.1] - Unreleased (`release/2.x`)
+
+The 2.x line is in maintenance for ADK-Rust 2: security fixes only, until the `adk_ui` server
+profile's sunset on 2026-12-31.
+
+### Fixed
+
+- `ApplicationRenderer` passes the application's `state` to every rendered component as its data
+  model, so tables, charts and key-value views bound with `data_source.binding_path` show the
+  application's data instead of an empty view.
 
 ## [2.2.0] - 2026-08-22
 

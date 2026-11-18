@@ -20,8 +20,8 @@ adk-surface = { version = "3", features = ["web", "genui"] }
 ```rust
 // The agent draws with genui's render tools, in an adk-ui catalog...
 let agent = HarnessAgent::builder("operations")
-    .toolset(Arc::new(adk_ui::toolset_for(adk_ui::catalogs::studio())))
-    .instruction(adk_ui::prompts::instructions(adk_ui::catalogs::studio()))
+    .toolset(Arc::new(adk_ui::toolset_for(adk_ui::catalogs::spatial())))
+    .instruction(adk_ui::prompts::instructions(adk_ui::catalogs::spatial()))
     // ...
     .build()?;
 // ...and the home shows what it draws.
@@ -50,7 +50,7 @@ let app = ServerBuilder::new(config).with_ag_ui_extension(Arc::new(adk_ui::catal
 | The `adk_ui` protocol profile | Gone from adk-ui; deprecated in `adk-server` until 2026-12-31 |
 | Templates | Gone (some asked for passwords, which rule 5 refuses) |
 | `prompts::UI_AGENT_PROMPT` | `prompts::instructions(catalog)` |
-| Typed builders of `UiResponse` | `adk_ui::insight::{Chart, Metric, …}`, `adk_ui::studio::{App, Page, …}`, `adk_ui::draft::Screen` |
+| Typed builders of `UiResponse` | `adk_ui::insight::{Chart, Metric, …}`, `adk_ui::studio::{App, Page, …}`, `adk_ui::spatial::{Bar3D, Scene, …}`, `adk_ui::draft::Screen` |
 
 A drawing drawn with adk-ui 2 has no `genui` record, so an ADK-Rust 3 home shows it as an
 ordinary tool result.
@@ -60,6 +60,25 @@ bind, is checked for a decision's words ("Allow once", "Approve", "Deny", "Done"
 length; a component that is not a `forms` button never dispatches anything; there are no
 images, password fields or modals. A drawing that breaks a rule is refused, and the agent reads
 why.
+
+## 3D
+
+adk-ui 2 drew 3D with three.js in its own React renderer. In adk-ui 3 the home draws it:
+
+| You want | adk-ui 3 |
+|---|---|
+| A 3D bar, scatter or surface chart | `Bar3D`, `Scatter3D`, `SurfacePlot` (spatial) |
+| A network or a globe | `Graph3D`, `Globe` (spatial) |
+| A layout of things, with states, motion and notes beside them | `Scene` (spatial): groups, lines, arrows, text, lights, cameras, motion, panels |
+| The person picks something in 3D | `Scene` with `pickInto` and a `ChoicePicker` the drawing shows; picking fills it and sends nothing, and the drawing's **Send** asks first |
+| Cards with depth, a carousel, a wall | `DepthCard` (tilt, flip, layers), `Stage` (stage, wall, carousel) |
+| Anything else (particles, simulations, custom geometry) | `show_3d_app` (feature `apps`): three.js the model writes, run in genui-apps' sandbox on its own origin |
+
+Colours are palette tokens (`chart1` … `chart8`, `ink`, `neutral`, `muted`) or a state
+(`ok`, `warning`, `critical`, `info`) with a label; hex colours, textures, models, fonts and
+links are refused. Studio's `Scene3D` keeps its schema: the home maps each hex colour to the
+nearest chart colour. The web home draws scenes with WebGL, loaded only for a drawing that has
+one; without WebGL, and in the terminal, a scene is its words.
 
 ## React
 
@@ -94,6 +113,7 @@ Charts, metrics and the rest are also exported as components (`Chart`, `Metric`,
 | `forms` 1.0 (`genui`) | `https://adk-rust.com/a2ui/catalogs/forms/1.0/catalog.json` |
 | adk-ui insight 1.0 | `https://zavora.ai/a2ui/catalogs/adk-ui-insight/1.0/catalog.json` |
 | adk-ui studio 1.0 | `https://zavora.ai/a2ui/catalogs/adk-ui-studio/1.0/catalog.json` |
+| adk-ui spatial 1.0 | `https://zavora.ai/a2ui/catalogs/adk-ui-spatial/1.0/catalog.json` |
 
 They replace `zavora.ai:adk-ui/extended@0.2.0` and the per-kit catalog ids. The documents are in
 `catalogs/`.
