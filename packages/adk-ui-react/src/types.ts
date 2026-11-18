@@ -1,148 +1,154 @@
-export type Component =
-    // Atoms
-    | { type: 'text'; id?: string; content: string; variant?: TextVariant }
-    | { type: 'button'; id?: string; label: string; action_id: string; variant?: ButtonVariant; disabled?: boolean; icon?: string }
-    | { type: 'icon'; id?: string; name: string; size?: number }
-    | { type: 'image'; id?: string; src: string; alt?: string }
-    | { type: 'badge'; id?: string; label: string; variant?: BadgeVariant }
-    // Inputs
-    | { type: 'text_input'; id?: string; name: string; label: string; input_type?: 'text' | 'email' | 'password' | 'tel' | 'url'; placeholder?: string; required?: boolean; default_value?: string; min_length?: number; max_length?: number; error?: string }
-    | { type: 'number_input'; id?: string; name: string; label: string; min?: number; max?: number; step?: number; required?: boolean; default_value?: number; error?: string }
-    | { type: 'select'; id?: string; name: string; label: string; options: SelectOption[]; required?: boolean; error?: string }
-    | { type: 'multi_select'; id?: string; name: string; label: string; options: SelectOption[]; required?: boolean }
-    | { type: 'switch'; id?: string; name: string; label: string; default_checked?: boolean }
-    | { type: 'date_input'; id?: string; name: string; label: string; required?: boolean }
-    | { type: 'slider'; id?: string; name: string; label: string; min?: number; max?: number; step?: number; default_value?: number }
-    | { type: 'textarea'; id?: string; name: string; label: string; placeholder?: string; rows?: number; required?: boolean; default_value?: string; error?: string }
-    // Layouts
-    | { type: 'stack'; id?: string; direction: 'horizontal' | 'vertical'; children: Component[]; gap?: number | string; justify?: string; align?: string; wrap?: boolean }
-    | { type: 'grid'; id?: string; columns: number; children: Component[]; gap?: number | string }
-    | { type: 'card'; id?: string; title?: string; description?: string; content: Component[]; footer?: Component[] }
-    | { type: 'container'; id?: string; children: Component[]; padding?: number }
-    | { type: 'divider'; id?: string }
-    | { type: 'tabs'; id?: string; tabs: Tab[] }
-    // Data Display
-    | { type: 'table'; id?: string; columns: TableColumn[]; data?: Record<string, unknown>[]; data_source?: DataSource; sortable?: boolean; page_size?: number; striped?: boolean }
-    | { type: 'list'; id?: string; items: string[]; ordered?: boolean }
-    | { type: 'key_value'; id?: string; pairs?: KeyValuePair[]; data_source?: DataSource }
-    | { type: 'code_block'; id?: string; code: string; language?: string }
-    // Visualizations
-    | { type: 'chart'; id?: string; title?: string; kind: ChartKind; data?: Record<string, unknown>[]; data_source?: DataSource; x_key: string; y_keys: string[]; x_type?: ChartXType; time_format?: string; window?: number; x_label?: string; y_label?: string; show_legend?: boolean; colors?: string[] }
-    | Scene3dComponent
-    // Feedback
-    | { type: 'alert'; id?: string; title: string; description?: string; variant?: AlertVariant }
-    | { type: 'progress'; id?: string; value: number; label?: string }
-    | { type: 'toast'; id?: string; message: string; variant?: AlertVariant; duration?: number; dismissible?: boolean }
-    | { type: 'modal'; id?: string; title: string; content: Component[]; footer?: Component[]; size?: ModalSize; closable?: boolean }
-    | { type: 'spinner'; id?: string; size?: SpinnerSize; label?: string }
-    | { type: 'skeleton'; id?: string; variant?: SkeletonVariant; width?: string; height?: string };
+import type { ReactNode } from 'react';
 
-export type TextVariant = 'h1' | 'h2' | 'h3' | 'h4' | 'body' | 'caption' | 'code';
-export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost' | 'outline';
-export type BadgeVariant = 'default' | 'info' | 'success' | 'warning' | 'error' | 'secondary' | 'outline';
-export type AlertVariant = 'info' | 'success' | 'warning' | 'error';
-export type ChartKind = 'bar' | 'line' | 'area' | 'pie' | 'scatter' | 'sparkline';
-export type ChartXType = 'category' | 'numeric' | 'time';
-export type DataRefresh = { mode: 'manual' } | { mode: 'interval'; secs: number } | { mode: 'push' };
-export interface DataSource { binding_path: string; refresh?: DataRefresh; ttl?: number }
-export type ModalSize = 'small' | 'medium' | 'large' | 'full';
-export type SpinnerSize = 'small' | 'medium' | 'large';
-export type SkeletonVariant = 'text' | 'circle' | 'rectangle';
+/**
+ * A node of a drawing as `@zavora-ai/adk-surface-react`'s `DrawnView` hands it to a renderer:
+ * the subset of its `DrawnNode` adk-ui reads. Every string in it was checked on the server.
+ */
+export interface DrawnNodeLike {
+    key: string;
+    component: string;
+    children?: DrawnNodeLike[];
+}
 
-export interface Scene3dComponent {
-    type: 'scene_3d';
-    id?: string;
+/**
+ * What a renderer of an extension component gets from `DrawnView`
+ * (`ExtensionRendererProps`): the node (its one child is what the ADK-Rust home shows for
+ * it), the component's properties as the server resolved and checked them, the nodes it holds
+ * and `renderChild` to draw one as the home does. There is no way to send or change a value:
+ * an extension component only shows.
+ */
+export interface RendererProps {
+    node: DrawnNodeLike;
+    props: Record<string, unknown>;
+    children: DrawnNodeLike[];
+    renderChild: (node: DrawnNodeLike) => ReactNode;
+}
+
+/** A renderer of one extension component. */
+export type Renderer = (props: RendererProps) => ReactNode;
+
+/** Renderers by catalog id, then component type: `DrawnView`'s `renderers`. */
+export type Renderers = Record<string, Record<string, Renderer>>;
+
+/** A tone; the host draws each in its own colours, never a decision's. */
+export type Tone = 'neutral' | 'info' | 'success' | 'warning' | 'danger';
+
+/** How a value is written. */
+export type ValueFormat = 'number' | 'percent' | 'currency';
+
+/** A row of data: field names to values. */
+export type Row = Record<string, unknown>;
+
+/** The insight catalog's `Chart`. */
+export interface ChartProps {
+    kind: 'bar' | 'line' | 'area' | 'pie' | 'scatter';
+    title?: string;
+    data: Row[];
+    x: { key: string; type?: 'category' | 'number' | 'time'; label?: string };
+    series: { key: string; label?: string }[];
+    yLabel?: string;
+    stacked?: boolean;
+    legend?: boolean;
+    valueFormat?: ValueFormat;
+    currency?: string;
+    timeUnit?: 'second' | 'minute' | 'hour' | 'day' | 'month' | 'year';
+    window?: number;
+}
+
+/** The insight catalog's `Sparkline`. */
+export interface SparklineProps {
+    data: (number | Row)[];
+    key?: string;
+    label?: string;
+    tone?: Tone;
+    window?: number;
+}
+
+/** The insight catalog's `Metric`. */
+export interface MetricProps {
+    label: string;
+    value: unknown;
+    unit?: string;
+    format?: ValueFormat;
+    currency?: string;
+    delta?: { value: number; goodWhen?: 'up' | 'down' };
+    caption?: string;
+    status?: 'ok' | 'warning' | 'critical' | 'info' | 'neutral';
+    trend?: number[];
+}
+
+/** The insight catalog's `KeyValue`. */
+export interface KeyValueProps {
+    title?: string;
+    items?: { key: string; value: unknown }[];
+    data?: Row[];
+    keyField?: string;
+    valueField?: string;
+}
+
+/** The insight catalog's `Progress`. */
+export interface ProgressProps {
+    label?: string;
+    value?: number;
+    tone?: Tone;
+    indeterminate?: boolean;
+}
+
+/** The insight catalog's `Badge`. */
+export interface BadgeProps {
+    text: string;
+    tone?: Tone;
+}
+
+/** The studio catalog's `App`. */
+export interface AppProps {
+    title?: string;
+    pages: { id: string; title: string; child: string }[];
+    navigation?: 'top' | 'side';
+    initialPage?: string;
+}
+
+/** The studio catalog's `Page`. */
+export interface PageProps {
+    title?: string;
+    description?: string;
+    layout?: 'stack' | 'grid' | 'split';
+    children: string[];
+}
+
+/** The studio catalog's `Region`. */
+export interface RegionProps {
+    title?: string;
+    layout?: 'stack' | 'grid' | 'split';
+    columns?: number;
+    tone?: Tone;
+    variant?: 'plain' | 'hero';
+    children: string[];
+}
+
+/** A primitive shape of a scene. */
+export type Shape = 'box' | 'sphere' | 'cylinder' | 'cone' | 'plane' | 'torus';
+
+/** One object of a scene: a primitive with a checked label. No model, texture or action. */
+export interface SceneObject {
+    id: string;
+    shape: Shape;
+    position?: [number, number, number];
+    /** Degrees about each axis. */
+    rotation?: [number, number, number];
+    scale?: [number, number, number];
+    color?: string;
+    label?: string;
+}
+
+/** The studio catalog's `Scene3D`. */
+export interface Scene3DProps {
     title?: string;
     description?: string;
     height?: number;
-    background?: 'transparent' | 'surface' | 'muted' | 'contrast';
-    camera?: {
-        position?: [number, number, number];
-        target?: [number, number, number];
-        fov?: number;
-    };
-    objects: Scene3dObject[];
-    auto_rotate?: boolean;
-    controls?: boolean;
-    fallback?: string;
-}
-
-export type Scene3dMaterialRole = 'primary' | 'secondary' | 'surface' | 'muted' | 'success' | 'warning' | 'info';
-export type Scene3dObject =
-    | {
-        kind: 'primitive'; id: string; shape: 'box' | 'sphere' | 'cylinder' | 'torus' | 'plane';
-        position?: [number, number, number]; rotation?: [number, number, number]; scale?: [number, number, number];
-        material?: Scene3dMaterialRole; label?: string; action_id?: string;
-    }
-    | {
-        kind: 'model'; id: string; asset_id: string;
-        position?: [number, number, number]; rotation?: [number, number, number]; scale?: [number, number, number];
-        label?: string; action_id?: string;
-    };
-
-export interface SelectOption {
-    label: string;
-    value: string;
-}
-
-export interface TableColumn {
-    header: string;
-    accessor_key: string;
-    sortable?: boolean;
-}
-
-export interface Tab {
-    label: string;
-    content: Component[];
-}
-
-export interface KeyValuePair {
-    key: string;
-    value: string;
-}
-
-export interface UiResponse {
-    id?: string;
-    kit_id?: string;
-    theme?: 'light' | 'dark' | 'system';
-    components: Component[];
-}
-
-// --- User Events (UI → Agent) ---
-
-export type UiEvent =
-    | { action: 'form_submit'; action_id: string; data: Record<string, unknown>; source_component_id?: string }
-    | { action: 'button_click'; action_id: string; source_component_id?: string }
-    | { action: 'input_change'; name: string; value: unknown }
-    | { action: 'tab_change'; index: number };
-
-export interface SurfaceRef { id: string; version: number }
-export interface UiEventEnvelope {
-    surface_ref: SurfaceRef;
-    event: UiEvent;
-    occurred_at: string;
-    metadata?: Record<string, unknown>;
-}
-
-export function uiEventToMessage(event: UiEvent): string {
-    switch (event.action) {
-        case 'form_submit':
-            return `[UI Event: Form submitted]\nAction: ${event.action_id}\nData:\n${JSON.stringify(event.data, null, 2)}`;
-        case 'button_click':
-            return `[UI Event: Button clicked]\nAction: ${event.action_id}`;
-        case 'input_change':
-            return `[UI Event: Input changed]\nField: ${event.name}\nValue: ${event.value}`;
-        case 'tab_change':
-            return `[UI Event: Tab changed]\nIndex: ${event.index}`;
-    }
-}
-
-// --- Streaming Updates (Agent → UI) ---
-
-export type UiOperation = 'replace' | 'patch' | 'append' | 'remove';
-
-export interface UiUpdate {
-    target_id: string;
-    operation: UiOperation;
-    payload?: Component;
+    background?: string;
+    camera?: { position?: [number, number, number]; target?: [number, number, number]; fov?: number };
+    objects: SceneObject[];
+    autoRotate?: boolean;
+    controls?: 'none' | 'orbit';
 }

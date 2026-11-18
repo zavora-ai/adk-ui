@@ -1,0 +1,74 @@
+{
+  "catalogs": [
+    {
+      "extensions": [
+        "Badge",
+        "Chart",
+        "KeyValue",
+        "Metric",
+        "Progress",
+        "Sparkline"
+      ],
+      "file": "adk-ui-insight-1.0.json",
+      "homeDrawn": [],
+      "id": "https://zavora.ai/a2ui/catalogs/adk-ui-insight/1.0/catalog.json",
+      "label": "insight 1.0"
+    },
+    {
+      "extensions": [
+        "App",
+        "Badge",
+        "Chart",
+        "KeyValue",
+        "Metric",
+        "Page",
+        "Progress",
+        "Region",
+        "Scene3D",
+        "Sparkline"
+      ],
+      "file": "adk-ui-studio-1.0.json",
+      "homeDrawn": [
+        "Scene3D"
+      ],
+      "id": "https://zavora.ai/a2ui/catalogs/adk-ui-studio/1.0/catalog.json",
+      "label": "studio 1.0"
+    },
+    {
+      "extensions": [
+        "App",
+        "Badge",
+        "Bar3D",
+        "Chart",
+        "DepthCard",
+        "Globe",
+        "Graph3D",
+        "KeyValue",
+        "Metric",
+        "Page",
+        "Progress",
+        "Region",
+        "Scatter3D",
+        "Scene",
+        "Scene3D",
+        "Sparkline",
+        "Stage",
+        "SurfacePlot"
+      ],
+      "file": "adk-ui-spatial-1.0.json",
+      "homeDrawn": [
+        "Bar3D",
+        "DepthCard",
+        "Globe",
+        "Graph3D",
+        "Scatter3D",
+        "Scene",
+        "Scene3D",
+        "Stage",
+        "SurfacePlot"
+      ],
+      "id": "https://zavora.ai/a2ui/catalogs/adk-ui-spatial/1.0/catalog.json",
+      "label": "spatial 1.0"
+    }
+  ]
+}

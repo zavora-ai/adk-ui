@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use serde_json::{Map, Value, json};
+use serde_json::{Value, json};
 
 use super::spec::{
     BRAND_KIT_SCHEMA_VERSION, BrandKitManifest, KitComponentRecipe, KitDensity, KitRadius,
@@ -8,15 +8,18 @@ use super::spec::{
     KitTemplate, is_css_color_token,
 };
 
+/// What a brand kit generates for a host: its manifest, its semantic tokens and the CSS that
+/// applies them. A kit never defines a catalog: the components a drawing may use come from
+/// adk-ui's catalogs alone, and the host, not the model, chooses the kit.
 #[derive(Debug, Clone)]
 pub struct KitArtifacts {
     pub manifest: BrandKitManifest,
-    pub catalog: Value,
     pub tokens: Value,
-    pub templates: Value,
-    pub agent_context: Value,
     pub theme_css: String,
 }
+
+/// The components a kit's recipes style, by their `forms` names.
+const RECIPE_COMPONENTS: &[&str] = &["Button", "Card", "TextField"];
 
 #[derive(Debug, Default)]
 pub struct KitGenerator;
@@ -38,9 +41,8 @@ impl KitGenerator {
                 value
             }
         };
-        let catalog_id = format!("zavora.ai:adk-ui/kit/{slug}@{kit_version}");
-        let components = catalog_components();
-        let recipes = component_recipes(&components, spec);
+        let kit_id = format!("zavora.ai:adk-ui/kit/{slug}@{kit_version}");
+        let recipes = component_recipes(spec);
         let semantic_tokens = semantic_tokens(spec);
         let templates = spec
             .templates
@@ -61,7 +63,7 @@ impl KitGenerator {
 
         let manifest = BrandKitManifest {
             schema_version: BRAND_KIT_SCHEMA_VERSION.to_string(),
-            id: catalog_id.clone(),
+            id: kit_id.clone(),
             name: kit_name.to_string(),
             version: kit_version.to_string(),
             status: KitStatus::Draft,
@@ -73,72 +75,22 @@ impl KitGenerator {
             templates: templates.clone(),
         };
 
-        let catalog = json!({
-            "$schema": "https://json-schema.org/draft/2020-12/schema",
-            "$id": catalog_id,
-            "title": format!("ADK-UI Brand Kit: {kit_name}"),
-            "description": format!("Generated component contract for {kit_name}. Runtime use requires host approval."),
-            "catalogId": catalog_id,
-            "components": components,
-            "theme": {
-                "primaryColor": semantic_tokens.colors.primary,
-                "agentDisplayName": kit_name,
-                "kitStatus": "draft"
-            },
-            "x-adkUiBrandKit": {
-                "schemaVersion": BRAND_KIT_SCHEMA_VERSION,
-                "manifestId": catalog_id,
-                "status": "draft"
-            }
-        });
-
         let tokens = serde_json::to_value(&semantic_tokens).unwrap_or_else(|_| json!({}));
-        let templates_value = json!({ "templates": templates });
-        let allowed_components = catalog
-            .get("components")
-            .and_then(Value::as_object)
-            .map(|value| value.keys().cloned().collect::<Vec<_>>())
-            .unwrap_or_default();
-        let agent_context = json!({
-            "kitId": catalog_id,
-            "status": "draft",
-            "allowedComponents": allowed_components,
-            "assetPolicy": "Reference declared assets with kit://<asset-id>. Do not invent logos, marks, fonts, or brand colors.",
-            "designPolicy": "Use semantic tokens and declared component recipes. Treat the kit as the design source of truth.",
-            "templates": spec.templates,
-        });
-        let theme_css = theme_css(&catalog_id, &semantic_tokens);
+        let theme_css = theme_css(&kit_id, &semantic_tokens);
 
         KitArtifacts {
             manifest,
-            catalog,
             tokens,
-            templates: templates_value,
-            agent_context,
             theme_css,
         }
     }
 }
 
-fn catalog_components() -> Map<String, Value> {
-    serde_json::from_str::<Value>(include_str!("../../catalog/extended_catalog.json"))
-        .ok()
-        .and_then(|catalog| {
-            catalog
-                .get("components")
-                .and_then(Value::as_object)
-                .cloned()
-        })
-        .unwrap_or_default()
-}
-
-fn component_recipes(
-    catalog_components: &Map<String, Value>,
-    spec: &KitSpec,
-) -> BTreeMap<String, KitComponentRecipe> {
-    catalog_components
-        .keys()
+fn component_recipes(spec: &KitSpec) -> BTreeMap<String, KitComponentRecipe> {
+    RECIPE_COMPONENTS
+        .iter()
         .map(|component| {
+            let component = (*component).to_string();
             let variant = match component.as_str() {
                 "Button" => spec
                     .components
@@ -150,16 +102,11 @@ fn component_recipes(
                     .card
                     .as_ref()
                     .and_then(|card| card.elevation.clone()),
-                "TextInput" => spec
+                "TextField" => spec
                     .components
                     .input
                     .as_ref()
                     .and_then(|input| input.style.clone()),
-                "Table" => spec.components.table.as_ref().and_then(|table| {
-                    table
-                        .striped
-                        .map(|striped| if striped { "striped" } else { "plain" }.to_string())
-                }),
                 _ => None,
             };
             (
@@ -284,7 +231,7 @@ fn density_spacing(density: &KitDensity) -> u8 {
     }
 }
 
-fn radius_value(radius: &KitRadius) -> &'static str {
+pub(crate) fn radius_value(radius: &KitRadius) -> &'static str {
     match radius {
         KitRadius::None => "0px",
         KitRadius::Sm => "4px",
@@ -324,7 +271,7 @@ fn color_or(value: &str, fallback: &str) -> String {
     }
 }
 
-fn css_string(value: &str) -> String {
+pub(crate) fn css_string(value: &str) -> String {
     value
         .replace('\\', "\\\\")
         .replace('"', "\\\"")
@@ -385,17 +332,24 @@ mod tests {
     }
 
     #[test]
-    fn generates_complete_draft_manifest_and_catalog() {
+    fn generates_a_draft_manifest_tokens_and_css_and_never_a_catalog() {
         let artifacts = KitGenerator::new().generate(&spec());
         assert_eq!(
-            artifacts.catalog["catalogId"],
+            artifacts.manifest.id,
             "zavora.ai:adk-ui/kit/fintech-pro@0.1.0"
         );
         assert_eq!(artifacts.manifest.status, KitStatus::Draft);
         assert!(artifacts.manifest.validate().is_ok());
-        assert!(artifacts.catalog["components"]["Card"].is_object());
+        assert_eq!(
+            artifacts
+                .manifest
+                .components
+                .keys()
+                .map(String::as_str)
+                .collect::<Vec<_>>(),
+            ["Button", "Card", "TextField"]
+        );
         assert!(artifacts.tokens["colors"]["primary"].is_string());
-        assert_eq!(artifacts.agent_context["status"], "draft");
         assert!(artifacts.theme_css.contains("--adk-ui-primary"));
     }
 

@@ -1,179 +1,86 @@
-# Brand Kits
+# Brand kits
 
-Brand kits make company design inputs the source of truth for generated interfaces. An agent chooses the right approved components and content, but it does not invent a logo, pick arbitrary colors, or restyle the product after generation.
+A brand kit makes a company's design inputs (colours, type, radius, the chart palette) the
+source of truth for a host's own pages. In adk-ui 3 a kit is **the host's**: the agent never
+chooses one, a drawing never carries one, and no kit restyles a decision. The ADK-Rust web home
+keeps its own tokens; a kit styles hosts of your own that embed `DrawnView`.
 
-## What A Kit Controls
+| | adk-ui 2 | adk-ui 3 |
+|---|---|---|
+| Who picks the kit | The agent, with `render_kit` and `kit_id` | The host |
+| What a kit defines | Tokens, a component catalog, templates, model instructions | Tokens (and reviewed assets for the host's own chrome) |
+| Where it applies | Every protocol surface, as its catalog id | The host's pages: `KitProvider`, or the CSS of `ApprovedKit::surface_css` |
+| Assets in drawings | `kit://` references in components | None: a drawing has no images |
 
-One versioned `BrandKitManifest` is shared across the stack:
+## Draft a kit
 
-- **Agents** receive the allowed component catalog, templates, asset references, and design policy.
-- **Protocol surfaces** carry the kit id as their catalog identity.
-- **React renderers** apply semantic color, typography, spacing, radius, and motion tokens.
-- **Assets** are referenced by stable `kit://<asset-id>` identifiers instead of model-generated URLs.
-- **Hosts** decide which manifests are approved and may replace component rendering through typed slots.
+`KitGenerator` turns brand inputs into a **draft** manifest, its semantic tokens and kit-scoped
+CSS. It never activates anything.
 
-This follows the useful separation seen in current generative-UI systems: controlled components for product-critical flows, declarative protocol surfaces for portable UI, and open-ended rendering only for explicitly sandboxed use cases. ADK UI keeps brand kits on the controlled/declarative side of that boundary.
+```rust
+use adk_ui::kit::{KitGenerator, KitSpec};
 
-## Draft First
-
-`render_kit` always produces a draft. It does not publish or activate a kit.
-
-```json
-{
-  "name": "Acme Operations",
-  "version": "1.0.0",
-  "brand": {
-    "vibe": "direct, dependable, operational",
-    "industry": "logistics"
-  },
-  "colors": {
-    "primary": "#00695c",
-    "accent": "#d97706",
-    "background": "#f7f9f8",
-    "surface": "#ffffff",
-    "text": "#17211f"
-  },
-  "typography": {
-    "family": "Source Sans 3"
-  },
-  "assets": [
-    {
-      "id": "primary-logo",
-      "kind": "logo",
-      "uri": "/brand/acme-logo.svg",
-      "mimeType": "image/svg+xml",
-      "alt": "Acme"
-    }
-  ],
-  "provenance": {
-    "source": "imported",
-    "sourceUri": "https://design.acme.example/brand"
-  },
-  "templates": ["incident_command", "shipment_exception"]
-}
+let spec: KitSpec = serde_json::from_value(serde_json::json!({
+    "name": "Acme Operations",
+    "version": "1.0.0",
+    "brand": { "vibe": "direct, dependable, operational", "industry": "logistics" },
+    "colors": { "primary": "#00695c" },
+    "typography": { "family": "Source Sans 3" }
+}))?;
+let draft = KitGenerator::new().generate(&spec);
+assert_eq!(draft.manifest.status, adk_ui::kit::KitStatus::Draft);
 ```
 
-The result contains:
+## Approve it
 
-- `manifest`: versioned tokens, assets, recipes, provenance, and lifecycle state
-- `catalog`: every component supported by the renderer, not an empty placeholder
-- `tokens`: web-ready semantic token values
-- `templates`: named workflow starting points
-- `agent_context`: allowed components and anti-brand-invention instructions
-- `theme_css`: static, kit-scoped CSS for non-React hosts
+Approval is a human step:
 
-## Existing And Generated Assets
+1. Check every colour pair for contrast in light and dark.
+2. Import existing company assets first; generated assets go through the same review.
+3. Store assets on an approved HTTPS host, or as root-relative application assets.
+4. Set `status` to `approved` and fill `reviewedBy` and `approvedAt`.
+5. Run `BrandKitManifest::validate()`.
 
-Existing company assets should be imported first. If a required derivative does not exist, a separate generation pipeline may create it, but the generated file must enter the same review path as an imported file.
+Only an approved, signed, valid kit applies: `ApprovedKit::try_from` refuses anything else, and
+the React `KitProvider` throws for a draft unless `allowDraft` is set for an isolated preview.
 
-Use provenance values consistently:
+## Apply it in a host
 
-- `imported`: supplied by a company design system or brand repository
-- `generated`: created by a model or asset pipeline
-- `hybrid`: imported source material with generated derivatives
-
-ADK UI does not silently call an image model from `render_kit`. Generation is host-owned so companies can choose their model, storage, legal review, and approval process. Once reviewed, generated assets are listed in `assets` and addressed through `kit://` references like any other asset.
-
-## Approval
-
-Before changing a manifest to `approved`:
-
-1. Verify asset ownership and licensing.
-2. Sanitize SVG content; MIME validation alone does not make an SVG trusted.
-3. Store assets on an approved HTTPS host or as root-relative application assets.
-4. Record a SHA-256 digest for immutable production assets where possible.
-5. Check alternative text, contrast, keyboard behavior, responsive layouts, and reduced-motion behavior.
-6. Set `reviewedBy` and `approvedAt`, then run `BrandKitManifest::validate()`.
-
-The React provider refuses draft and deprecated kits by default. `allowDraft` exists only for an isolated preview workflow.
-
-## React Host
+React, around the host's `DrawnView`s:
 
 ```tsx
-import {
-  AdkUiKitProvider,
-  Renderer,
-  defaultUiKit,
-  resolveApprovedUiKit,
-  type UiKitManifest,
-  type UiResponse,
-} from '@zavora-ai/adk-ui-react';
+import { DrawnView } from "@zavora-ai/adk-surface-react";
+import { KitProvider, adkUiRenderers } from "@zavora-ai/adk-ui-react";
 
-function AgentSurface({ response, kits }: {
-  response: UiResponse;
-  kits: UiKitManifest[];
-}) {
-  const kit = resolveApprovedUiKit(response.kit_id, kits, defaultUiKit);
-
-  return (
-    <AdkUiKitProvider kit={kit}>
-      {response.components.map((component, index) => (
-        <Renderer key={component.id ?? index} component={component} />
-      ))}
-    </AdkUiKitProvider>
-  );
-}
+<KitProvider kit={approvedManifest}>
+  <DrawnView surface={surface} onSend={send} renderers={adkUiRenderers} />
+</KitProvider>;
 ```
 
-`A2uiSurfaceRenderer` consumes the same provider, so native A2UI and legacy `UiResponse` rendering use one visual contract.
+Or the CSS rule, from Rust:
 
-### Approved Asset References
-
-Agents use a stable asset id:
-
-```json
-{
-  "type": "image",
-  "src": "kit://primary-logo",
-  "alt": "Acme"
-}
+```rust
+let kit = adk_ui::kit::ApprovedKit::try_from(manifest)?;
+let css = kit.surface_css(); // [data-adk-ui-kit="…"] { --card: …; --accent: …; --chart-1: …; }
 ```
 
-The renderer resolves the id against the active manifest, then runs the resolved URI through its URL security policy. Missing or malformed kit references are not rendered.
+Both set the adk-surface tokens `DrawnView` and adk-ui's renderers read: `--bg`, `--card`,
+`--raised`, `--border`, `--text`, `--text-2`, `--label`, `--accent`, `--focus`, `--font`,
+`--mono`, `--radius`, `--chart-grid`, `--chart-axis` and `--chart-1` … `--chart-8`. They never set
+a decision's or a status's colours (`--decision*`, `--pill-*`, `--waiting`), and a value that is
+not a CSS colour is left out.
 
-### Component Slots
+For a third-party A2UI renderer, the host's transport may add `ApprovedKit::a2ui_theme()` (or
+`kitA2uiTheme`) to `createSurface` when it re-sends a drawing: the primary colour only, never an
+icon or a display name, which would let a drawing pass for someone else, and never part of the
+stored drawing.
 
-Hosts can replace a catalog component without teaching the model a new rendering implementation:
+## Security boundary
 
-```tsx
-<AdkUiKitProvider
-  kit={kit}
-  slots={{
-    button: ({ component, renderDefault }) =>
-      component.type === 'button' && component.variant === 'primary'
-        ? <CompanyPrimaryButton label={component.label} />
-        : renderDefault(),
-  }}
->
-  {children}
-</AdkUiKitProvider>
-```
+A kit is configuration, not UI:
 
-Use slots for real design-system components. Keep the default renderer for component types the company has not replaced.
-
-## Protocol Selection
-
-For legacy-style tools such as `render_form`, `render_layout`, and `render_card`, pass the approved manifest id as `kit_id`:
-
-```json
-{
-  "protocol": "ag_ui",
-  "kit_id": "zavora.ai:adk-ui/kit/acme-operations@1.0.0"
-}
-```
-
-The identifier is copied into `UiResponse.kit_id` and becomes the projected A2UI, AG-UI, or MCP Apps catalog id. `render_screen` and `render_page` already accept their catalog identity directly as `catalog_id`.
-
-Hosts must resolve that identity against their own approved manifest registry. A server-provided draft, unknown id, or deprecated id must not silently activate new brand code or assets.
-
-## Security Boundary
-
-A kit is configuration, not executable UI. Keep these boundaries:
-
-- Do not place JavaScript, arbitrary HTML, or event-handler source in token or asset fields.
-- Permit only reviewed component slots compiled into the host application.
-- Use CSP and an asset-host allowlist in production.
-- Keep remote catalog loading disabled unless the catalog registry is configured with trusted HTTPS hosts.
-- Sandbox genuinely open-ended MCP Apps or HTML output separately from the controlled kit renderer.
-- Preserve the fallback approved kit when a requested manifest cannot be resolved.
-
+- No JavaScript, HTML or event handlers in token or asset fields; colours are checked before
+  they reach CSS.
+- Kit assets are for the host's own chrome (its header logo, say), never referenced by a drawing.
+- The model never sees a kit and cannot ask for one: what a drawing may contain comes from
+  adk-ui's catalogs alone, and every drawing is checked by `genui`'s rule 5.

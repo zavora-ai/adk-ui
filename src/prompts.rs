@@ -1,45 +1,85 @@
-//! UI Agent System Prompts
-//!
-//! Tested prompts for improving LLM reliability when using UI tools.
+//! What to tell a model that draws in an adk-ui catalog, beside `genui`'s own tool
+//! descriptions.
 
-/// System prompt for agents using UI tools.
+use adk_surface::genui::{Catalog, RESERVED_LABELS, RESERVED_PHRASES};
+
+/// Instructions for an agent that draws in `catalog` with `genui`'s render tools: which
+/// components only show, how to bind data, the limits, and what a drawing never contains.
 ///
-/// This prompt has been tested to improve tool usage reliability:
-/// - Prevents raw JSON output
-/// - Encourages single tool calls
-/// - Provides clear guidance on tool selection
-pub const UI_AGENT_PROMPT: &str = r#"You design task-focused interfaces with render_* tools. The UI is the primary response.
+/// ```rust
+/// let instructions = adk_ui::prompts::instructions(adk_ui::catalogs::insight());
+/// assert!(instructions.contains("render_screen"));
+/// assert!(instructions.contains("Allow once"));
+/// assert!(!instructions.contains("pickInto"));
+/// assert!(adk_ui::prompts::instructions(adk_ui::catalogs::spatial()).contains("pickInto"));
+/// ```
+pub fn instructions(catalog: &Catalog) -> String {
+    let added: Vec<&str> = catalog.extensions().collect();
+    let reserved: Vec<&str> = RESERVED_PHRASES
+        .iter()
+        .chain(RESERVED_LABELS.iter())
+        .copied()
+        .collect();
+    format!(
+        "You can show the person charts and figures in their thread with render_screen, in the \
+         {label} catalog: the forms components and {added}. These components only show; only a \
+         Button asks for an action, and pressing it never runs a tool: it asks the person first, \
+         on the home's own card.\n\
+         - Put the numbers in dataModel and bind them, as {{\"path\": \"/sales\"}}; never paste \
+         data into labels.\n\
+         - A chart draws at most 500 rows and 8 series: aggregate or downsample first, and say \
+         so in its title.\n\
+         - When numbers change, call patch_surface with the new data instead of drawing again.\n\
+         - Label things with plain words. A drawing never shows a decision's words ({reserved}), \
+         links, images or password fields, and is refused if it does: say it in your reply or \
+         draw it another way.\n\
+         - Every component needs a unique id, and one has the id root.{spatial}",
+        label = catalog.label(),
+        added = added.join(", "),
+        reserved = reserved.join(", "),
+        spatial = if catalog.has_component("Scene") {
+            SPATIAL
+        } else {
+            ""
+        },
+    )
+}
 
-## Interaction contract
-1. Call exactly one render_* tool per response. Never output raw component JSON.
-2. Render immediately when the request is actionable. Make conservative assumptions instead of asking broad clarifying questions.
-3. Treat the tool result as the complete surface for this turn. Do not add a placeholder or second surface.
-4. Advance multi-step work one user action at a time. Never show success before the corresponding submit or confirmation event.
-5. Require an explicit review/confirm step before destructive, financial, privileged, or externally visible actions. Keep the proposed scope editable before confirmation.
+/// What a model drawing in the spatial catalog needs to know about 3D.
+const SPATIAL: &str = "\n\
+     3D, drawn natively by the home in its own colours:\n\
+     - Use 3D only when depth carries information: a value over two categories (Bar3D), three \
+     measures (Scatter3D), a value over a grid (SurfacePlot), a network (Graph3D), places and \
+     routes (Globe), a physical layout (Scene). Otherwise use Chart.\n\
+     - Limits: Bar3D 50 rows by 8 series; Scatter3D 2000 points; SurfacePlot 64 by 64; Graph3D \
+     200 nodes and 400 edges; Globe 500 places and 200 routes; Scene 128 objects, 3 lights, 4 \
+     panels, 32 moving, each motion taking 0.2 to 120 seconds (scale slow periods down and \
+     say so). Aggregate or sample first and say so in the title.\n\
+     - Colours are names, never codes: chart1 to chart8, ink, neutral, muted; a state (ok, \
+     warning, critical, info) needs a label too.\n\
+     - Bind data and change it with patch_surface; keep object ids so things move smoothly. \
+     Give motion only where it means something.\n\
+     - To let the person pick by clicking, show a ChoicePicker, set the Scene's pickInto to its \
+     path, and give each pickable object a label and a value from its options. A Button still \
+     sends it, and the person decides.\n\
+     - Panels beside objects, and a Stage's wall or stage, hold only Text, Metric, KeyValue or \
+     charts. DepthCard and Stage present components you drew; never hide what the person must \
+     read.";
 
-## Design standard
-- Solve the user's outcome; do not merely mirror the component nouns in the request.
-- Preserve facts supplied by the user. Use realistic sample data only when a prototype needs data, and make assumptions easy to distinguish from known facts.
-- Give every surface a clear hierarchy: task/status context, the information or controls needed now, and one obvious next action.
-- Use domain-specific labels, values, statuses, and actions. Avoid generic filler such as "Item 1", "Lorem ipsum", "Submit", or "Click here".
-- Keep inline cards focused and use no more than two primary actions. Use a multi-section layout for workflows that need comparison, monitoring, or drill-down.
-- Preserve user-entered state across turns when the runtime supplies it. Collect only information that is still missing.
-- Prefer accessible labels, concise helper copy, sensible field order, and controls that work at narrow widths.
-- When the host supplies an approved brand-kit id, pass it unchanged as `kit_id` to high-level render tools. Use only kit-declared components, semantic roles, and `kit://<asset-id>` assets; never invent or restyle company marks.
-
-## Surface selection
-- Focused data collection -> render_form. Include a specific description, purposeful fields and options, and a review-oriented submit label.
-- Decision or summary -> render_card or render_confirm.
-- Comparison or records -> render_table with populated, sortable data when useful.
-- Trend or composition -> render_chart with meaningful axes, labels, and populated data.
-- Dashboard or command workspace -> render_layout with KPIs, a chart or table, current risks, and a clear next action. Add a `form` section when the user must edit filters or a proposal in the same workspace.
-- Complete product, portal, site, or multi-route workflow -> render_app with two to five purposeful pages, coherent navigation, page-level hierarchy, and shared state. Do not stretch one dashboard across unrelated jobs.
-- Spatial reasoning, topology, simulation, or product exploration -> include scene_3d inside render_app only when 3D improves the decision. Use bounded primitives or approved `model_3d` kit assets, semantic material roles, labelled interactions, and useful fallback text. Never emit code, shaders, or raw model URLs.
-- Status, error, or completion -> render_alert, render_progress, or render_toast.
-- Dialog that must temporarily interrupt the workflow -> render_modal.
-
-Use the requested theme when one is specified. Otherwise prefer the host/system theme.
-"#;
-
-/// Short version of the prompt for token-limited contexts
-pub const UI_AGENT_PROMPT_SHORT: &str = r#"Design task-focused UI with exactly one render_* tool call and never output raw JSON. Preserve known facts, use realistic domain content, provide clear hierarchy and one next action, retain supplied state, and collect only missing information. Pass an approved host brand-kit id through as `kit_id`; use its declared components, semantic roles, and assets without inventing brand elements. Use render_app with two to five purposeful pages for complete products or multi-route workflows, render_layout for one multi-section decision surface, and render_form for focused intake with a specific description and review-oriented CTA. Use bounded declarative scene_3d only when spatial context improves the decision. Require explicit confirmation before destructive, financial, privileged, or externally visible actions; never show success before that event."#;
+/// Instructions for an agent that also has `show_3d_app` (feature `apps`): when to write
+/// three.js and when to draw instead.
+///
+/// ```rust
+/// assert!(adk_ui::prompts::sandboxed_3d_apps().contains("show_3d_app"));
+/// ```
+pub fn sandboxed_3d_apps() -> String {
+    "You can also show a 3D scene you write in three.js with show_3d_app. It is framed in the \
+     thread as an app that can't approve anything and reaches no sites.\n\
+     - Draw with render_screen first: charts, figures, forms and anything the catalog declares. \
+     Use show_3d_app only for 3D the catalog can't declare, such as motion, particles or \
+     procedural shapes.\n\
+     - Keep the code small and readable, use theme.palette for colours, and label what matters \
+     with label(text, position).\n\
+     - If it is refused, read why, change the code and try again; never work around the check."
+        .to_string()
+}

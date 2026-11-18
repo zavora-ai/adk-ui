@@ -1,0 +1,195 @@
+{
+  "catalog": "studio",
+  "summary": "A release room as an app of pages: health and risks, the checklist, and deploys per day.",
+  "screen": {
+    "surfaceId": "release-room",
+    "title": "Release 2026.11",
+    "components": [
+      {
+        "id": "root",
+        "component": "App",
+        "title": "Release 2026.11",
+        "pages": [
+          {
+            "id": "overview",
+            "title": "Overview",
+            "child": "overview"
+          },
+          {
+            "id": "checklist",
+            "title": "Checklist",
+            "child": "checklist"
+          },
+          {
+            "id": "deploys",
+            "title": "Deploys",
+            "child": "deploys"
+          }
+        ]
+      },
+      {
+        "id": "overview",
+        "component": "Page",
+        "title": "Where we are",
+        "description": "Updated every hour",
+        "children": [
+          "health",
+          "risks"
+        ]
+      },
+      {
+        "id": "health",
+        "component": "Region",
+        "title": "Health",
+        "layout": "grid",
+        "columns": 2,
+        "children": [
+          "readiness",
+          "blockers"
+        ]
+      },
+      {
+        "id": "readiness",
+        "component": "Metric",
+        "label": "Readiness",
+        "value": {
+          "path": "/readiness"
+        },
+        "format": "percent",
+        "status": "ok"
+      },
+      {
+        "id": "blockers",
+        "component": "Metric",
+        "label": "Blockers",
+        "value": 1,
+        "status": "warning"
+      },
+      {
+        "id": "risks",
+        "component": "Region",
+        "title": "Risks",
+        "children": [
+          "risk-list"
+        ]
+      },
+      {
+        "id": "risk-list",
+        "component": "KeyValue",
+        "items": [
+          {
+            "key": "Payments migration",
+            "value": "Testing in staging"
+          },
+          {
+            "key": "Search index",
+            "value": "Rebuild scheduled"
+          }
+        ]
+      },
+      {
+        "id": "checklist",
+        "component": "Page",
+        "title": "Checklist",
+        "children": [
+          "progress",
+          "badges"
+        ]
+      },
+      {
+        "id": "progress",
+        "component": "Progress",
+        "label": "Checklist",
+        "value": 72
+      },
+      {
+        "id": "badges",
+        "component": "Row",
+        "children": [
+          "b1",
+          "b2",
+          "b3"
+        ]
+      },
+      {
+        "id": "b1",
+        "component": "Badge",
+        "text": "Docs ready",
+        "tone": "success"
+      },
+      {
+        "id": "b2",
+        "component": "Badge",
+        "text": "Load test running",
+        "tone": "info"
+      },
+      {
+        "id": "b3",
+        "component": "Badge",
+        "text": "Payments blocked",
+        "tone": "danger"
+      },
+      {
+        "id": "deploys",
+        "component": "Page",
+        "title": "Deploys per day",
+        "children": [
+          "deploy-chart"
+        ]
+      },
+      {
+        "id": "deploy-chart",
+        "component": "Chart",
+        "kind": "bar",
+        "data": {
+          "path": "/deploys"
+        },
+        "x": {
+          "key": "day",
+          "label": "Day"
+        },
+        "series": [
+          {
+            "key": "staging",
+            "label": "Staging"
+          },
+          {
+            "key": "production",
+            "label": "Production"
+          }
+        ]
+      }
+    ],
+    "dataModel": {
+      "readiness": 86,
+      "deploys": [
+        {
+          "day": "Mon",
+          "staging": 6,
+          "production": 2
+        },
+        {
+          "day": "Tue",
+          "staging": 9,
+          "production": 3
+        },
+        {
+          "day": "Wed",
+          "staging": 4,
+          "production": 1
+        },
+        {
+          "day": "Thu",
+          "staging": 7,
+          "production": 4
+        },
+        {
+          "day": "Fri",
+          "staging": 3,
+          "production": 0
+        }
+      ]
+    },
+    "actions": []
+  }
+}

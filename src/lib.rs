@@ -1,54 +1,70 @@
-pub mod a2ui;
-pub mod application;
-#[cfg(feature = "awp")]
-pub mod awp_compat;
-pub mod catalog_registry;
-pub mod compat;
-pub mod html;
-pub mod interop;
+//! # adk-ui
+//!
+//! Extension catalogs for agent-drawn UI in [ADK-Rust](https://adk-rust.com) 3.
+//!
+//! ADK-Rust draws agent UI with `adk-surface`'s `genui` feature: the render tools, A2UI
+//! v0.9.1, a version and digest record for every drawing, rule 5 (a drawing never contains
+//! approval controls, secrets or links) and the governed send (a form's **Send** asks for a
+//! call the person decides). adk-ui 3 adds what `genui`'s `forms` catalog leaves out, as
+//! extension catalogs `genui` checks and draws:
+//!
+//! | Part | What |
+//! |---|---|
+//! | [`catalogs`] | The catalogs: [`catalogs::insight`] (charts, sparklines, metrics, key-value lists, progress, badges), [`catalogs::studio`] (insight, plus apps of pages, regions and primitive 3D scenes) and [`catalogs::spatial`] (studio, plus 3D charts, scenes, cards with depth and 3D layouts) |
+//! | [`insight`] | Builders for the insight components |
+//! | [`studio`] | Builders for the studio components |
+//! | [`spatial`] | Builders for the spatial components: 3D charts, scenes, cards with depth and 3D layouts |
+//! | [`draft`] | A screen under construction, checked as `genui` checks it |
+//! | [`toolset`] | `genui`'s render tools drawing in an adk-ui catalog |
+//! | [`prompts`] | What to tell a model that draws in one |
+//! | [`kit`] | Brand kits: approved design tokens a host applies to its own pages ([`kit::ApprovedKit`]) |
+//! | `apps` | With the `apps` feature: an MCP server that shows model-written three.js in genui-apps' sandbox |
+//!
+//! adk-ui adds no render tool name, protocol, provenance record or approval path: an agent
+//! draws with `genui`'s `render_screen`, the drawing is recorded and checked by `genui`, and a
+//! home shows it once its catalog is registered ([`catalogs::register`]).
+//!
+//! ```rust,no_run
+//! use std::sync::Arc;
+//! use adk_surface::{LocalSource, SurfaceEngine};
+//!
+//! # fn example(source: LocalSource) {
+//! // The agent's render tools draw in the insight catalog...
+//! let tools = adk_ui::toolset();
+//! // ...and the home shows what they draw.
+//! let engine = adk_ui::catalogs::register(SurfaceEngine::builder(Arc::new(source))).build();
+//! # let _ = (tools, engine);
+//! # }
+//! ```
+//!
+//! adk-ui 2.x, with its own render tools and protocol adapters, stays on crates.io for
+//! ADK-Rust 2.
+
+#[cfg(feature = "apps")]
+pub mod apps;
+mod build;
+pub mod catalogs;
+pub mod draft;
+pub mod insight;
 pub mod kit;
-pub mod model;
-pub mod notifications;
-pub mod persistence;
 pub mod prompts;
-pub mod protocol_capabilities;
-pub mod schema;
-mod surface_runtime;
-pub mod templates;
-pub mod tools;
-pub mod toolset;
-pub mod validation;
+mod scene;
+mod schema;
+pub mod spatial;
+pub mod studio;
 
-pub use a2ui::*;
-pub use application::*;
-pub use catalog_registry::{CatalogArtifact, CatalogError, CatalogRegistry, CatalogSource};
-pub use interop::*;
+use adk_surface::genui::{Catalog, DrawToolset, Validator};
+
+pub use insight::bind;
 pub use kit::{BrandKitManifest, KitArtifacts, KitGenerator, KitSpec};
-pub use model::{ToolEnvelope, ToolEnvelopeProtocol};
-pub use notifications::{UiNotification, UiNotificationChannel, UiNotificationSeverity};
-pub use persistence::{
-    FsSurfaceStore, InMemorySurfaceStore, SavedSurface, SurfaceStore, SurfaceStoreError,
-};
-pub use prompts::{UI_AGENT_PROMPT, UI_AGENT_PROMPT_SHORT};
-#[cfg(feature = "awp")]
-pub use protocol_capabilities::AWP_PROTOCOL_CAPABILITY;
-pub use protocol_capabilities::{
-    ADK_UI_LEGACY_DEPRECATION, SUPPORTED_UI_PROTOCOLS, TOOL_ENVELOPE_VERSION,
-    UI_CAPABILITY_SCHEMA_VERSION, UI_DEFAULT_PROTOCOL, UI_PREFERRED_PROTOCOL,
-    UI_PROTOCOL_CAPABILITIES, UiCapabilityScope, UiCapabilityStatus, UiProtocolCapabilityClaim,
-    UiProtocolCapabilitySpec, UiProtocolDeprecationSpec, UiProtocolImplementationTier,
-    UiProtocolNegotiationSpec, UiProtocolSpecTrack, UiProtocolVersionSpec,
-    normalize_runtime_ui_protocol,
-};
-pub use surface_runtime::{ACTIVE_SURFACE_STATE_KEY, SURFACE_REFS_STATE_KEY, SurfaceRef};
 
-// Re-export frequently used protocol constants at the crate root for discoverability.
-pub use a2ui::{A2UI_BASIC_CATALOG_ID, A2UI_MIME_TYPE, A2UI_PROTOCOL_VERSION};
-pub use interop::{MCP_APPS_EXTENSION_ID, MCP_APPS_SEP_STATUS};
-pub use schema::*;
-pub use templates::{StatItem, TemplateData, UiTemplate, UserData, render_template};
-pub use tools::*;
-pub use toolset::UiToolset;
-pub use validation::{Validate, ValidationError, validate_ui_response};
+/// `genui`'s render tools drawing in the insight catalog: give them to an agent as its one
+/// `DrawToolset`, and register the catalog with the home ([`catalogs::register`]).
+pub fn toolset() -> DrawToolset {
+    toolset_for(catalogs::insight())
+}
 
-pub use html::{BandwidthMode, HtmlRenderOptions, render_components_html, render_surface_html};
+/// `genui`'s render tools drawing in `catalog`.
+pub fn toolset_for(catalog: &'static Catalog) -> DrawToolset {
+    DrawToolset::new(Validator::new(catalog))
+}

@@ -1,39 +1,29 @@
+// `recharts` and `three` are optional peers: the entry point never reaches for them, and a
+// chart or scene draws the home's view without them.
 const { describe, it, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const Module = require('node:module');
-const fs = require('node:fs');
-const path = require('node:path');
 
-const OPTIONAL_PEERS = ['three', 'recharts'];
+const PEERS = ['three', 'recharts'];
 const originalResolve = Module._resolveFilename;
-const requestedPeers = [];
+const requested = [];
 
-/**
- * `three` and `recharts` are declared as optional peer dependencies, so the
- * package has to stay usable when a host never installs them. These tests hide
- * both modules from the resolver to prove the entry point does not reach for
- * them and that chart/3D components degrade instead of taking down the surface.
- */
-function hideOptionalPeers() {
-    Module._resolveFilename = function (request, ...rest) {
-        const root = request.split('/')[0];
-        if (OPTIONAL_PEERS.includes(root)) {
-            requestedPeers.push(request);
-            const error = new Error(`Cannot find module '${request}'`);
-            error.code = 'MODULE_NOT_FOUND';
-            throw error;
-        }
-        return originalResolve.call(this, request, ...rest);
-    };
-}
-
-describe('Optional peer dependencies', () => {
+describe('optional peer dependencies', () => {
     let React;
     let renderToStaticMarkup;
     let pkg;
 
     before(() => {
-        hideOptionalPeers();
+        Module._resolveFilename = function (request, ...rest) {
+            if (PEERS.includes(request.split('/')[0])) {
+                requested.push(request);
+                const error = new Error(`Cannot find module '${request}'`);
+                error.code = 'MODULE_NOT_FOUND';
+                throw error;
+            }
+            return originalResolve.call(this, request, ...rest);
+        };
+        for (const key of Object.keys(require.cache)) if (key.includes('/dist/')) delete require.cache[key];
         React = require('react');
         renderToStaticMarkup = require('react-dom/server').renderToStaticMarkup;
         pkg = require('../dist/index.js');
@@ -43,44 +33,44 @@ describe('Optional peer dependencies', () => {
         Module._resolveFilename = originalResolve;
     });
 
-    it('loads the package without three or recharts installed', () => {
-        assert.equal(typeof pkg.Renderer, 'function');
-        assert.equal(typeof pkg.UnifiedRenderStore, 'function');
+    it('loads the entry point without them', () => {
+        assert.ok(pkg.adkUiRenderers);
+        assert.deepEqual(requested, []);
     });
 
-    it('does not resolve the optional peers at import time', () => {
-        assert.deepEqual(requestedPeers, []);
+    it('draws a chart and a scene as their fallbacks', () => {
+        const chart = renderToStaticMarkup(
+            React.createElement(pkg.Chart, {
+                kind: 'line',
+                data: [{ t: 'Jan', v: 3 }],
+                x: { key: 't', label: 'Month' },
+                series: [{ key: 'v', label: 'Visits' }],
+            }),
+        );
+        assert.match(chart, /<table class="adk-ui-table">/);
+        assert.match(chart, /<th scope="col">Visits<\/th>/);
+        const scene = renderToStaticMarkup(
+            React.createElement(pkg.Scene3D, { objects: [{ id: 'a', shape: 'box', label: 'Dock' }], fallback: 'plain' }),
+        );
+        assert.match(scene, /plain/);
+        assert.match(scene, /<li>Dock<\/li>/);
     });
 
-    it('renders a chart component without crashing when recharts is absent', () => {
-        const component = {
-            type: 'chart',
-            id: 'chart-1',
-            kind: 'bar',
-            data: [{ name: 'a', value: 1 }],
-            x_key: 'name',
-            y_keys: ['value'],
-        };
-        const html = renderToStaticMarkup(React.createElement(pkg.Renderer, { component }));
-        assert.match(html, /Loading chart/);
-    });
-
-    it('renders a 3D scene component without crashing when three is absent', () => {
-        const component = {
-            type: 'scene_3d',
-            id: 'scene-1',
-            objects: [],
-        };
-        const html = renderToStaticMarkup(React.createElement(pkg.Renderer, { component }));
-        assert.match(html, /Loading 3D scene/);
-    });
-
-    it('ships the degraded fallback so a missing peer explains itself', () => {
-        const bundle = fs.readFileSync(path.join(__dirname, '..', 'dist', 'index.js'), 'utf8');
-        assert.match(bundle, /adk-ui-optional-renderer/);
-        assert.match(bundle, /Install the optional peer dependency/);
-        for (const peer of OPTIONAL_PEERS) {
-            assert.ok(bundle.includes(`"${peer}"`) || bundle.includes(`'${peer}'`), `expected ${peer} to be named in the fallback path`);
-        }
+    it("draws the home's own view of a chart or scene in a DrawnView without them", () => {
+        const renderChild = (node) => React.createElement('span', { 'data-node': node.key }, node.text);
+        const home = { key: 'c#1', component: 'Text', text: 'home view' };
+        const draw = (catalog, component, props) =>
+            renderToStaticMarkup(
+                React.createElement(() =>
+                    pkg.adkUiRenderers[catalog][component]({
+                        node: { key: 'c', component, children: [home] },
+                        props,
+                        children: [],
+                        renderChild,
+                    }),
+                ),
+            );
+        const chart = draw(pkg.INSIGHT_CATALOG_ID, 'Chart', { kind: 'bar', data: [], x: { key: 'm' }, series: [{ key: 'v' }] });
+        assert.match(chart, /data-node="c#1">home view/);
     });
 });

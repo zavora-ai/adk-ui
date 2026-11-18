@@ -1,0 +1,306 @@
+{
+  "catalog": "spatial",
+  "summary": "A yard in 3D: groups, lights and motion, docks the person picks into a form, a panel beside the free dock, and a carousel of figures. Reserve asks before anything runs.",
+  "screen": {
+    "surfaceId": "yard",
+    "title": "Yard B · docks",
+    "components": [
+      {
+        "id": "root",
+        "component": "Column",
+        "children": [
+          "yard-scene",
+          "dock",
+          "reserve",
+          "figures"
+        ]
+      },
+      {
+        "id": "yard-scene",
+        "component": "Scene",
+        "title": "Docks",
+        "description": "Pick a dock to reserve it",
+        "objects": [
+          {
+            "id": "floor",
+            "shape": "plane",
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "scale": [
+              16,
+              1,
+              10
+            ],
+            "color": "muted"
+          },
+          {
+            "id": "docks",
+            "shape": "group",
+            "position": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "id": "dock-1",
+            "parent": "docks",
+            "shape": "box",
+            "position": [
+              -5,
+              0.6,
+              -2
+            ],
+            "scale": [
+              2.4,
+              1.2,
+              2.4
+            ],
+            "color": "chart1",
+            "state": "warning",
+            "label": "Dock 1 · loading",
+            "value": "dock-1"
+          },
+          {
+            "id": "dock-2",
+            "parent": "docks",
+            "shape": "box",
+            "position": [
+              -1.7,
+              0.6,
+              -2
+            ],
+            "scale": [
+              2.4,
+              1.2,
+              2.4
+            ],
+            "color": "chart1",
+            "state": "warning",
+            "label": "Dock 2 · loading",
+            "value": "dock-2"
+          },
+          {
+            "id": "dock-3",
+            "parent": "docks",
+            "shape": "box",
+            "position": [
+              1.7,
+              0.6,
+              -2
+            ],
+            "scale": [
+              2.4,
+              1.2,
+              2.4
+            ],
+            "color": "chart1",
+            "state": "ok",
+            "label": "Dock 3 · free",
+            "value": "dock-3",
+            "motion": {
+              "kind": "pulse",
+              "seconds": 2.4,
+              "amount": 0.08
+            }
+          },
+          {
+            "id": "dock-4",
+            "parent": "docks",
+            "shape": "box",
+            "position": [
+              5,
+              0.6,
+              -2
+            ],
+            "scale": [
+              2.4,
+              1.2,
+              2.4
+            ],
+            "color": "chart1",
+            "state": "critical",
+            "label": "Dock 4 · closed",
+            "value": "dock-4"
+          },
+          {
+            "id": "truck",
+            "shape": "box",
+            "position": [
+              -5,
+              0.8,
+              2.5
+            ],
+            "scale": [
+              1.6,
+              1.4,
+              3.6
+            ],
+            "color": "chart3",
+            "label": "Truck TR-114",
+            "motion": {
+              "kind": "bob",
+              "seconds": 3,
+              "amount": 0.05
+            }
+          },
+          {
+            "id": "lane",
+            "shape": "arrow",
+            "points": [
+              [
+                -5,
+                0.05,
+                4.5
+              ],
+              [
+                -5,
+                0.05,
+                1.0
+              ],
+              [
+                1.7,
+                0.05,
+                0.5
+              ]
+            ],
+            "color": "neutral",
+            "label": "Way in"
+          },
+          {
+            "id": "sign",
+            "shape": "text",
+            "text": "Yard B",
+            "position": [
+              0,
+              2.6,
+              -4.5
+            ]
+          }
+        ],
+        "camera": {
+          "preset": "iso"
+        },
+        "lighting": "studio",
+        "lights": [
+          {
+            "kind": "point",
+            "position": [
+              1.7,
+              4,
+              -2
+            ],
+            "color": "chart2",
+            "intensity": 0.8
+          }
+        ],
+        "pickInto": "/dock",
+        "panels": [
+          {
+            "anchor": "dock-3",
+            "child": "dock-3-note"
+          }
+        ],
+        "height": 420
+      },
+      {
+        "id": "dock-3-note",
+        "component": "Text",
+        "text": "Free from 14:00, fits a 40 ft trailer",
+        "variant": "caption"
+      },
+      {
+        "id": "dock",
+        "component": "ChoicePicker",
+        "label": "Dock",
+        "value": {
+          "path": "/dock"
+        },
+        "options": [
+          {
+            "label": "Dock 1",
+            "value": "dock-1"
+          },
+          {
+            "label": "Dock 2",
+            "value": "dock-2"
+          },
+          {
+            "label": "Dock 3",
+            "value": "dock-3"
+          },
+          {
+            "label": "Dock 4",
+            "value": "dock-4"
+          }
+        ]
+      },
+      {
+        "id": "reserve",
+        "component": "Button",
+        "child": "reserve-label",
+        "variant": "primary",
+        "action": {
+          "event": {
+            "name": "reserve"
+          }
+        }
+      },
+      {
+        "id": "reserve-label",
+        "component": "Text",
+        "text": "Reserve this dock"
+      },
+      {
+        "id": "figures",
+        "component": "Stage",
+        "layout": "carousel",
+        "title": "Today",
+        "children": [
+          "turnaround",
+          "waiting-trucks",
+          "on-time"
+        ]
+      },
+      {
+        "id": "turnaround",
+        "component": "Metric",
+        "label": "Average turnaround",
+        "value": 42,
+        "unit": "min"
+      },
+      {
+        "id": "waiting-trucks",
+        "component": "Metric",
+        "label": "Trucks waiting",
+        "value": 3
+      },
+      {
+        "id": "on-time",
+        "component": "Metric",
+        "label": "On time",
+        "value": 94,
+        "unit": "%"
+      }
+    ],
+    "dataModel": {
+      "dock": []
+    },
+    "actions": [
+      {
+        "id": "reserve",
+        "label": "Reserve this dock",
+        "tool": "reserve_dock",
+        "args": {
+          "dock": {
+            "path": "/dock"
+          },
+          "from": "14:00"
+        }
+      }
+    ]
+  }
+}

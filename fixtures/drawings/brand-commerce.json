@@ -1,0 +1,127 @@
+{
+  "catalog": "insight",
+  "summary": "One storefront summary a host draws under two approved brand kits; the drawing itself carries no theme.",
+  "screen": {
+    "surfaceId": "store-week",
+    "title": "This week in the store",
+    "components": [
+      {
+        "id": "root",
+        "component": "Column",
+        "children": [
+          "kpis",
+          "channels",
+          "order"
+        ]
+      },
+      {
+        "id": "kpis",
+        "component": "Row",
+        "children": [
+          "revenue",
+          "orders",
+          "conversion"
+        ]
+      },
+      {
+        "id": "revenue",
+        "component": "Metric",
+        "label": "Revenue",
+        "value": {
+          "path": "/revenue"
+        },
+        "format": "currency",
+        "currency": "USD",
+        "delta": {
+          "value": 8.5,
+          "goodWhen": "up"
+        },
+        "trend": {
+          "path": "/revenueTrend"
+        }
+      },
+      {
+        "id": "orders",
+        "component": "Metric",
+        "label": "Orders",
+        "value": 1284,
+        "delta": {
+          "value": 96,
+          "goodWhen": "up"
+        }
+      },
+      {
+        "id": "conversion",
+        "component": "Metric",
+        "label": "Conversion",
+        "value": 3.1,
+        "format": "percent"
+      },
+      {
+        "id": "channels",
+        "component": "Chart",
+        "kind": "pie",
+        "title": "Sales by channel",
+        "data": {
+          "path": "/channels"
+        },
+        "x": {
+          "key": "channel"
+        },
+        "series": [
+          {
+            "key": "share",
+            "label": "Share"
+          }
+        ],
+        "valueFormat": "percent"
+      },
+      {
+        "id": "order",
+        "component": "KeyValue",
+        "title": "Largest order",
+        "items": [
+          {
+            "key": "Order",
+            "value": "SO-88213"
+          },
+          {
+            "key": "Items",
+            "value": 14
+          },
+          {
+            "key": "Total",
+            "value": "USD 2,940"
+          }
+        ]
+      }
+    ],
+    "dataModel": {
+      "revenue": 48210,
+      "revenueTrend": [
+        6100,
+        6400,
+        7200,
+        6900,
+        7700,
+        6800,
+        7110
+      ],
+      "channels": [
+        {
+          "channel": "Web",
+          "share": 54
+        },
+        {
+          "channel": "App",
+          "share": 31
+        },
+        {
+          "channel": "Marketplace",
+          "share": 15
+        }
+      ]
+    },
+    "actions": []
+  }
+}

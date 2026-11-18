@@ -1,0 +1,18 @@
+# Build adk-ui 3 against an adk-rust checkout until ADK-Rust 3.0 is on crates.io.
+#
+#   cp .cargo/config.toml.example .cargo/config.toml   # untracked
+#
+# Set the paths to an adk-rust checkout of `main` (genui extension catalogs landed in
+# zavora-ai/adk-rust#1393). Remove this file once ADK-Rust 3.0 is on crates.io.
+
+[patch.crates-io]
+adk-core = { path = "../adk-rust/adk-core" }
+adk-devtools = { path = "../adk-rust/adk-devtools" }
+adk-harness = { path = "../adk-rust/adk-harness" }
+adk-kernel = { path = "../adk-rust/adk-kernel" }
+adk-model = { path = "../adk-rust/adk-model" }
+adk-runner = { path = "../adk-rust/adk-runner" }
+adk-server = { path = "../adk-rust/adk-server" }
+adk-session = { path = "../adk-rust/adk-session" }
+adk-surface = { path = "../adk-rust/adk-surface" }
+adk-tool = { path = "../adk-rust/adk-tool" }

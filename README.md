@@ -1,364 +1,169 @@
 # adk-ui
 
-Dynamic UI generation for [ADK-Rust](https://adk-rust.com) agents — render forms, cards, tables, charts, and more.
+Charts, metrics, pages and scenes for agent-drawn UI in [ADK-Rust](https://adk-rust.com) 3.
 
-`adk-ui` provides AI agents with a structured UI vocabulary: forms, dashboards, confirmations, alerts, tables, charts, progress indicators, modals, toasts, and protocol-aware surfaces that real clients can render. If your agent can reason about a workflow, `adk-ui` helps it express that workflow as an interface people can use.
+ADK-Rust draws agent UI with `adk-surface`'s **genui** feature: the render tools, A2UI v0.9.1, a
+version and digest record for every drawing, and **rule 5**: a drawing never contains approval
+controls, secrets or links, and a form's **Send** asks the person before any tool runs. genui's
+own `forms` catalog draws forms, cards and tables. adk-ui 3 adds the rest as **extension
+catalogs** that genui checks and draws:
 
-[![Crates.io](https://img.shields.io/crates/v/adk-ui.svg)](https://crates.io/crates/adk-ui)
-[![Documentation](https://docs.rs/adk-ui/badge.svg)](https://docs.rs/adk-ui)
-[![License](https://img.shields.io/crates/l/adk-ui.svg)](LICENSE)
+| Catalog | Adds to `forms` |
+|---|---|
+| **insight** | `Chart` (bar, line, area, pie, scatter over category, number or time axes), `Sparkline`, `Metric`, `KeyValue`, `Progress`, `Badge` |
+| **studio** | insight, plus `App` (pages the host navigates), `Page`, `Region` and `Scene3D` (primitive 3D shapes with labels) |
+| **spatial** | studio, plus 3D charts (`Bar3D`, `Scatter3D`, `SurfacePlot`, `Graph3D`, `Globe`), `Scene` (groups, lines, lights, motion, panels beside objects; picking an object fills a choice field the drawing shows), `DepthCard` (tilt, flip, layers) and `Stage` (stage, wall, carousel) |
 
-## Why adk-ui?
+adk-ui adds no render tool name, protocol, provenance record or approval path. Every component
+only shows: its strings, and every string of the data it binds, are checked before anything is
+drawn. The web home draws charts and 3D scenes natively, in its own palette (scenes with WebGL,
+loaded only for a drawing that has one), and the rest as its own components; a host of your own
+draws them richly with `@zavora-ai/adk-ui-react`. The terminal shows each one in words, and a
+phone points to the home.
 
-- **Structured agentic UI** — give agents high-level render tools instead of hand-authoring frontend code.
-- **Protocol-honest boundaries** — A2UI, AG-UI, and MCP Apps are supported with explicit capability signaling, not vague compatibility claims.
-- **Ship faster** — includes a Rust demo server, a React reference client, protocol adapters, examples, tests, and migration docs.
-- **Keep the loop agentic** — the same system can request input, render results, ask for confirmation, and react to follow-up actions.
-- **Grow without rewriting** — start with high-level tools, then choose the protocol surface that matches your host or client architecture.
+> adk-ui 2.x, with its own render tools and protocol adapters, stays on crates.io and npm for
+> ADK-Rust 2. Moving over: [docs/MIGRATING_TO_3.md](docs/MIGRATING_TO_3.md).
 
-## Version 2.1: Agent UI Studio
-
-Version 2 is not just a protocol refresh. The example client is now a usable studio for exploring agent-generated interfaces:
-
-- Start with a scenario or write your own UI goal.
-- Switch between A2UI, AG-UI, MCP Apps, AWP, and the legacy ADK profile from one protocol matrix.
-- Compare desktop and mobile surfaces without leaving the run.
-- Inspect protocol events, assistant output, reasoning, and correlated actions in focused tabs.
-- Try the complete support-escalation flow locally, even when the Rust server or an LLM API key is unavailable.
-
-![ADK UI v2.1 landing page](docs/screenshots/adk-ui-v2-landing.png)
-
-![ADK UI v2.1 Agent UI Studio](docs/screenshots/adk-ui-v2-studio.png)
-
-## Example Showcase
-
-The reference client includes six independent, zero-server examples. Each one has a direct URL, a separate source fixture, responsive preview controls, fullscreen mode, and a visible host event receipt.
-
-![ADK UI independent example showcase](docs/screenshots/adk-ui-showcase.png)
-
-| Example | Capability focus | Direct URL |
-|---------|------------------|------------|
-| Incident command | Decision support, charts, tables, guarded rollback | `/?example=incident-command` |
-| Guided support | Adaptive forms, validation, context preservation | `/?example=support-workflow` |
-| Release room | Multi-page generation, local routing, preserved form state | `/?example=release-room` |
-| Brand concierge | Approved UI kits and semantic design tokens | `/?example=brand-commerce` |
-| Spatial logistics | Declarative 3D, labelled actions, safe fallback | `/?example=spatial-logistics` |
-| Streaming operations | Targeted replace, patch, append, and remove updates | `/?example=streaming-operations` |
-
-Run the React client, then open the Showcase section or navigate directly to any URL above. The fixtures live in [`examples/ui_react_client/src/showcase/examples`](examples/ui_react_client/src/showcase/examples) and render exclusively through `@zavora-ai/adk-ui-react` public APIs.
-
-## Protocol Examples
-
-### A2UI Dashboard
-
-![A2UI dashboard](docs/screenshots/a2ui-dashboard.png)
-
-### AG-UI Operations Flow
-
-![AG-UI operations flow](docs/screenshots/ag-ui-command-center.png)
-
-### MCP Apps Confirm Flow
-
-![MCP Apps confirm flow](docs/screenshots/mcp-apps-confirm.png)
-
-## What You Can Build
-
-- A **support intake assistant** that turns open-ended requests into structured forms, triage queues, and escalation confirmations.
-- An **operations agent** that renders dashboards, alerts, and approval prompts instead of dumping raw JSON into chat.
-- A **scheduling assistant** that shows availability, collects preferences, and confirms bookings.
-- An **inventory or facilities workflow** that moves from dashboard → form → approval → toast in a single agent session.
-
-## Quick Start
-
-### 1. Add the dependency
+## Use it
 
 ```toml
 [dependencies]
-adk-ui = "2"
-# For local development against ADK-Rust 2.0 workspace:
-# adk-ui = { path = "../adk-ui", features = ["adk-core"] }
+adk-ui = "3"
+adk-surface = { version = "3", features = ["web", "genui"] }
 ```
-
-### 2. Register the UI toolset with your agent
 
 ```rust
-use adk_agent::LlmAgentBuilder;
-use adk_ui::{UiToolset, UI_AGENT_PROMPT};
-
-let tools = UiToolset::all_tools();
-
-let mut builder = LlmAgentBuilder::new("assistant")
-    .model(model)
-    .instruction(UI_AGENT_PROMPT);
-
-for tool in tools {
-    builder = builder.tool(tool);
-}
-
-let agent = builder.build()?;
-```
-
-For versioned, durable surfaces, register the toolset itself with a store:
-
-```rust,ignore
-use adk_ui::{FsSurfaceStore, UiToolset};
 use std::sync::Arc;
+use adk_surface::SurfaceEngine;
 
-let store = Arc::new(FsSurfaceStore::new("./data/surfaces")?);
-let ui = UiToolset::new().with_persistence(store);
-let agent = LlmAgentBuilder::new("assistant")
+// The agent draws with genui's render tools, in adk-ui's spatial catalog (all three).
+let agent = HarnessAgent::builder("operations")
     .model(model)
-    .instruction(UI_AGENT_PROMPT)
-    .toolset(Arc::new(ui))
+    .toolset(Arc::new(adk_ui::toolset_for(adk_ui::catalogs::spatial())))
+    .instruction(adk_ui::prompts::instructions(adk_ui::catalogs::spatial()))
+    .tool(Arc::new(start_rollback))
     .build()?;
+
+// The home shows what it draws; AG-UI clients get it too.
+let engine = adk_ui::catalogs::register(SurfaceEngine::builder(Arc::new(source))).build();
+let app = ServerBuilder::new(config)
+    .with_ag_ui_extension(Arc::new(adk_ui::catalogs::ag_ui()))
+    .add_api_routes(adk_surface::web::router(engine.clone()))
+    .add_api_routes(adk_surface::web::genui::router(engine))
+    .add_root_routes(adk_surface::web::home())
+    .build();
 ```
 
-This adds `save_surface`, `load_surface`, `list_surfaces`, and `delete_surface`; `patch_surface` also updates the stored payload using optimistic revision checks.
+The model draws a screen with `render_screen`:
 
-### 3. Run the example stack
+```json
+{
+  "surfaceId": "incident-2041",
+  "title": "Incident INC-2041",
+  "components": [
+    { "id": "root", "component": "Column", "children": ["p95", "latency", "start"] },
+    { "id": "p95", "component": "Metric", "label": "p95 latency", "value": { "path": "/p95" }, "unit": "ms" },
+    { "id": "latency", "component": "Chart", "kind": "line", "data": { "path": "/latency" },
+      "x": { "key": "at", "type": "time" }, "series": [{ "key": "checkout", "label": "Checkout" }] },
+    { "id": "start", "component": "Button", "child": "start-label", "action": { "event": { "name": "rollback" } } },
+    { "id": "start-label", "component": "Text", "text": "Start rollback" }
+  ],
+  "dataModel": { "p95": 840, "latency": [{ "at": "2026-11-16T09:00:00Z", "checkout": 410 }] },
+  "actions": [{ "id": "rollback", "label": "Start rollback", "tool": "start_rollback", "args": { "service": "checkout-api" } }]
+}
+```
 
-The bundled demo pairs the Rust example server with the React client.
+Pressing **Start rollback** never runs `start_rollback`: the agent holds the call, and the person
+decides on the home's card (Allow once, Edit or Deny).
 
-**Default LLM provider is OpenAI.** Switch with `ADK_UI_PROVIDER`.
+Builders write the same JSON in Rust (`adk_ui::insight::{Chart, Metric, …}`,
+`adk_ui::studio::{App, Page, …}`, `adk_ui::spatial::{Bar3D, Scene, …}`, `adk_ui::draft::Screen`),
+and `Screen::validate` checks a drawing exactly as genui will.
+
+## 3D
+
+The spatial catalog's components only show, like every other. The server checks each scene
+before it's drawn:
+- colours come from the home's palette, never hex, and a state colour always has a label;
+- labels are page text, checked like any string;
+- there are no textures, models, fonts, shaders or links;
+- everything has a cap (objects, points, labels, panels, motions).
+
+The server also writes each scene's summary. Picking an object fills a choice field the drawing
+shows (`pickInto`) and sends nothing; the drawing's own **Send** still asks first.
+
+```rust
+use adk_ui::spatial::{Motion, Object, Scene};
+
+let yard = Scene::new("yard")
+    .object(Object::new("dock-3", "box", [3.0, 0.5, 0.0]).label("Dock 3 · free").state("ok")
+        .motion(Motion::pulse(2.0)).value("dock-3"))
+    .pick_into("/dock")
+    .build();
+```
+
+For 3D the catalog can't express, the `apps` feature adds `show_3d_app`. This MCP tool runs
+three.js the model writes in genui-apps' sandbox, a frame on its own origin that can't reach
+the home or the network:
+- the server refuses code that shows a decision's words, imports, fetches, or talks to its
+  parent;
+- the page owns the render loop and a Pause button;
+- the tool calls an app asks for are held for the person.
+
+The `adk-ui-apps` binary serves the tool over stdio:
 
 ```bash
-# Install dependencies from the repo root
-npm install
-
-# Start the Rust example server (OpenAI default)
-export OPENAI_API_KEY=sk-...
-# optional: export ADK_UI_MODEL=gpt-5.6-sol
-cargo run --example ui_server --features adk-core
-
-# Or Gemini:
-# export ADK_UI_PROVIDER=gemini
-# export GOOGLE_API_KEY=...
-# cargo run --example ui_server --features adk-core
-
-# Focused agentic demos (A2UI / AG-UI / MCP Apps only) on port 8081:
-# cargo run --example agentic_ui --features adk-core
+cargo install adk-ui --features apps   # adk-ui-apps
 ```
 
-```bash
-# In a second terminal
-cd examples/ui_react_client
-npm run dev -- --host 127.0.0.1
+## In a host of your own
+
+```tsx
+import { DrawnView } from "@zavora-ai/adk-surface-react";
+import { adkUiRenderers, KitProvider } from "@zavora-ai/adk-ui-react";
+
+<KitProvider kit={approvedKit}>
+  <DrawnView surface={surface} onSend={send} renderers={adkUiRenderers} />
+</KitProvider>;
 ```
 
-Open [http://127.0.0.1:5173/](http://127.0.0.1:5173/), choose a protocol profile, and run one of the built-in prompts.
-
-> The repo uses npm workspaces, so the React example and the shared renderer package install together from the root. A fresh clone should start with `npm install` at the top level.
-
-## Generative UI Concept
-
-`adk-ui` is a UI layer for agents, not a replacement web framework.
-
-Your agent decides:
-
-1. What the user needs next
-2. Which UI pattern fits the moment
-3. What data to show or collect
-4. What action should follow the user's response
-
-`adk-ui` gives the agent structured tools to express those decisions safely. A single conversation can naturally move through:
-
-1. A prompt from the user
-2. A rendered form or dashboard
-3. A follow-up action (confirm, submit, retry)
-4. A new surface, update, or toast
-
-## Agentic UI Examples
-
-### Support Intake
-
-> *"My payroll export failed and finance needs it today."*
-
-The agent renders a support intake form with severity, environment, screenshots, and deadline fields — summarizes the issue back to the user — then asks for confirmation before escalating to the on-call queue.
-
-### Operations Command Center
-
-> *"Show me cluster health and let me approve a failover if needed."*
-
-The agent renders a dashboard with alerts, node tables, and traffic charts — surfaces a confirmation card for risky actions — then renders a toast or status panel after approval.
-
-### Scheduling Assistant
-
-> *"Book me the earliest available appointment next week."*
-
-The agent shows available time slots — collects preferences or missing constraints — confirms the selection — then renders a success state with the booked details.
-
-## Supported Protocols
-
-`adk-ui` supports five runtime profiles, each designed for a different integration boundary:
-
-| Protocol | Best For |
-|----------|----------|
-| **A2UI** | Direct structured surface transport between agent/server and renderer. Cleanest starting point. |
-| **AG-UI** | Consumers that need event streams, lifecycle updates, and stable message/tool semantics. |
-| **MCP Apps** | Host/app bridge integrations with `ui://` resources, structured content, and bridge-aware metadata. |
-| **AWP** | Agentic Web Protocol — dual-user rendering with HTML output, capability manifest export, and bandwidth-adaptive mode. Requires `awp` feature flag. |
-
-A legacy `adk_ui` profile remains available for backward compatibility during migration. New integrations should use `a2ui`, `ag_ui`, or `mcp_apps`.
-
-### Choosing the Right Protocol
-
-- Start with **A2UI** for the most direct structured surface path.
-- Use **AG-UI** when the consumer wants event semantics.
-- Use **MCP Apps** when the host/app bridge model matters.
-- Use **AWP** when you need dual-user rendering (HTML for humans, structured data for agents) with bandwidth-adaptive output.
-
-If unsure, start with A2UI, validate the user journey, then introduce AG-UI, MCP Apps, or AWP at the boundary that needs them.
-
-### AWP Feature Flag
-
-AWP integration is behind an optional Cargo feature flag:
-
-```toml
-[dependencies]
-adk-ui = { version = "2", features = ["awp"] }
-```
-
-This adds the `AwpAdapter`, HTML renderer with `BandwidthMode`, capability manifest export via `UiToolset::to_capability_entries()`, and `ToolEnvelope` AWP bridge fields. Without the flag, adk-ui compiles without any AWP dependencies.
-
-## Compliance Snapshot
-
-This section is deliberately concrete to help integrators understand what is implemented today.
-
-### Implementation Metrics
-
-| Metric | Value |
-|--------|-------|
-| Component types | 30 |
-| High-level render tools | 13 |
-| Render tool × protocol combinations tested | 39 / 39 |
-| Runtime profiles smoke-tested in live client | 5 / 5 (as of 2026-08-14) |
-| Runtime capability metadata | Versioned 2026 contract at `/api/ui/capabilities` |
-
-### Protocol Support
-
-| Protocol | Upstream Target | Tier | What Works Today | Live Validation |
-|----------|----------------|------|------------------|-----------------|
-| `a2ui` | **v0.9.1 stable** + **v1.0 release candidate** | **Native subset** | Versioned catalog capability exchange, JSONL surfaces, validation feedback, and a candidate v1.0 correlated RPC subset | Dashboard + agentic support flow |
-| `ag_ui` | Current stable event and capability model | **Native subset** | Typed baseline capability snapshots, SSE lifecycle, text/tool/state/activity streams, reasoning continuity, and interrupt/resume wire types | Ops command center + confirm |
-| `mcp_apps` | **2026-01-26 stable** (`io.modelcontextprotocol/ui`) | **Native subset** | MIME extension negotiation, `ui://` resources, progressive fallback, initialize/message/model-context flows, and typed tool/lifecycle notifications | Confirm + form host bridge |
-| `adk_ui` | Internal legacy | Legacy | Backward-compatible runtime during migration (sunset 2026-12-31) | Tested in browser |
-| `awp` | AWP v1.0 | Compatibility subset | HTML rendering, capability export, bandwidth-adaptive mode | Dashboard + form |
-
-> **Preferred profile:** `a2ui`. **Default demo LLM:** OpenAI Responses with `gpt-5.6-sol` (`OPENAI_API_KEY`); set `ADK_UI_PROVIDER=gemini` for Gemini.
-
-The capability endpoint is designed for code, not marketing copy. Every protocol includes per-version maturity, negotiation keys, content types, transports, fallback paths, and scoped claims marked `supported`, `partial`, `candidate`, `host_owned`, `planned`, or `legacy`. Protocol-specific details expose A2UI agent/renderer catalogs, the AG-UI agent snapshot, and MCP Apps extension and host capabilities separately.
-
-### A2UI v1.0 actionResponse (demo path)
-
-1. Select protocol **a2ui**, run a prompt that renders a form/confirm.
-2. Click a button or submit the form — the client sends `wantResponse: true` + `actionId`.
-3. The example server emits a correlated `actionResponse` on the SSE stream.
-4. The client writes the value to `/__a2ui/lastActionResponse` and shows it under **A2UI actionResponse**.
-
-### AG-UI reasoning UI
-
-When the stream includes `REASONING_*` events, the client shows a collapsible **Agent reasoning** panel (streaming text updates live).
-
-> **Honesty note:** typed wire support is not the same as an end-to-end host feature. Durable AG-UI interrupt checkpointing, MCP Apps iframe/CSP enforcement, external links/downloads, and transport-specific A2A policy remain agent- or host-owned and are reported that way.
-
-## Architecture
-
-```text
-User prompt
-  → Agent decides what UI to render
-  → adk-ui tool emits a surface or protocol-aware payload
-  → Client renders the surface
-  → User acts on the interface
-  → Action routes back to the agent
-  → Agent updates, confirms, or completes the workflow
-```
-
-This repo includes:
-
-- Rust-side UI models, validation, prompts, templates, and protocol adapters
-- A React reference client that renders and acts on agent-produced surfaces
-- Protocol boundary code for A2UI, AG-UI, and MCP Apps
-- Tests and examples for real integration paths
-
-## Render Tools
-
-| Tool | Purpose |
-|------|---------|
-| `render_app` | Generate a complete multi-page application graph with routes, page-level composition, state, and optional declarative 3D scenes |
-| `render_screen` | Emit protocol-aware screen surfaces from component definitions |
-| `render_page` | Build multi-section pages with protocol-aware payloads |
-| `render_kit` | Generate a reviewable brand-kit manifest, real component catalog, semantic tokens, assets, templates, agent constraints, and scoped CSS |
-| `render_form` | Collect structured user input |
-| `render_card` | Display information-rich cards with actions |
-| `render_alert` | Surface status and severity messages |
-| `render_confirm` | Request user approval for risky or important actions |
-| `render_table` | Display sortable tabular data |
-| `render_chart` | Display line, bar, area, and pie charts |
-| `render_layout` | Build dashboard-style layouts, including embedded form sections for editable proposals |
-| `render_progress` | Show progress and step flows |
-| `render_modal` | Display modal dialogs |
-| `render_toast` | Show temporary notifications |
-
-### Brand-driven generative UI
-
-ADK UI brand kits make approved company tokens, assets, component recipes, and templates the design source of truth. Agents pass an approved `kit_id`; protocol adapters preserve it as the catalog identity; both React renderer paths consume the same scoped kit. Draft kits are rejected by production providers unless preview is explicitly enabled.
-
-See [Brand Kits](docs/BRAND_KITS.md) for import, asset generation, approval, React, protocol, and security guidance.
-
-### Whole applications and spatial UI
-
-Use `render_app` when the requested outcome is a product, portal, site, or multi-route workflow. It emits a validated application graph plus independently addressable page surfaces, so application-aware clients get preserved navigation and older protocol clients still receive usable surface fallbacks.
-
-The `scene_3d` component is declarative rather than executable. Agents choose from bounded primitives or approved `model_3d` assets in the active brand kit; hosts own the renderer, materials, interaction policy, accessibility fallback, and performance budget.
-
-See [Generative Applications and 3D](docs/GENERATIVE_APPLICATIONS_3D.md) for schemas, React integration, protocol behavior, security boundaries, and performance guidance.
-
-### Core Strengths
-
-- Type-safe Rust schema with TypeScript-friendly rendering surface
-- Server-side validation before bad UI reaches the browser
-- Streaming updates via `UiUpdate`
-- HTML renderer for all 30+ component types with bandwidth-adaptive and accessible 3D fallback output
-- Multi-page application rendering with state-preserving navigation and page-level design composition
-- Lazy WebGPU/WebGL 3D rendering without increasing the normal surface startup payload
-- Tested system prompts for reliable tool use
-- Prebuilt templates for common business flows
-- Protocol adapters that reduce per-tool drift
+`recharts` is an optional peer: without it a chart is drawn as the home draws it. 3D scenes,
+cards with depth and 3D layouts have no renderer here: `DrawnView` draws them itself, natively,
+with picking into the drawing's form (`three` stays an optional peer only for the deprecated
+standalone `Scene3D`). See [packages/adk-ui-react](packages/adk-ui-react/README.md) and
+[docs/BRAND_KITS.md](docs/BRAND_KITS.md).
 
 ## Examples
 
-| Example | Description | Command |
-|---------|-------------|---------|
-| `ui_server` | Rust server with SSE and protocol-aware UI tool output | `cargo run --example ui_server --features adk-core` |
-| `ui_react_client` | React reference client with protocol profile selector | `cd examples/ui_react_client && npm run dev -- --host 127.0.0.1` |
-| `ui_react_client?example=<id>` | Independent zero-server capability showcases | Run the React client, then open `/?example=incident-command` |
+| | |
+|---|---|
+| [`examples/insight_agent.rs`](examples/insight_agent.rs) | A real agent on Claude that studies a directory with its own tools and answers with adk-ui's charts, metrics, pages and 3D; configured from the environment (`ANTHROPIC_MODEL`, `ANTHROPIC_EFFORT`, `AGENT_WORKSPACE`, `AGENT_MODE`, `AGENT_CATALOG`, `PORT`): `ANTHROPIC_MODEL=claude-opus-5-5 AGENT_WORKSPACE=$PWD cargo run --example insight_agent`. Add `ADK_UI_3D_APPS=1` and `--features apps` for `show_3d_app` (apps origin on `APPS_PORT`, default `PORT` + 1) |
+| [`examples/insight_home.rs`](examples/insight_home.rs) | The ADK-Rust web home over a scripted agent that draws the eleven sample drawings: `cargo run --example insight_home -- 8806 /tmp/insight-home`, open `http://127.0.0.1:8806/ui/` and send a message |
+| [`examples/custom_host`](examples/custom_host) | A Vite app drawing the same drawings with `DrawnView`: the home's view, adk-ui's renderers, and two approved brand kits |
+| [`fixtures/drawings`](fixtures/drawings) | The eleven sample drawings: incident command, support request, release room, store week, warehouse bays and live throughput in studio; revenue in 3D bars, a fleet on a globe, a service network, a yard to pick a dock in, and terrain in spatial |
 
-Protocol coverage and streaming behaviors are exercised through the live React client and the Rust test suite in [`/tests`](tests/).
+## Versions
 
-## Migration and Deprecation
+| adk-ui | ADK-Rust | `@zavora-ai/adk-ui-react` | `@zavora-ai/adk-surface-react` |
+|---|---|---|---|
+| 3.0 | 3.0 (`adk-surface` with `genui`'s scenes and depth) | 3.0 | 3.0 |
+| 2.2 | 2 | 2.2 | n/a |
 
-The legacy `adk_ui` runtime profile is on a planned migration path:
+Rust 1.95 or later. React 18.3 or 19.
 
-| Milestone | Date |
-|-----------|------|
-| Announced | 2026-02-07 |
-| Sunset target | 2026-12-31 |
-| Preferred profiles | `a2ui`, `ag_ui`, `mcp_apps` |
+## Developing
 
-See [docs/PROTOCOL_MIGRATION.md](docs/PROTOCOL_MIGRATION.md) for detailed guidance.
+```bash
+cargo test                                 # add --features apps for show_3d_app
+cargo clippy --all-targets --all-features -- -D warnings
+npm install && npm test                    # packages/adk-ui-react
+```
 
-## Additional Documentation
-
-- [Protocol Migration Guide](docs/PROTOCOL_MIGRATION.md)
-- [Protocol Modernization Workplan](docs/PROTOCOL_MODERNIZATION_WORKPLAN.md)
-- [Framework Continuity Roadmap](docs/FRAMEWORK_CONTINUITY_ROADMAP.md)
-- [Generative Applications and 3D](docs/GENERATIVE_APPLICATIONS_3D.md)
-- [React Client Notes](examples/ui_react_client/README.md)
+To build against an unreleased adk-rust, copy `.cargo/config.toml.example` to
+`.cargo/config.toml` (untracked) and point it at a checkout. `catalogs/` holds the catalog
+documents, written from the Rust catalogs and drift-checked by `cargo test`; the React
+package's registry is checked against them. Releasing: [RELEASING.md](RELEASING.md).
 
 ## License
 
 Apache-2.0
-
-## Part of ADK-Rust
-
-`adk-ui` is part of the [ADK-Rust](https://adk-rust.com) ecosystem for building AI agents in Rust.

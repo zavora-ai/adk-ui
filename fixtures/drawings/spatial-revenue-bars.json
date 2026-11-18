@@ -1,0 +1,169 @@
+{
+  "catalog": "spatial",
+  "summary": "Revenue over two categories in 3D bars, headline figures on a curved wall, and a patch that adds a quarter.",
+  "screen": {
+    "surfaceId": "revenue-3d",
+    "title": "Revenue by quarter and region",
+    "components": [
+      {
+        "id": "root",
+        "component": "Column",
+        "children": [
+          "headline",
+          "bars"
+        ]
+      },
+      {
+        "id": "headline",
+        "component": "Stage",
+        "layout": "wall",
+        "title": "This year",
+        "children": [
+          "total",
+          "best",
+          "growth"
+        ]
+      },
+      {
+        "id": "total",
+        "component": "Metric",
+        "label": "Revenue",
+        "value": {
+          "path": "/total"
+        },
+        "unit": "USD M"
+      },
+      {
+        "id": "best",
+        "component": "Metric",
+        "label": "Best region",
+        "value": "North"
+      },
+      {
+        "id": "growth",
+        "component": "Metric",
+        "label": "Growth since Q1",
+        "value": {
+          "path": "/growth"
+        },
+        "unit": "%",
+        "delta": {
+          "value": {
+            "path": "/growth"
+          },
+          "goodWhen": "up"
+        }
+      },
+      {
+        "id": "bars",
+        "component": "Bar3D",
+        "title": "Quarterly revenue",
+        "description": "USD millions",
+        "data": {
+          "path": "/revenue"
+        },
+        "x": {
+          "key": "quarter",
+          "label": "Quarter"
+        },
+        "series": [
+          {
+            "key": "north",
+            "label": "North"
+          },
+          {
+            "key": "south",
+            "label": "South"
+          },
+          {
+            "key": "west",
+            "label": "West"
+          }
+        ],
+        "yLabel": "Revenue",
+        "height": 380,
+        "controls": "orbit"
+      }
+    ],
+    "dataModel": {
+      "revenue": [
+        {
+          "quarter": "Q1 2026",
+          "north": 4.2,
+          "south": 3.1,
+          "west": 2.4
+        },
+        {
+          "quarter": "Q2 2026",
+          "north": 4.8,
+          "south": 3.4,
+          "west": 2.9
+        },
+        {
+          "quarter": "Q3 2026",
+          "north": 5.1,
+          "south": 3.9,
+          "west": 3.6
+        },
+        {
+          "quarter": "Q4 2026",
+          "north": 5.9,
+          "south": 4.2,
+          "west": 4.1
+        }
+      ],
+      "total": 47.6,
+      "growth": 41
+    }
+  },
+  "patches": [
+    {
+      "surfaceId": "revenue-3d",
+      "data": [
+        {
+          "path": "/revenue",
+          "value": [
+            {
+              "quarter": "Q1 2026",
+              "north": 4.2,
+              "south": 3.1,
+              "west": 2.4
+            },
+            {
+              "quarter": "Q2 2026",
+              "north": 4.8,
+              "south": 3.4,
+              "west": 2.9
+            },
+            {
+              "quarter": "Q3 2026",
+              "north": 5.1,
+              "south": 3.9,
+              "west": 3.6
+            },
+            {
+              "quarter": "Q4 2026",
+              "north": 5.9,
+              "south": 4.2,
+              "west": 4.1
+            },
+            {
+              "quarter": "Q1 2027",
+              "north": 6.3,
+              "south": 4.6,
+              "west": 4.4
+            }
+          ]
+        },
+        {
+          "path": "/total",
+          "value": 62.9
+        },
+        {
+          "path": "/growth",
+          "value": 50
+        }
+      ]
+    }
+  ]
+}

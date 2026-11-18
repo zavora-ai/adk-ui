@@ -1,0 +1,231 @@
+/*
+ * adk-ui's renderers, on the adk-surface tokens (--card, --border, --text, --text-2, --label,
+ * --accent, --focus, --font, --mono, --radius, --chart-1 ... --chart-8). Import
+ * `@zavora-ai/adk-surface-react/tokens.css` or define the tokens yourself; a brand kit sets
+ * them with <KitProvider>. Nothing here uses a decision's colours.
+ */
+.adk-ui-chart,
+.adk-ui-scene {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.adk-ui-heading {
+    margin: 0;
+    color: var(--text, #0f172a);
+    font: 600 15px/1.35 var(--font, system-ui);
+}
+
+.adk-ui-caption {
+    color: var(--label, #64748b);
+    font: 12px/1.4 var(--font, system-ui);
+}
+
+.adk-ui-table {
+    width: 100%;
+    border-collapse: collapse;
+    font: 13px/1.4 var(--font, system-ui);
+    color: var(--text, #0f172a);
+}
+
+.adk-ui-table th,
+.adk-ui-table td {
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--border, #e6e8ec);
+    text-align: left;
+}
+
+.adk-ui-table th {
+    color: var(--label, #64748b);
+    font-weight: 500;
+}
+
+.adk-ui-sparkline {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.adk-ui-sparkline svg {
+    width: 120px;
+    height: 28px;
+}
+
+.adk-ui-metric {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px 14px;
+    border: 1px solid var(--border, #e6e8ec);
+    border-radius: var(--radius, 10px);
+    background: var(--card, #fff);
+}
+
+.adk-ui-metric__value {
+    color: var(--text, #0f172a);
+    font: 600 26px/1.15 var(--font, system-ui);
+    font-variant-numeric: tabular-nums;
+}
+
+.adk-ui-metric__delta,
+.adk-ui-metric__status {
+    color: var(--text-2, #475569);
+    font: 12px/1.4 var(--font, system-ui);
+}
+
+.adk-ui-metric__delta[data-direction='better'] {
+    color: var(--chart-2, #0d9488);
+}
+
+.adk-ui-key-value dl {
+    display: grid;
+    gap: 6px;
+    margin: 0;
+}
+
+.adk-ui-key-value__pair {
+    display: grid;
+    grid-template-columns: minmax(96px, 34%) 1fr;
+    gap: 12px;
+}
+
+.adk-ui-key-value dt {
+    color: var(--label, #64748b);
+}
+
+.adk-ui-key-value dd {
+    margin: 0;
+    color: var(--text, #0f172a);
+}
+
+.adk-ui-progress {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font: 13px/1.4 var(--font, system-ui);
+    color: var(--text, #0f172a);
+}
+
+.adk-ui-progress__track {
+    height: 8px;
+    border-radius: 999px;
+    background: var(--raised, #f6f7f9);
+    overflow: hidden;
+}
+
+.adk-ui-progress__bar {
+    height: 100%;
+    background: var(--chart-1, #2563eb);
+}
+
+.adk-ui-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border: 1px solid var(--border, #e6e8ec);
+    border-radius: 999px;
+    color: var(--text-2, #475569);
+    font: 500 12px/1.5 var(--font, system-ui);
+}
+
+.adk-ui-badge[data-tone='success'] {
+    color: var(--chart-2, #0d9488);
+}
+
+.adk-ui-badge[data-tone='info'] {
+    color: var(--chart-1, #2563eb);
+}
+
+.adk-ui-badge[data-tone='warning'],
+.adk-ui-badge[data-tone='danger'] {
+    color: var(--chart-4, #db2777);
+}
+
+.adk-ui-app__tabs {
+    display: flex;
+    gap: 4px;
+    border-bottom: 1px solid var(--border, #e6e8ec);
+}
+
+.adk-ui-app[data-navigation='side'] {
+    display: grid;
+    grid-template-columns: 180px 1fr;
+}
+
+.adk-ui-app[data-navigation='side'] .adk-ui-app__tabs {
+    flex-direction: column;
+    border-bottom: 0;
+}
+
+.adk-ui-app__tabs [role='tab'] {
+    padding: 6px 10px;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    background: none;
+    color: var(--text-2, #475569);
+    font: 500 13px/1.4 var(--font, system-ui);
+    cursor: pointer;
+}
+
+.adk-ui-app__tabs [role='tab'][aria-selected='true'] {
+    border-bottom-color: var(--accent, #2563eb);
+    color: var(--text, #0f172a);
+}
+
+.adk-ui-app__tabs [role='tab']:focus-visible {
+    outline: 2px solid var(--focus, #2563eb);
+    outline-offset: 2px;
+}
+
+.adk-ui-app__page,
+.adk-ui-page__content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-top: 12px;
+}
+
+/* An inactive page stays out of sight: `hidden` loses to the display rule above otherwise. */
+.adk-ui-app__page[hidden] {
+    display: none;
+}
+
+.adk-ui-page[data-layout='grid'] .adk-ui-page__content,
+.adk-ui-region[data-layout='grid'] .adk-ui-region__content {
+    display: grid;
+    grid-template-columns: repeat(var(--adk-ui-columns, 2), minmax(0, 1fr));
+    gap: 12px;
+}
+
+.adk-ui-region {
+    padding: 12px 14px;
+    border: 1px solid var(--border, #e6e8ec);
+    border-radius: var(--radius, 10px);
+    background: var(--card, #fff);
+}
+
+.adk-ui-region__content {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.adk-ui-scene__viewport {
+    width: 100%;
+    border-radius: var(--radius, 10px);
+    overflow: hidden;
+    background: var(--raised, #f6f7f9);
+}
+
+.adk-ui-scene__labels {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    color: var(--text-2, #475569);
+    font: 12px/1.4 var(--font, system-ui);
+}

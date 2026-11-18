@@ -1,7 +1,7 @@
 {
     "name": "@zavora-ai/adk-ui-react",
-    "version": "2.2.0",
-    "description": "React components for rendering ADK-UI agent interfaces",
+    "version": "3.0.0",
+    "description": "Renderers of adk-ui's extension catalogs (charts, metrics, pages, scenes) for @zavora-ai/adk-surface-react's DrawnView, and the same components for a host's own data",
     "main": "dist/index.js",
     "module": "dist/index.mjs",
     "types": "dist/index.d.ts",
@@ -11,6 +11,7 @@
             "import": "./dist/index.mjs",
             "require": "./dist/index.js"
         },
+        "./style.css": "./dist/index.css",
         "./package.json": "./package.json"
     },
     "files": [
@@ -27,12 +28,16 @@
         "typecheck": "tsc --noEmit"
     },
     "peerDependencies": {
-        "react": ">=18.0.0",
-        "react-dom": ">=18.0.0",
+        "@zavora-ai/adk-surface-react": "^3.0.0",
+        "react": ">=18.3.0 <20",
+        "react-dom": ">=18.3.0 <20",
         "recharts": "^3.0.0",
         "three": ">=0.180.0"
     },
     "peerDependenciesMeta": {
+        "@zavora-ai/adk-surface-react": {
+            "optional": true
+        },
         "recharts": {
             "optional": true
         },
@@ -40,28 +45,31 @@
             "optional": true
         }
     },
-    "dependencies": {
-        "clsx": "^2.0.0",
-        "lucide-react": "^0.564.0",
-        "react-markdown": "^10.1.0"
-    },
     "devDependencies": {
+        "@eslint/js": "^9.39.1",
         "@types/react": "^19.2.5",
         "@types/react-dom": "^19.2.3",
         "@types/three": "^0.185.0",
         "esbuild": "^0.28.2",
+        "eslint": "^9.39.1",
+        "eslint-plugin-react-hooks": "^7.0.1",
+        "globals": "^16.5.0",
         "react": "^19.2.0",
         "react-dom": "^19.2.0",
         "recharts": "^3.10.1",
         "three": "^0.185.1",
-        "typescript": "^5.0.0"
+        "typescript": "~5.9.3",
+        "typescript-eslint": "^8.46.4"
     },
     "keywords": [
         "adk",
+        "adk-rust",
         "agent",
-        "ui",
+        "a2ui",
+        "genui",
+        "generative-ui",
+        "charts",
         "react",
-        "components",
         "zavora"
     ],
     "repository": {
@@ -71,5 +79,8 @@
     "license": "Apache-2.0",
     "publishConfig": {
         "access": "public"
-    }
+    },
+    "sideEffects": [
+        "*.css"
+    ]
 }

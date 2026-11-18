@@ -5,6 +5,135 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — 3.0.0
+
+adk-ui 3 is an extension of ADK-Rust 3's agent-drawn UI (`adk-surface`, feature `genui`), not
+a second render stack. `genui` draws, versions and proves every drawing, keeps approval
+controls, secrets and links out of it (spec 3.3 §7.4 rule 5), and turns a form's **Send** into
+a call the person decides. adk-ui 3 adds extension catalogs `genui` checks and draws.
+
+### Added
+
+- **The insight catalog** (`catalogs::insight`, id
+  `https://zavora.ai/a2ui/catalogs/adk-ui-insight/1.0/catalog.json`): `forms` 1.0 plus
+  `Chart` (bar, line, area, pie, scatter over category, number or time axes), `Sparkline`,
+  `Metric` (value, unit, currency or percent, change, status, trend), `KeyValue`, `Progress`
+  and `Badge`. Every one only shows, binds its data with `{"path"}`, and says what the
+  ADK-Rust web home and terminal show for it: charts as the home's native chart, the rest as
+  `forms` components. `genui` checks every string in them and in the data they bind.
+- `toolset()` and `toolset_for()`: `genui`'s render tools drawing in an adk-ui catalog, under
+  their usual names; `catalogs::register` and `catalogs::ag_ui` register the catalogs with a
+  home and with AG-UI.
+- **The studio catalog** (`catalogs::studio`, id
+  `https://zavora.ai/a2ui/catalogs/adk-ui-studio/1.0/catalog.json`): the insight catalog plus
+  `App` (pages the host navigates; the web home shows them as tabs), `Page`, `Region` and
+  `Scene3D` (primitive shapes with checked labels and `#rrggbb` colours, at most 64; no models,
+  textures or actions). The home draws a scene in 3D: each hex colour as the nearest chart
+  colour, and a plane upright in x-y as three.js draws one. The containers declare what they
+  hold, so `genui` checks every held component, its fields and buttons included. Builders in
+  `studio`.
+- `kit::ApprovedKit`: only an approved, valid kit applies. `surface_css` sets the adk-surface
+  tokens a custom host's `DrawnView` and adk-ui's renderers read (card, border, text, accent,
+  focus, fonts, radius, the eight chart colours), never a decision's or a status's;
+  `a2ui_theme` gives a third-party A2UI renderer the primary colour alone.
+- Builders for every insight component (`insight::Chart`, `Metric`, …, `bind`), a `Screen`
+  that is checked as `genui` checks it and gives `render_screen`'s arguments, and
+  `prompts::instructions` for the model.
+- **The spatial catalog** (`catalogs::spatial`, id
+  `https://zavora.ai/a2ui/catalogs/adk-ui-spatial/1.0/catalog.json`): the studio catalog plus
+  - 3D charts: `Bar3D`, `Scatter3D`, `SurfacePlot`, `Graph3D` and `Globe`;
+  - `Scene`: groups, lines, arrows, text, palette colours and states, lights, cameras,
+    motion, panels beside objects, and `pickInto`, where picking an object fills a choice
+    field the drawing shows and never sends;
+  - `DepthCard` (tilt, flip, layers) and `Stage` (stage, wall, carousel).
+
+  Each one projects onto `genui`'s own scenes and depth effects. The ADK-Rust web home draws
+  them natively (WebGL, in its palette), and the terminal shows their words. Every limit is
+  checked again on bound data, which the schema can't see. Builders are in `spatial`.
+  `catalogs::HOME_DRAWN` lists what the home draws, and `prompts::instructions` tells a spatial
+  agent when 3D carries information.
+- **`@zavora-ai/adk-ui-react` 3**: renderers for `@zavora-ai/adk-surface-react`'s `DrawnView`
+  (`adkUiRenderers`, `insightRenderers`, `studioRenderers`, and `spatialRenderers` for the
+  spatial catalog's 2D components).
+  - A renderer draws from the server's resolved, checked properties and never gets a way to
+    send; forms inside an app's pages stay `DrawnView`'s own.
+  - `Chart` (recharts) loads lazily as an optional peer and falls back to the home's own view.
+  - 3D scenes, cards with depth and 3D layouts have no renderer: `DrawnView` draws them.
+  - `Sparkline`, `Metric`, `KeyValueList`, `ProgressBar`, `Badge`, `AppShell`, `PageView` and
+    `RegionView` need no peer and also draw a host's own data. The standalone `Scene3D` is
+    deprecated.
+  - `KitProvider` applies approved kits only.
+- **3D apps** (feature `apps`): `apps::ThreeApps`, an MCP server whose one tool,
+  `show_3d_app`, shows three.js the model writes in genui-apps' sandbox, on its own origin
+  (`adk-ui-apps` serves it over stdio).
+  - The page loads three.js 0.185.1 from its one declared site. It runs the code in a block
+    of its own, given `THREE`, `scene`, `camera`, `onFrame`, `label`, `theme` and more, so
+    code that declares a given name again still runs.
+  - The page owns the render loop and its Pause button.
+  - The server refuses code that shows a decision's words or reaches outside its frame.
+  - `insight_agent` serves it with `ADK_UI_3D_APPS=1`. The spatial prompt states every scene
+    limit, a motion's 0.2 to 120 seconds included, so a model knows when to use an app
+    instead.
+- `catalogs/`: the catalog documents and an index, written from the Rust catalogs and
+  drift-checked by `cargo test`; the React registry is checked against them.
+- Eleven sample drawings (`fixtures/drawings/`, six in studio and five in spatial), the
+  `insight_home` example (the ADK-Rust web home over a scripted agent that draws them), and
+  `examples/custom_host` (a Vite app drawing them with `DrawnView`, adk-ui's renderers and two
+  approved kits).
+- The `insight_agent` example: a harness agent on an Anthropic model (adaptive thinking, prompt
+  caching) that studies a directory with its own workspace tools and answers with adk-ui's
+  catalogs (spatial by default), everything configured from the environment and nothing
+  scripted.
+- End-to-end tests:
+  - a harness agent draws every sample through `toolset_for`, in studio and in spatial;
+  - a home that registers the catalogs shows every one, its scenes with the server's
+    summaries;
+  - a form inside a drawing is held for the person with only its fields;
+  - a dock picked in a 3D scene is sent as a field and asks first.
+- `docs/MIGRATING_TO_3.md` maps every 2.x tool, module and React export to its replacement.
+
+### Removed
+
+- Every render tool and `UiToolset` (`render_form`, `render_card`, `render_table`,
+  `render_chart`, `render_layout`, `render_page`, `render_app`, `render_screen`,
+  `render_confirm`, `render_alert`, `render_toast`, `render_modal`, `render_progress`,
+  `render_kit`, `patch_surface` and the surface persistence tools): agents draw with
+  `genui`'s render tools; a confirm dialog an agent draws is never an approval.
+- The protocol adapters and profiles (`interop` for AG-UI, MCP Apps and AWP, the legacy
+  `adk_ui` profile, `protocol_capabilities`), the A2UI model (`a2ui`), the HTML renderer
+  (`html`), templates (some asked for passwords), notifications, the legacy schema and
+  validation, the catalog registry and the 2.x catalogs: `genui` owns A2UI v0.9.1, AG-UI and
+  MCP Apps.
+- The `adk-core`, `awp` and `remote-catalogs` features, and the 2.x examples (`ui_server`,
+  `agentic_ui`, the Agent UI Studio client). The protocol migration notes move to
+  `docs/archive/2.x/`.
+- From `@zavora-ai/adk-ui-react`: `Renderer`, `StreamingRenderer`, the A2UI renderer, parser
+  and store, the protocol client, `uiEventToMessage` (UI events no longer reach the model as the
+  person's words), `ApplicationRenderer`, `ReasoningPanel`, kit slots and `kit://` assets, and
+  the `react-markdown`, `lucide-react` and `clsx` dependencies.
+
+### Changed
+
+- Builds on `adk-surface` 3 (`genui`, with its scenes and depth effects) and `schemars` 1.0;
+  Rust 1.95. `.cargo/config.toml.example` builds against an unreleased adk-rust checkout.
+- A brand kit generates its manifest, tokens and CSS only, never a catalog or instructions for
+  the model; its recipes use the `forms` names (`TextField` for 2.x's `TextInput`). A kit is the
+  host's: the agent never picks one and a drawing never carries one (`docs/BRAND_KITS.md`).
+- The crate and `@zavora-ai/adk-ui-react` are both 3.0.0, released after ADK-Rust 3.0
+  (`adk-surface`, `@zavora-ai/adk-surface-react`) is published ([RELEASING.md](RELEASING.md)).
+- The 2026 generative UI market brief, written for 2.x, moves to `docs/archive/2.x/`.
+
+## [2.2.1] - Unreleased (`release/2.x`)
+
+The 2.x line is in maintenance for ADK-Rust 2: security fixes only, until the `adk_ui` server
+profile's sunset on 2026-12-31.
+
+### Fixed
+
+- `ApplicationRenderer` passes the application's `state` to every rendered component as its data
+  model, so tables, charts and key-value views bound with `data_source.binding_path` show the
+  application's data instead of an empty view.
+
 ## [2.2.0] - 2026-08-22
 
 ### Added

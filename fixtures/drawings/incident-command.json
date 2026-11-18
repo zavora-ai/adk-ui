@@ -1,0 +1,218 @@
+{
+  "catalog": "insight",
+  "summary": "An incident at a glance: live metrics, latency over the last hours, who is on it, and a rollback the person asks for.",
+  "screen": {
+    "surfaceId": "incident-2041",
+    "title": "Incident INC-2041 · checkout latency",
+    "components": [
+      {
+        "id": "root",
+        "component": "Column",
+        "children": [
+          "status",
+          "metrics",
+          "latency",
+          "facts",
+          "rollback"
+        ]
+      },
+      {
+        "id": "status",
+        "component": "Badge",
+        "text": "Investigating",
+        "tone": "warning"
+      },
+      {
+        "id": "metrics",
+        "component": "Row",
+        "children": [
+          "p95",
+          "errors",
+          "open"
+        ]
+      },
+      {
+        "id": "p95",
+        "component": "Metric",
+        "label": "p95 latency",
+        "value": {
+          "path": "/p95"
+        },
+        "unit": "ms",
+        "delta": {
+          "value": 180,
+          "goodWhen": "down"
+        },
+        "status": "critical",
+        "trend": {
+          "path": "/p95Trend"
+        }
+      },
+      {
+        "id": "errors",
+        "component": "Metric",
+        "label": "Error rate",
+        "value": {
+          "path": "/errorRate"
+        },
+        "format": "percent",
+        "status": "warning"
+      },
+      {
+        "id": "open",
+        "component": "Metric",
+        "label": "Open incidents",
+        "value": 3,
+        "delta": {
+          "value": 1,
+          "goodWhen": "down"
+        }
+      },
+      {
+        "id": "latency",
+        "component": "Chart",
+        "kind": "line",
+        "title": "p95 latency, last 6 hours",
+        "data": {
+          "path": "/latency"
+        },
+        "x": {
+          "key": "at",
+          "type": "time"
+        },
+        "series": [
+          {
+            "key": "checkout",
+            "label": "Checkout"
+          },
+          {
+            "key": "search",
+            "label": "Search"
+          }
+        ],
+        "yLabel": "ms",
+        "timeUnit": "hour"
+      },
+      {
+        "id": "facts",
+        "component": "KeyValue",
+        "title": "Context",
+        "items": [
+          {
+            "key": "Service",
+            "value": "checkout-api"
+          },
+          {
+            "key": "Region",
+            "value": "eu-west-1"
+          },
+          {
+            "key": "On call",
+            "value": "Platform team"
+          },
+          {
+            "key": "Last deploy",
+            "value": "2026.11.16-2"
+          }
+        ]
+      },
+      {
+        "id": "rollback",
+        "component": "Card",
+        "child": "rollback-form"
+      },
+      {
+        "id": "rollback-form",
+        "component": "Column",
+        "children": [
+          "reason",
+          "start"
+        ]
+      },
+      {
+        "id": "reason",
+        "component": "TextField",
+        "label": "Why roll back",
+        "value": {
+          "path": "/reason"
+        },
+        "variant": "longText"
+      },
+      {
+        "id": "start",
+        "component": "Button",
+        "child": "start-label",
+        "variant": "primary",
+        "action": {
+          "event": {
+            "name": "rollback"
+          }
+        }
+      },
+      {
+        "id": "start-label",
+        "component": "Text",
+        "text": "Start rollback"
+      }
+    ],
+    "dataModel": {
+      "p95": 840,
+      "p95Trend": [
+        410,
+        430,
+        520,
+        690,
+        780,
+        840
+      ],
+      "errorRate": 2.4,
+      "reason": "",
+      "latency": [
+        {
+          "at": "2026-11-16T09:00:00Z",
+          "checkout": 410,
+          "search": 220
+        },
+        {
+          "at": "2026-11-16T10:00:00Z",
+          "checkout": 430,
+          "search": 225
+        },
+        {
+          "at": "2026-11-16T11:00:00Z",
+          "checkout": 520,
+          "search": 230
+        },
+        {
+          "at": "2026-11-16T12:00:00Z",
+          "checkout": 690,
+          "search": 228
+        },
+        {
+          "at": "2026-11-16T13:00:00Z",
+          "checkout": 780,
+          "search": 240
+        },
+        {
+          "at": "2026-11-16T14:00:00Z",
+          "checkout": 840,
+          "search": 238
+        }
+      ]
+    },
+    "actions": [
+      {
+        "id": "rollback",
+        "label": "Start rollback",
+        "tool": "start_rollback",
+        "args": {
+          "service": "checkout-api",
+          "toVersion": "2026.11.16-1",
+          "reason": {
+            "path": "/reason"
+          }
+        }
+      }
+    ]
+  }
+}
