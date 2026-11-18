@@ -161,8 +161,10 @@ npm install && npm test                    # packages/adk-ui-react
 
 To build against an unreleased adk-rust, copy `.cargo/config.toml.example` to
 `.cargo/config.toml` (untracked) and point it at a checkout. `catalogs/` holds the catalog
-documents, written from the Rust catalogs and drift-checked by `cargo test`; the React
-package's registry is checked against them. Releasing: [RELEASING.md](RELEASING.md).
+documents, written from the Rust catalogs and drift-checked by `cargo test`: A2UI 1.0
+documents in `catalogs/a2ui-1.0/` (only what each catalog adds, which a surface mixes with
+`forms`, with its rules as `instructions`; checked against the A2UI 1.0 meta-schema) and the
+v0.9.1 documents beside them. The React package's registry is checked against them. Releasing: [RELEASING.md](RELEASING.md).
 
 ## License
 

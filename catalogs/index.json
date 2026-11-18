@@ -1,6 +1,7 @@
 {
   "catalogs": [
     {
+      "a2ui1_0File": "a2ui-1.0/adk-ui-insight-1.0.json",
       "extensions": [
         "Badge",
         "Chart",
@@ -15,6 +16,7 @@
       "label": "insight 1.0"
     },
     {
+      "a2ui1_0File": "a2ui-1.0/adk-ui-studio-1.0.json",
       "extensions": [
         "App",
         "Badge",
@@ -35,6 +37,7 @@
       "label": "studio 1.0"
     },
     {
+      "a2ui1_0File": "a2ui-1.0/adk-ui-spatial-1.0.json",
       "extensions": [
         "App",
         "Badge",

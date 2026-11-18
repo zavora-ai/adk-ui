@@ -9,6 +9,18 @@ use std::sync::LazyLock;
 use adk_surface::SurfaceEngineBuilder;
 use adk_surface::genui::{Catalog, ExtensionSpec, GenuiAgUi};
 
+/// A catalog with its rules (`prompts::catalog_rules`) as its A2UI 1.0 `instructions`.
+trait WithRules {
+    fn with_rules(self) -> Catalog;
+}
+
+impl WithRules for Catalog {
+    fn with_rules(self) -> Catalog {
+        let rules = crate::prompts::catalog_rules(&self);
+        self.with_instructions(rules)
+    }
+}
+
 /// The insight catalog's id.
 pub const INSIGHT_ID: &str = "https://zavora.ai/a2ui/catalogs/adk-ui-insight/1.0/catalog.json";
 
@@ -20,6 +32,7 @@ static INSIGHT: LazyLock<Catalog> = LazyLock::new(|| {
         components: crate::insight::components(),
     })
     .unwrap_or_else(|error| panic!("adk-ui's insight catalog does not compile: {error}"))
+    .with_rules()
 });
 
 /// The insight catalog: `forms` 1.0 plus charts, sparklines, metrics, key-value lists,
@@ -47,6 +60,7 @@ static STUDIO: LazyLock<Catalog> = LazyLock::new(|| {
         components,
     })
     .unwrap_or_else(|error| panic!("adk-ui's studio catalog does not compile: {error}"))
+    .with_rules()
 });
 
 /// The studio catalog: the insight catalog plus apps of pages, regions and primitive 3D
@@ -75,6 +89,7 @@ static SPATIAL: LazyLock<Catalog> = LazyLock::new(|| {
         components,
     })
     .unwrap_or_else(|error| panic!("adk-ui's spatial catalog does not compile: {error}"))
+    .with_rules()
 });
 
 /// The spatial catalog: the studio catalog plus 3D charts, laid-out scenes with motion, panels

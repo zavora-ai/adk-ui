@@ -1,0 +1,1719 @@
+{
+  "$id": "https://zavora.ai/a2ui/catalogs/adk-ui-spatial/1.0/catalog.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "catalogId": "https://zavora.ai/a2ui/catalogs/adk-ui-spatial/1.0/catalog.json",
+  "components": {
+    "App": {
+      "allOf": [
+        {
+          "properties": {
+            "component": {
+              "const": "App"
+            },
+            "initialPage": {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            "navigation": {
+              "enum": [
+                "top",
+                "side"
+              ],
+              "type": "string"
+            },
+            "pages": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "child": {
+                    "$ref": "common_types.json#/$defs/ComponentId"
+                  },
+                  "id": {
+                    "maxLength": 64,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "title": {
+                    "$ref": "common_types.json#/$defs/DynamicString"
+                  }
+                },
+                "required": [
+                  "id",
+                  "title",
+                  "child"
+                ],
+                "type": "object"
+              },
+              "maxItems": 24,
+              "minItems": 1,
+              "type": "array"
+            },
+            "title": {
+              "$ref": "common_types.json#/$defs/DynamicString"
+            }
+          },
+          "required": [
+            "component",
+            "pages"
+          ],
+          "type": "object"
+        }
+      ],
+      "allowedChildren": [
+        "Page"
+      ],
+      "type": "object",
+      "unevaluatedProperties": false
+    },
+    "Badge": {
+      "allOf": [
+        {
+          "properties": {
+            "component": {
+              "const": "Badge"
+            },
+            "text": {
+              "$ref": "common_types.json#/$defs/DynamicString"
+            },
+            "tone": {
+              "enum": [
+                "neutral",
+                "info",
+                "success",
+                "warning",
+                "danger"
+              ],
+              "type": "string"
+            }
+          },
+          "required": [
+            "component",
+            "text"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object",
+      "unevaluatedProperties": false
+    },
+    "Bar3D": {
+      "allOf": [
+        {
+          "properties": {
+            "camera": {
+              "enum": [
+                "fit",
+                "front",
+                "top",
+                "side",
+                "iso"
+              ],
+              "type": "string"
+            },
+            "component": {
+              "const": "Bar3D"
+            },
+            "controls": {
+              "enum": [
+                "none",
+                "orbit"
+              ],
+              "type": "string"
+            },
+            "data": {
+              "oneOf": [
+                {
+                  "$ref": "common_types.json#/$defs/DataBinding"
+                },
+                {
+                  "items": {
+                    "type": "object"
+                  },
+                  "maxItems": 50,
+                  "type": "array"
+                }
+              ]
+            },
+            "description": {
+              "$ref": "common_types.json#/$defs/DynamicString"
+            },
+            "height": {
+              "maximum": 960,
+              "minimum": 240,
+              "type": "integer"
+            },
+            "series": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "key": {
+                    "maxLength": 64,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "label": {
+                    "$ref": "common_types.json#/$defs/DynamicString"
+                  }
+                },
+                "required": [
+                  "key"
+                ],
+                "type": "object"
+              },
+              "maxItems": 8,
+              "minItems": 1,
+              "type": "array"
+            },
+            "title": {
+              "$ref": "common_types.json#/$defs/DynamicString"
+            },
+            "x": {
+              "additionalProperties": false,
+              "properties": {
+                "key": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "label": {
+                  "$ref": "common_types.json#/$defs/DynamicString"
+                }
+              },
+              "required": [
+                "key"
+              ],
+              "type": "object"
+            },
+            "yLabel": {
+              "$ref": "common_types.json#/$defs/DynamicString"
+            }
+          },
+          "required": [
+            "component",
+            "data",
+            "x",
+            "series"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object",
+      "unevaluatedProperties": false
+    },
+    "Chart": {
+      "allOf": [
+        {
+          "properties": {
+            "component": {
+              "const": "Chart"
+            },
+            "currency": {
+              "pattern": "^[A-Z]{3}$",
+              "type": "string"
+            },
+            "data": {
+              "oneOf": [
+                {
+                  "$ref": "common_types.json#/$defs/DataBinding"
+                },
+                {
+                  "items": {
+                    "type": "object"
+                  },
+                  "maxItems": 500,
+                  "type": "array"
+                }
+              ]
+            },
+            "kind": {
+              "enum": [
+                "bar",
+                "line",
+                "area",
+                "pie",
+                "scatter"
+              ],
+              "type": "string"
+            },
+            "legend": {
+              "type": "boolean"
+            },
+            "series": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "key": {
+                    "maxLength": 64,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "label": {
+                    "$ref": "common_types.json#/$defs/DynamicString"
+                  }
+                },
+                "required": [
+                  "key"
+                ],
+                "type": "object"
+              },
+              "maxItems": 8,
+              "minItems": 1,
+              "type": "array"
+            },
+            "stacked": {
+              "type": "boolean"
+            },
+            "timeUnit": {
+              "enum": [
+                "second",
+                "minute",
+                "hour",
+                "day",
+                "month",
+                "year"
+              ],
+              "type": "string"
+            },
+            "title": {
+              "$ref": "common_types.json#/$defs/DynamicString"
+            },
+            "valueFormat": {
+              "enum": [
+                "number",
+                "percent",
+                "currency"
+              ],
+              "type": "string"
+            },
+            "window": {
+              "maximum": 500,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "x": {
+              "additionalProperties": false,
+              "properties": {
+                "key": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "label": {
+                  "$ref": "common_types.json#/$defs/DynamicString"
+                },
+                "type": {
+                  "enum": [
+                    "category",
+                    "number",
+                    "time"
+                  ],
+                  "type": "string"
+                }
+              },
+              "required": [
+                "key"
+              ],
+              "type": "object"
+            },
+            "yLabel": {
+              "$ref": "common_types.json#/$defs/DynamicString"
+            }
+          },
+          "required": [
+            "component",
+            "kind",
+            "data",
+            "x",
+            "series"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object",
+      "unevaluatedProperties": false
+    },
+    "DepthCard": {
+      "allOf": [
+        {
+          "properties": {
+            "back": {
+              "$ref": "common_types.json#/$defs/ComponentId"
+            },
+            "component": {
+              "const": "DepthCard"
+            },
+            "effect": {
+              "enum": [
+                "tilt",
+                "flip",
+                "layers"
+              ],
+              "type": "string"
+            },
+            "front": {
+              "$ref": "common_types.json#/$defs/ComponentId"
+            },
+            "layers": {
+              "items": {
+                "$ref": "common_types.json#/$defs/ComponentId"
+              },
+              "maxItems": 4,
+              "minItems": 1,
+              "type": "array"
+            },
+            "title": {
+              "$ref": "common_types.json#/$defs/DynamicString"
+            }
+          },
+          "required": [
+            "component",
+            "front"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object",
+      "unevaluatedProperties": false
+    },
+    "Globe": {
+      "allOf": [
+        {
+          "properties": {
+            "arcs": {
+              "oneOf": [
+                {
+                  "$ref": "common_types.json#/$defs/DataBinding"
+                },
+                {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "from": {
+                        "items": {
+                          "type": "number"
+                        },
+                        "maxItems": 2,
+                        "minItems": 2,
+                        "type": "array"
+                      },
+                      "label": {
+                        "$ref": "common_types.json#/$defs/DynamicString"
+                      },
+                      "to": {
+                        "items": {
+                          "type": "number"
+                        },
+                        "maxItems": 2,
+                        "minItems": 2,
+                        "type": "array"
+                      }
+                    },
+                    "required": [
+                      "from",
+                      "to"
+                    ],
+                    "type": "object"
+                  },
+                  "maxItems": 200,
+                  "type": "array"
+                }
+              ]
+            },
+            "component": {
+              "const": "Globe"
+            },
+            "controls": {
+              "enum": [
+                "none",
+                "orbit"
+              ],
+              "type": "string"
+            },
+            "description": {
+              "$ref": "common_types.json#/$defs/DynamicString"
+            },
+            "focus": {
+              "additionalProperties": false,
+              "properties": {
+                "lat": {
+                  "maximum": 90,
+                  "minimum": -90,
+                  "type": "number"
+                },
+                "lon": {
+                  "maximum": 180,
+                  "minimum": -180,
+                  "type": "number"
+                }
+              },
+              "required": [
+                "lat",
+                "lon"
+              ],
+              "type": "object"
+            },
+            "height": {
+              "maximum": 960,
+              "minimum": 240,
+              "type": "integer"
+            },
+            "points": {
+              "oneOf": [
+                {
+                  "$ref": "common_types.json#/$defs/DataBinding"
+                },
+                {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "group": {
+                        "maxLength": 64,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "label": {
+                        "$ref": "common_types.json#/$defs/DynamicString"
+                      },
+                      "lat": {
+                        "maximum": 90,
+                        "minimum": -90,
+                        "type": "number"
+                      },
+                      "lon": {
+                        "maximum": 180,
+                        "minimum": -180,
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "lat",
+                      "lon"
+                    ],
+                    "type": "object"
+                  },
+                  "maxItems": 500,
+                  "type": "array"
+                }
+              ]
+            },
+            "spin": {
+              "type": "boolean"
+            },
+            "title": {
+              "$ref": "common_types.json#/$defs/DynamicString"
+            }
+          },
+          "required": [
+            "component",
+            "points"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object",
+      "unevaluatedProperties": false
+    },
+    "Graph3D": {
+      "allOf": [
+        {
+          "properties": {
+            "component": {
+              "const": "Graph3D"
+            },
+            "controls": {
+              "enum": [
+                "none",
+                "orbit"
+              ],
+              "type": "string"
+            },
+            "description": {
+              "$ref": "common_types.json#/$defs/DynamicString"
+            },
+            "edges": {
+              "oneOf": [
+                {
+                  "$ref": "common_types.json#/$defs/DataBinding"
+                },
+                {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "from": {
+                        "maxLength": 64,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "to": {
+                        "maxLength": 64,
+                        "minLength": 1,
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "from",
+                      "to"
+                    ],
+                    "type": "object"
+                  },
+                  "maxItems": 400,
+                  "type": "array"
+                }
+              ]
+            },
+            "height": {
+              "maximum": 960,
+              "minimum": 240,
+              "type": "integer"
+            },
+            "layout": {
+              "enum": [
+                "sphere",
+                "layers",
+                "given"
+              ],
+              "type": "string"
+            },
+            "nodes": {
+              "oneOf": [
+                {
+                  "$ref": "common_types.json#/$defs/DataBinding"
+                },
+                {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "group": {
+                        "maxLength": 64,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "id": {
+                        "maxLength": 64,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "label": {
+                        "$ref": "common_types.json#/$defs/DynamicString"
+                      },
+                      "x": {
+                        "type": "number"
+                      },
+                      "y": {
+                        "type": "number"
+                      },
+                      "z": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "id"
+                    ],
+                    "type": "object"
+                  },
+                  "maxItems": 200,
+                  "type": "array"
+                }
+              ]
+            },
+            "spin": {
+              "type": "boolean"
+            },
+            "title": {
+              "$ref": "common_types.json#/$defs/DynamicString"
+            }
+          },
+          "required": [
+            "component",
+            "nodes",
+            "edges"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object",
+      "unevaluatedProperties": false
+    },
+    "KeyValue": {
+      "allOf": [
+        {
+          "properties": {
+            "component": {
+              "const": "KeyValue"
+            },
+            "data": {
+              "oneOf": [
+                {
+                  "$ref": "common_types.json#/$defs/DataBinding"
+                },
+                {
+                  "items": {
+                    "type": "object"
+                  },
+                  "maxItems": 50,
+                  "type": "array"
+                }
+              ]
+            },
+            "items": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "key": {
+                    "$ref": "common_types.json#/$defs/DynamicString"
+                  },
+                  "value": {
+                    "$ref": "common_types.json#/$defs/DynamicValue"
+                  }
+                },
+                "required": [
+                  "key",
+                  "value"
+                ],
+                "type": "object"
+              },
+              "maxItems": 50,
+              "type": "array"
+            },
+            "keyField": {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            "title": {
+              "$ref": "common_types.json#/$defs/DynamicString"
+            },
+            "valueField": {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "component"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object",
+      "unevaluatedProperties": false
+    },
+    "Metric": {
+      "allOf": [
+        {
+          "properties": {
+            "caption": {
+              "$ref": "common_types.json#/$defs/DynamicString"
+            },
+            "component": {
+              "const": "Metric"
+            },
+            "currency": {
+              "pattern": "^[A-Z]{3}$",
+              "type": "string"
+            },
+            "delta": {
+              "additionalProperties": false,
+              "properties": {
+                "goodWhen": {
+                  "enum": [
+                    "up",
+                    "down"
+                  ],
+                  "type": "string"
+                },
+                "value": {
+                  "$ref": "common_types.json#/$defs/DynamicNumber"
+                }
+              },
+              "required": [
+                "value"
+              ],
+              "type": "object"
+            },
+            "format": {
+              "enum": [
+                "number",
+                "percent",
+                "currency"
+              ],
+              "type": "string"
+            },
+            "label": {
+              "$ref": "common_types.json#/$defs/DynamicString"
+            },
+            "status": {
+              "enum": [
+                "ok",
+                "warning",
+                "critical",
+                "info",
+                "neutral"
+              ],
+              "type": "string"
+            },
+            "trend": {
+              "oneOf": [
+                {
+                  "$ref": "common_types.json#/$defs/DataBinding"
+                },
+                {
+                  "items": {
+                    "type": "number"
+                  },
+                  "maxItems": 500,
+                  "type": "array"
+                }
+              ]
+            },
+            "unit": {
+              "$ref": "common_types.json#/$defs/DynamicString"
+            },
+            "value": {
+              "$ref": "common_types.json#/$defs/DynamicValue"
+            }
+          },
+          "required": [
+            "component",
+            "label",
+            "value"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object",
+      "unevaluatedProperties": false
+    },
+    "Page": {
+      "allOf": [
+        {
+          "properties": {
+            "children": {
+              "items": {
+                "$ref": "common_types.json#/$defs/ComponentId"
+              },
+              "maxItems": 32,
+              "type": "array"
+            },
+            "component": {
+              "const": "Page"
+            },
+            "description": {
+              "$ref": "common_types.json#/$defs/DynamicString"
+            },
+            "layout": {
+              "enum": [
+                "stack",
+                "grid",
+                "split"
+              ],
+              "type": "string"
+            },
+            "title": {
+              "$ref": "common_types.json#/$defs/DynamicString"
+            }
+          },
+          "required": [
+            "component",
+            "children"
+          ],
+          "type": "object"
+        }
+      ],
+      "allowedParents": [
+        "App"
+      ],
+      "type": "object",
+      "unevaluatedProperties": false
+    },
+    "Progress": {
+      "allOf": [
+        {
+          "properties": {
+            "component": {
+              "const": "Progress"
+            },
+            "indeterminate": {
+              "type": "boolean"
+            },
+            "label": {
+              "$ref": "common_types.json#/$defs/DynamicString"
+            },
+            "tone": {
+              "enum": [
+                "neutral",
+                "info",
+                "success",
+                "warning",
+                "danger"
+              ],
+              "type": "string"
+            },
+            "value": {
+              "$ref": "common_types.json#/$defs/DynamicNumber"
+            }
+          },
+          "required": [
+            "component"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object",
+      "unevaluatedProperties": false
+    },
+    "Region": {
+      "allOf": [
+        {
+          "properties": {
+            "children": {
+              "items": {
+                "$ref": "common_types.json#/$defs/ComponentId"
+              },
+              "maxItems": 32,
+              "type": "array"
+            },
+            "columns": {
+              "maximum": 4,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "component": {
+              "const": "Region"
+            },
+            "layout": {
+              "enum": [
+                "stack",
+                "grid",
+                "split"
+              ],
+              "type": "string"
+            },
+            "title": {
+              "$ref": "common_types.json#/$defs/DynamicString"
+            },
+            "tone": {
+              "enum": [
+                "neutral",
+                "info",
+                "success",
+                "warning",
+                "danger"
+              ],
+              "type": "string"
+            },
+            "variant": {
+              "enum": [
+                "plain",
+                "hero"
+              ],
+              "type": "string"
+            }
+          },
+          "required": [
+            "component",
+            "children"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object",
+      "unevaluatedProperties": false
+    },
+    "Scatter3D": {
+      "allOf": [
+        {
+          "properties": {
+            "component": {
+              "const": "Scatter3D"
+            },
+            "controls": {
+              "enum": [
+                "none",
+                "orbit"
+              ],
+              "type": "string"
+            },
+            "data": {
+              "oneOf": [
+                {
+                  "$ref": "common_types.json#/$defs/DataBinding"
+                },
+                {
+                  "items": {
+                    "type": "object"
+                  },
+                  "maxItems": 2000,
+                  "type": "array"
+                }
+              ]
+            },
+            "description": {
+              "$ref": "common_types.json#/$defs/DynamicString"
+            },
+            "group": {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            "height": {
+              "maximum": 960,
+              "minimum": 240,
+              "type": "integer"
+            },
+            "labelKey": {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            "size": {
+              "maximum": 1,
+              "minimum": 0.02,
+              "type": "number"
+            },
+            "title": {
+              "$ref": "common_types.json#/$defs/DynamicString"
+            },
+            "x": {
+              "additionalProperties": false,
+              "properties": {
+                "key": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "label": {
+                  "$ref": "common_types.json#/$defs/DynamicString"
+                }
+              },
+              "required": [
+                "key"
+              ],
+              "type": "object"
+            },
+            "y": {
+              "additionalProperties": false,
+              "properties": {
+                "key": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "label": {
+                  "$ref": "common_types.json#/$defs/DynamicString"
+                }
+              },
+              "required": [
+                "key"
+              ],
+              "type": "object"
+            },
+            "z": {
+              "additionalProperties": false,
+              "properties": {
+                "key": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "label": {
+                  "$ref": "common_types.json#/$defs/DynamicString"
+                }
+              },
+              "required": [
+                "key"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "component",
+            "data",
+            "x",
+            "y",
+            "z"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object",
+      "unevaluatedProperties": false
+    },
+    "Scene": {
+      "allOf": [
+        {
+          "properties": {
+            "camera": {
+              "additionalProperties": false,
+              "properties": {
+                "fov": {
+                  "maximum": 90,
+                  "minimum": 15,
+                  "type": "number"
+                },
+                "position": {
+                  "items": {
+                    "maximum": 1000.0,
+                    "minimum": -1000.0,
+                    "type": "number"
+                  },
+                  "maxItems": 3,
+                  "minItems": 3,
+                  "type": "array"
+                },
+                "preset": {
+                  "enum": [
+                    "fit",
+                    "front",
+                    "top",
+                    "side",
+                    "iso"
+                  ],
+                  "type": "string"
+                },
+                "spin": {
+                  "type": "boolean"
+                },
+                "target": {
+                  "items": {
+                    "maximum": 1000.0,
+                    "minimum": -1000.0,
+                    "type": "number"
+                  },
+                  "maxItems": 3,
+                  "minItems": 3,
+                  "type": "array"
+                }
+              },
+              "type": "object"
+            },
+            "component": {
+              "const": "Scene"
+            },
+            "controls": {
+              "enum": [
+                "none",
+                "orbit"
+              ],
+              "type": "string"
+            },
+            "description": {
+              "$ref": "common_types.json#/$defs/DynamicString"
+            },
+            "height": {
+              "maximum": 960,
+              "minimum": 240,
+              "type": "integer"
+            },
+            "lighting": {
+              "enum": [
+                "studio",
+                "soft",
+                "flat"
+              ],
+              "type": "string"
+            },
+            "lights": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "color": {
+                    "enum": [
+                      "chart1",
+                      "chart2",
+                      "chart3",
+                      "chart4",
+                      "chart5",
+                      "chart6",
+                      "chart7",
+                      "chart8",
+                      "ink",
+                      "neutral",
+                      "muted"
+                    ],
+                    "type": "string"
+                  },
+                  "intensity": {
+                    "maximum": 2,
+                    "minimum": 0,
+                    "type": "number"
+                  },
+                  "kind": {
+                    "enum": [
+                      "point",
+                      "spot",
+                      "directional"
+                    ],
+                    "type": "string"
+                  },
+                  "position": {
+                    "items": {
+                      "maximum": 1000.0,
+                      "minimum": -1000.0,
+                      "type": "number"
+                    },
+                    "maxItems": 3,
+                    "minItems": 3,
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "position"
+                ],
+                "type": "object"
+              },
+              "maxItems": 3,
+              "type": "array"
+            },
+            "objects": {
+              "oneOf": [
+                {
+                  "$ref": "common_types.json#/$defs/DataBinding"
+                },
+                {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "color": {
+                        "enum": [
+                          "chart1",
+                          "chart2",
+                          "chart3",
+                          "chart4",
+                          "chart5",
+                          "chart6",
+                          "chart7",
+                          "chart8",
+                          "ink",
+                          "neutral",
+                          "muted"
+                        ],
+                        "type": "string"
+                      },
+                      "finish": {
+                        "enum": [
+                          "matte",
+                          "glossy",
+                          "flat"
+                        ],
+                        "type": "string"
+                      },
+                      "id": {
+                        "maxLength": 64,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "label": {
+                        "$ref": "common_types.json#/$defs/DynamicString"
+                      },
+                      "motion": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "amount": {
+                            "maximum": 100,
+                            "minimum": 0,
+                            "type": "number"
+                          },
+                          "axis": {
+                            "enum": [
+                              "x",
+                              "y",
+                              "z"
+                            ],
+                            "type": "string"
+                          },
+                          "kind": {
+                            "enum": [
+                              "spin",
+                              "bob",
+                              "pulse",
+                              "orbit",
+                              "path"
+                            ],
+                            "type": "string"
+                          },
+                          "path": {
+                            "items": {
+                              "items": {
+                                "maximum": 1000.0,
+                                "minimum": -1000.0,
+                                "type": "number"
+                              },
+                              "maxItems": 3,
+                              "minItems": 3,
+                              "type": "array"
+                            },
+                            "maxItems": 64,
+                            "minItems": 2,
+                            "type": "array"
+                          },
+                          "seconds": {
+                            "maximum": 120,
+                            "minimum": 0.2,
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "kind"
+                        ],
+                        "type": "object"
+                      },
+                      "opacity": {
+                        "maximum": 1,
+                        "minimum": 0.15,
+                        "type": "number"
+                      },
+                      "parent": {
+                        "maxLength": 64,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "points": {
+                        "items": {
+                          "items": {
+                            "maximum": 1000.0,
+                            "minimum": -1000.0,
+                            "type": "number"
+                          },
+                          "maxItems": 3,
+                          "minItems": 3,
+                          "type": "array"
+                        },
+                        "maxItems": 64,
+                        "minItems": 2,
+                        "type": "array"
+                      },
+                      "position": {
+                        "items": {
+                          "maximum": 1000.0,
+                          "minimum": -1000.0,
+                          "type": "number"
+                        },
+                        "maxItems": 3,
+                        "minItems": 3,
+                        "type": "array"
+                      },
+                      "rotation": {
+                        "items": {
+                          "maximum": 360.0,
+                          "minimum": -360.0,
+                          "type": "number"
+                        },
+                        "maxItems": 3,
+                        "minItems": 3,
+                        "type": "array"
+                      },
+                      "scale": {
+                        "items": {
+                          "maximum": 1000.0,
+                          "minimum": 0.001,
+                          "type": "number"
+                        },
+                        "maxItems": 3,
+                        "minItems": 3,
+                        "type": "array"
+                      },
+                      "shape": {
+                        "enum": [
+                          "group",
+                          "box",
+                          "sphere",
+                          "cylinder",
+                          "cone",
+                          "plane",
+                          "torus",
+                          "line",
+                          "arrow",
+                          "text"
+                        ],
+                        "type": "string"
+                      },
+                      "state": {
+                        "enum": [
+                          "ok",
+                          "warning",
+                          "critical",
+                          "info"
+                        ],
+                        "type": "string"
+                      },
+                      "text": {
+                        "$ref": "common_types.json#/$defs/DynamicString"
+                      },
+                      "value": {
+                        "maxLength": 200,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "wireframe": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "shape"
+                    ],
+                    "type": "object"
+                  },
+                  "maxItems": 128,
+                  "type": "array"
+                }
+              ]
+            },
+            "panels": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "anchor": {
+                    "maxLength": 64,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "child": {
+                    "$ref": "common_types.json#/$defs/ComponentId"
+                  }
+                },
+                "required": [
+                  "anchor",
+                  "child"
+                ],
+                "type": "object"
+              },
+              "maxItems": 4,
+              "type": "array"
+            },
+            "pickInto": {
+              "maxLength": 200,
+              "pattern": "^/[^\\s]*$",
+              "type": "string"
+            },
+            "title": {
+              "$ref": "common_types.json#/$defs/DynamicString"
+            }
+          },
+          "required": [
+            "component",
+            "objects"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object",
+      "unevaluatedProperties": false
+    },
+    "Scene3D": {
+      "allOf": [
+        {
+          "properties": {
+            "autoRotate": {
+              "type": "boolean"
+            },
+            "background": {
+              "pattern": "^#[0-9a-fA-F]{6}$",
+              "type": "string"
+            },
+            "camera": {
+              "additionalProperties": false,
+              "properties": {
+                "fov": {
+                  "maximum": 90,
+                  "minimum": 20,
+                  "type": "number"
+                },
+                "position": {
+                  "items": {
+                    "maximum": 1000.0,
+                    "minimum": -1000.0,
+                    "type": "number"
+                  },
+                  "maxItems": 3,
+                  "minItems": 3,
+                  "type": "array"
+                },
+                "target": {
+                  "items": {
+                    "maximum": 1000.0,
+                    "minimum": -1000.0,
+                    "type": "number"
+                  },
+                  "maxItems": 3,
+                  "minItems": 3,
+                  "type": "array"
+                }
+              },
+              "type": "object"
+            },
+            "component": {
+              "const": "Scene3D"
+            },
+            "controls": {
+              "enum": [
+                "none",
+                "orbit"
+              ],
+              "type": "string"
+            },
+            "description": {
+              "$ref": "common_types.json#/$defs/DynamicString"
+            },
+            "height": {
+              "maximum": 960,
+              "minimum": 240,
+              "type": "integer"
+            },
+            "objects": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "color": {
+                    "pattern": "^#[0-9a-fA-F]{6}$",
+                    "type": "string"
+                  },
+                  "id": {
+                    "maxLength": 64,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "label": {
+                    "$ref": "common_types.json#/$defs/DynamicString"
+                  },
+                  "position": {
+                    "items": {
+                      "maximum": 1000.0,
+                      "minimum": -1000.0,
+                      "type": "number"
+                    },
+                    "maxItems": 3,
+                    "minItems": 3,
+                    "type": "array"
+                  },
+                  "rotation": {
+                    "items": {
+                      "maximum": 360.0,
+                      "minimum": -360.0,
+                      "type": "number"
+                    },
+                    "maxItems": 3,
+                    "minItems": 3,
+                    "type": "array"
+                  },
+                  "scale": {
+                    "items": {
+                      "maximum": 100.0,
+                      "minimum": 0.001,
+                      "type": "number"
+                    },
+                    "maxItems": 3,
+                    "minItems": 3,
+                    "type": "array"
+                  },
+                  "shape": {
+                    "enum": [
+                      "box",
+                      "sphere",
+                      "cylinder",
+                      "cone",
+                      "plane",
+                      "torus"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "shape"
+                ],
+                "type": "object"
+              },
+              "maxItems": 64,
+              "minItems": 1,
+              "type": "array"
+            },
+            "title": {
+              "$ref": "common_types.json#/$defs/DynamicString"
+            }
+          },
+          "required": [
+            "component",
+            "objects"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object",
+      "unevaluatedProperties": false
+    },
+    "Sparkline": {
+      "allOf": [
+        {
+          "properties": {
+            "component": {
+              "const": "Sparkline"
+            },
+            "data": {
+              "oneOf": [
+                {
+                  "$ref": "common_types.json#/$defs/DataBinding"
+                },
+                {
+                  "items": {
+                    "type": [
+                      "number",
+                      "object"
+                    ]
+                  },
+                  "maxItems": 500,
+                  "type": "array"
+                }
+              ]
+            },
+            "key": {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            "label": {
+              "$ref": "common_types.json#/$defs/DynamicString"
+            },
+            "tone": {
+              "enum": [
+                "neutral",
+                "info",
+                "success",
+                "warning",
+                "danger"
+              ],
+              "type": "string"
+            },
+            "window": {
+              "maximum": 500,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "component",
+            "data"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object",
+      "unevaluatedProperties": false
+    },
+    "Stage": {
+      "allOf": [
+        {
+          "properties": {
+            "children": {
+              "items": {
+                "$ref": "common_types.json#/$defs/ComponentId"
+              },
+              "maxItems": 12,
+              "minItems": 1,
+              "type": "array"
+            },
+            "component": {
+              "const": "Stage"
+            },
+            "description": {
+              "$ref": "common_types.json#/$defs/DynamicString"
+            },
+            "layout": {
+              "enum": [
+                "stage",
+                "wall",
+                "carousel"
+              ],
+              "type": "string"
+            },
+            "title": {
+              "$ref": "common_types.json#/$defs/DynamicString"
+            }
+          },
+          "required": [
+            "component",
+            "children"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object",
+      "unevaluatedProperties": false
+    },
+    "SurfacePlot": {
+      "allOf": [
+        {
+          "properties": {
+            "component": {
+              "const": "SurfacePlot"
+            },
+            "controls": {
+              "enum": [
+                "none",
+                "orbit"
+              ],
+              "type": "string"
+            },
+            "description": {
+              "$ref": "common_types.json#/$defs/DynamicString"
+            },
+            "height": {
+              "maximum": 960,
+              "minimum": 240,
+              "type": "integer"
+            },
+            "title": {
+              "$ref": "common_types.json#/$defs/DynamicString"
+            },
+            "values": {
+              "oneOf": [
+                {
+                  "$ref": "common_types.json#/$defs/DataBinding"
+                },
+                {
+                  "items": {
+                    "items": {
+                      "type": "number"
+                    },
+                    "maxItems": 64,
+                    "minItems": 2,
+                    "type": "array"
+                  },
+                  "maxItems": 64,
+                  "minItems": 2,
+                  "type": "array"
+                }
+              ]
+            },
+            "wireframe": {
+              "type": "boolean"
+            },
+            "xLabel": {
+              "$ref": "common_types.json#/$defs/DynamicString"
+            },
+            "yLabel": {
+              "$ref": "common_types.json#/$defs/DynamicString"
+            },
+            "zLabel": {
+              "$ref": "common_types.json#/$defs/DynamicString"
+            }
+          },
+          "required": [
+            "component",
+            "values"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object",
+      "unevaluatedProperties": false
+    }
+  },
+  "description": "The components spatial 1.0 adds to https://adk-rust.com/a2ui/catalogs/forms/1.0/catalog.json, which a surface mixes with it",
+  "instructions": "App: {\"component\": \"App\", \"title\", \"pages\": [{\"id\", \"title\", \"child\": \"<a Page's id>\"}] (1 to 24), \"navigation\": \"top|side\", \"initialPage\"}; the home shows it as tabs.\nBadge: {\"component\": \"Badge\", \"text\", \"tone\": \"neutral|info|success|warning|danger\"}; a status word such as \"Shipped\", never a decision's word.\nBar3D: {\"component\": \"Bar3D\", \"title\", \"data\": {\"path\": \"/rows\"}, \"x\": {\"key\", \"label\"}, \"series\": [{\"key\", \"label\"}] (1 to 8), \"yLabel\"}: a value over two categories, rows along x and series in depth; at most 50 rows.\nChart: {\"component\": \"Chart\", \"kind\": \"bar|line|area|pie|scatter\", \"title\", \"data\": {\"path\": \"/rows\"} (at most 500 row objects), \"x\": {\"key\", \"type\": \"category|number|time\", \"label\"}, \"series\": [{\"key\", \"label\"}] (1 to 8; a pie uses the first), \"yLabel\", \"valueFormat\": \"number|percent|currency\", \"currency\", \"timeUnit\", \"window\"}.\nDepthCard: {\"component\": \"DepthCard\", \"title\", \"effect\": \"tilt|flip|layers\", \"front\": \"<id>\", \"back\": \"<id>\" (flip), \"layers\": [ids] (layers, at most 4)}: a card with depth; the home turns a flip card with its own button.\nGlobe: {\"component\": \"Globe\", \"title\", \"points\": [{\"lat\", \"lon\", \"label\", \"group\"}] (at most 500), \"arcs\": [{\"from\": [lat, lon], \"to\": [lat, lon], \"label\"}] (at most 200), \"focus\": {\"lat\", \"lon\"}, \"spin\"}: places and routes.\nGraph3D: {\"component\": \"Graph3D\", \"title\", \"nodes\": [{\"id\", \"label\", \"group\", \"x\", \"y\", \"z\"}] (at most 200), \"edges\": [{\"from\", \"to\"}] (at most 400), \"layout\": \"sphere|layers|given\", \"spin\"}: a network; layers stack the groups.\nKeyValue: {\"component\": \"KeyValue\", \"title\", \"items\": [{\"key\", \"value\"}] (at most 50), or \"data\": {\"path\": \"/rows\"} with \"keyField\" and \"valueField\"}.\nMetric: {\"component\": \"Metric\", \"label\", \"value\", \"unit\", \"format\": \"number|percent|currency\", \"currency\", \"delta\": {\"value\", \"goodWhen\": \"up|down\"}, \"caption\", \"status\": \"ok|warning|critical|info|neutral\", \"trend\": {\"path\": \"/numbers\"}}.\nPage: {\"component\": \"Page\", \"title\", \"description\", \"layout\": \"stack|grid|split\", \"children\": [ids]}.\nProgress: {\"component\": \"Progress\", \"label\", \"value\": 0 to 100, \"tone\", \"indeterminate\"}. Move it with patch_surface as the work moves.\nRegion: {\"component\": \"Region\", \"title\", \"layout\": \"stack|grid|split\", \"columns\": 1 to 4, \"tone\", \"variant\": \"plain|hero\", \"children\": [ids]}.\nScatter3D: {\"component\": \"Scatter3D\", \"title\", \"data\": {\"path\"}, \"x\", \"y\", \"z\": {\"key\", \"label\"}, \"group\": \"<key>\", \"labelKey\": \"<key>\"}: points over three measures, coloured by group (at most 8); at most 2000 points, 24 labelled.\nScene: {\"component\": \"Scene\", \"title\", \"objects\": [{\"id\", \"parent\", \"shape\": \"group|box|sphere|cylinder|cone|plane|torus|line|arrow|text\", \"position\", \"rotation\" (degrees), \"scale\", \"points\" (line, arrow), \"text\" (text), \"color\": \"chart1..chart8|ink|neutral|muted\", \"state\": \"ok|warning|critical|info\", \"label\", \"motion\": {\"kind\": \"spin|bob|pulse|orbit|path\", \"seconds\"}, \"value\"}] (at most 128), \"camera\", \"lighting\", \"pickInto\": \"/path of a ChoicePicker you show\", \"panels\": [{\"anchor\": \"<object id>\", \"child\": \"<id of a Text, Metric or KeyValue>\"}]}.\nScene3D: {\"component\": \"Scene3D\", \"title\", \"description\", \"objects\": [{\"id\", \"shape\": \"box|sphere|cylinder|cone|plane|torus\", \"position\": [x, y, z], \"rotation\", \"scale\", \"color\": \"#rrggbb\", \"label\"}] (1 to 64), \"camera\", \"height\", \"autoRotate\", \"controls\": \"none|orbit\"}; primitives only, no models; the home draws it in 3D in its own colours.\nSparkline: {\"component\": \"Sparkline\", \"data\": {\"path\": \"/values\"} (numbers, or rows with \"key\"), \"label\", \"tone\", \"window\"}.\nStage: {\"component\": \"Stage\", \"title\", \"description\", \"layout\": \"stage|wall|carousel\", \"children\": [ids] (1 to 12)}: components arranged in 3D; a stage or wall holds only what shows (charts, metrics, text), a carousel may hold a form.\nSurfacePlot: {\"component\": \"SurfacePlot\", \"title\", \"values\": {\"path\"} (rows of numbers, 2 to 64 by 2 to 64), \"xLabel\", \"yLabel\" (the value), \"zLabel\", \"wireframe\"}: a value over a grid, coloured by height.\n- Put the numbers in dataModel and bind them, as {\"@path\": \"/sales\"}; never paste data into labels.\n- A chart draws at most 500 rows and 8 series: aggregate or downsample first, and say so in its title.\n- Label things with plain words. A drawing never shows a decision's words (Allow once, Always allow, Waiting for you, You said yes, You said no, Confirm it's you, Stop all, Resume all, Take over, Add this agent, Edit, Deny, Done, Approve, Approved, Decided, Don't add), links, images or password fields, and is refused if it does: say it in your reply or draw it another way.\n- Every component needs a unique id, and one has the id root.\n3D, drawn natively by the home in its own colours:\n- Use 3D only when depth carries information: a value over two categories (Bar3D), three measures (Scatter3D), a value over a grid (SurfacePlot), a network (Graph3D), places and routes (Globe), a physical layout (Scene). Otherwise use Chart.\n- Limits: Bar3D 50 rows by 8 series; Scatter3D 2000 points; SurfacePlot 64 by 64; Graph3D 200 nodes and 400 edges; Globe 500 places and 200 routes; Scene 128 objects, 3 lights, 4 panels, 32 moving, each motion taking 0.2 to 120 seconds (scale slow periods down and say so). Aggregate or sample first and say so in the title.\n- Colours are names, never codes: chart1 to chart8, ink, neutral, muted; a state (ok, warning, critical, info) needs a label too.\n- Bind data and change it with patch_surface; keep object ids so things move smoothly. Give motion only where it means something.\n- To let the person pick by clicking, show a ChoicePicker, set the Scene's pickInto to its path, and give each pickable object a label and a value from its options. A Button still sends it, and the person decides.\n- Panels beside objects, and a Stage's wall or stage, hold only Text, Metric, KeyValue or charts. DepthCard and Stage present components you drew; never hide what the person must read.",
+  "protocolVersion": "1.0",
+  "title": "spatial 1.0"
+}

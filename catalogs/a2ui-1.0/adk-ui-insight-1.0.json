@@ -1,0 +1,418 @@
+{
+  "$id": "https://zavora.ai/a2ui/catalogs/adk-ui-insight/1.0/catalog.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "catalogId": "https://zavora.ai/a2ui/catalogs/adk-ui-insight/1.0/catalog.json",
+  "components": {
+    "Badge": {
+      "allOf": [
+        {
+          "properties": {
+            "component": {
+              "const": "Badge"
+            },
+            "text": {
+              "$ref": "common_types.json#/$defs/DynamicString"
+            },
+            "tone": {
+              "enum": [
+                "neutral",
+                "info",
+                "success",
+                "warning",
+                "danger"
+              ],
+              "type": "string"
+            }
+          },
+          "required": [
+            "component",
+            "text"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object",
+      "unevaluatedProperties": false
+    },
+    "Chart": {
+      "allOf": [
+        {
+          "properties": {
+            "component": {
+              "const": "Chart"
+            },
+            "currency": {
+              "pattern": "^[A-Z]{3}$",
+              "type": "string"
+            },
+            "data": {
+              "oneOf": [
+                {
+                  "$ref": "common_types.json#/$defs/DataBinding"
+                },
+                {
+                  "items": {
+                    "type": "object"
+                  },
+                  "maxItems": 500,
+                  "type": "array"
+                }
+              ]
+            },
+            "kind": {
+              "enum": [
+                "bar",
+                "line",
+                "area",
+                "pie",
+                "scatter"
+              ],
+              "type": "string"
+            },
+            "legend": {
+              "type": "boolean"
+            },
+            "series": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "key": {
+                    "maxLength": 64,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "label": {
+                    "$ref": "common_types.json#/$defs/DynamicString"
+                  }
+                },
+                "required": [
+                  "key"
+                ],
+                "type": "object"
+              },
+              "maxItems": 8,
+              "minItems": 1,
+              "type": "array"
+            },
+            "stacked": {
+              "type": "boolean"
+            },
+            "timeUnit": {
+              "enum": [
+                "second",
+                "minute",
+                "hour",
+                "day",
+                "month",
+                "year"
+              ],
+              "type": "string"
+            },
+            "title": {
+              "$ref": "common_types.json#/$defs/DynamicString"
+            },
+            "valueFormat": {
+              "enum": [
+                "number",
+                "percent",
+                "currency"
+              ],
+              "type": "string"
+            },
+            "window": {
+              "maximum": 500,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "x": {
+              "additionalProperties": false,
+              "properties": {
+                "key": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "label": {
+                  "$ref": "common_types.json#/$defs/DynamicString"
+                },
+                "type": {
+                  "enum": [
+                    "category",
+                    "number",
+                    "time"
+                  ],
+                  "type": "string"
+                }
+              },
+              "required": [
+                "key"
+              ],
+              "type": "object"
+            },
+            "yLabel": {
+              "$ref": "common_types.json#/$defs/DynamicString"
+            }
+          },
+          "required": [
+            "component",
+            "kind",
+            "data",
+            "x",
+            "series"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object",
+      "unevaluatedProperties": false
+    },
+    "KeyValue": {
+      "allOf": [
+        {
+          "properties": {
+            "component": {
+              "const": "KeyValue"
+            },
+            "data": {
+              "oneOf": [
+                {
+                  "$ref": "common_types.json#/$defs/DataBinding"
+                },
+                {
+                  "items": {
+                    "type": "object"
+                  },
+                  "maxItems": 50,
+                  "type": "array"
+                }
+              ]
+            },
+            "items": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "key": {
+                    "$ref": "common_types.json#/$defs/DynamicString"
+                  },
+                  "value": {
+                    "$ref": "common_types.json#/$defs/DynamicValue"
+                  }
+                },
+                "required": [
+                  "key",
+                  "value"
+                ],
+                "type": "object"
+              },
+              "maxItems": 50,
+              "type": "array"
+            },
+            "keyField": {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            "title": {
+              "$ref": "common_types.json#/$defs/DynamicString"
+            },
+            "valueField": {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "component"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object",
+      "unevaluatedProperties": false
+    },
+    "Metric": {
+      "allOf": [
+        {
+          "properties": {
+            "caption": {
+              "$ref": "common_types.json#/$defs/DynamicString"
+            },
+            "component": {
+              "const": "Metric"
+            },
+            "currency": {
+              "pattern": "^[A-Z]{3}$",
+              "type": "string"
+            },
+            "delta": {
+              "additionalProperties": false,
+              "properties": {
+                "goodWhen": {
+                  "enum": [
+                    "up",
+                    "down"
+                  ],
+                  "type": "string"
+                },
+                "value": {
+                  "$ref": "common_types.json#/$defs/DynamicNumber"
+                }
+              },
+              "required": [
+                "value"
+              ],
+              "type": "object"
+            },
+            "format": {
+              "enum": [
+                "number",
+                "percent",
+                "currency"
+              ],
+              "type": "string"
+            },
+            "label": {
+              "$ref": "common_types.json#/$defs/DynamicString"
+            },
+            "status": {
+              "enum": [
+                "ok",
+                "warning",
+                "critical",
+                "info",
+                "neutral"
+              ],
+              "type": "string"
+            },
+            "trend": {
+              "oneOf": [
+                {
+                  "$ref": "common_types.json#/$defs/DataBinding"
+                },
+                {
+                  "items": {
+                    "type": "number"
+                  },
+                  "maxItems": 500,
+                  "type": "array"
+                }
+              ]
+            },
+            "unit": {
+              "$ref": "common_types.json#/$defs/DynamicString"
+            },
+            "value": {
+              "$ref": "common_types.json#/$defs/DynamicValue"
+            }
+          },
+          "required": [
+            "component",
+            "label",
+            "value"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object",
+      "unevaluatedProperties": false
+    },
+    "Progress": {
+      "allOf": [
+        {
+          "properties": {
+            "component": {
+              "const": "Progress"
+            },
+            "indeterminate": {
+              "type": "boolean"
+            },
+            "label": {
+              "$ref": "common_types.json#/$defs/DynamicString"
+            },
+            "tone": {
+              "enum": [
+                "neutral",
+                "info",
+                "success",
+                "warning",
+                "danger"
+              ],
+              "type": "string"
+            },
+            "value": {
+              "$ref": "common_types.json#/$defs/DynamicNumber"
+            }
+          },
+          "required": [
+            "component"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object",
+      "unevaluatedProperties": false
+    },
+    "Sparkline": {
+      "allOf": [
+        {
+          "properties": {
+            "component": {
+              "const": "Sparkline"
+            },
+            "data": {
+              "oneOf": [
+                {
+                  "$ref": "common_types.json#/$defs/DataBinding"
+                },
+                {
+                  "items": {
+                    "type": [
+                      "number",
+                      "object"
+                    ]
+                  },
+                  "maxItems": 500,
+                  "type": "array"
+                }
+              ]
+            },
+            "key": {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            "label": {
+              "$ref": "common_types.json#/$defs/DynamicString"
+            },
+            "tone": {
+              "enum": [
+                "neutral",
+                "info",
+                "success",
+                "warning",
+                "danger"
+              ],
+              "type": "string"
+            },
+            "window": {
+              "maximum": 500,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "component",
+            "data"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object",
+      "unevaluatedProperties": false
+    }
+  },
+  "description": "The components insight 1.0 adds to https://adk-rust.com/a2ui/catalogs/forms/1.0/catalog.json, which a surface mixes with it",
+  "instructions": "Badge: {\"component\": \"Badge\", \"text\", \"tone\": \"neutral|info|success|warning|danger\"}; a status word such as \"Shipped\", never a decision's word.\nChart: {\"component\": \"Chart\", \"kind\": \"bar|line|area|pie|scatter\", \"title\", \"data\": {\"path\": \"/rows\"} (at most 500 row objects), \"x\": {\"key\", \"type\": \"category|number|time\", \"label\"}, \"series\": [{\"key\", \"label\"}] (1 to 8; a pie uses the first), \"yLabel\", \"valueFormat\": \"number|percent|currency\", \"currency\", \"timeUnit\", \"window\"}.\nKeyValue: {\"component\": \"KeyValue\", \"title\", \"items\": [{\"key\", \"value\"}] (at most 50), or \"data\": {\"path\": \"/rows\"} with \"keyField\" and \"valueField\"}.\nMetric: {\"component\": \"Metric\", \"label\", \"value\", \"unit\", \"format\": \"number|percent|currency\", \"currency\", \"delta\": {\"value\", \"goodWhen\": \"up|down\"}, \"caption\", \"status\": \"ok|warning|critical|info|neutral\", \"trend\": {\"path\": \"/numbers\"}}.\nProgress: {\"component\": \"Progress\", \"label\", \"value\": 0 to 100, \"tone\", \"indeterminate\"}. Move it with patch_surface as the work moves.\nSparkline: {\"component\": \"Sparkline\", \"data\": {\"path\": \"/values\"} (numbers, or rows with \"key\"), \"label\", \"tone\", \"window\"}.\n- Put the numbers in dataModel and bind them, as {\"@path\": \"/sales\"}; never paste data into labels.\n- A chart draws at most 500 rows and 8 series: aggregate or downsample first, and say so in its title.\n- Label things with plain words. A drawing never shows a decision's words (Allow once, Always allow, Waiting for you, You said yes, You said no, Confirm it's you, Stop all, Resume all, Take over, Add this agent, Edit, Deny, Done, Approve, Approved, Decided, Don't add), links, images or password fields, and is refused if it does: say it in your reply or draw it another way.\n- Every component needs a unique id, and one has the id root.",
+  "protocolVersion": "1.0",
+  "title": "insight 1.0"
+}

@@ -75,7 +75,12 @@ a call the person decides. adk-ui 3 adds extension catalogs `genui` checks and d
     limit, a motion's 0.2 to 120 seconds included, so a model knows when to use an app
     instead.
 - `catalogs/`: the catalog documents and an index, written from the Rust catalogs and
-  drift-checked by `cargo test`; the React registry is checked against them.
+  drift-checked by `cargo test`; the React registry is checked against them. A2UI 1.0
+  documents are in `catalogs/a2ui-1.0/`: only the components each catalog adds, which a 1.0
+  surface mixes with `forms`, its rules as `instructions` (`prompts::catalog_rules`) and
+  `App`/`Page` composition rules, checked against the pinned A2UI 1.0 meta-schema.
+- Agents are told to bind data in A2UI 1.0's syntax (`{"@path": "/sales"}`); the render
+  tools read v0.9.1's too.
 - Eleven sample drawings (`fixtures/drawings/`, six in studio and five in spatial), the
   `insight_home` example (the ADK-Rust web home over a scripted agent that draws them), and
   `examples/custom_host` (a Vite app drawing them with `DrawnView`, adk-ui's renderers and two

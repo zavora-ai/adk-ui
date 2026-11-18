@@ -52,6 +52,8 @@ async-trait = "0.1"
 axum = "0.8"
 futures = "0.3"
 http-body-util = "0.1"
+# Checks the A2UI 1.0 catalog documents against the pinned A2UI 1.0 meta-schema.
+jsonschema = { version = "0.47", default-features = false }
 tempfile = "3"
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "net", "time", "io-util"] }
 tower = { version = "0.5", features = ["util"] }
