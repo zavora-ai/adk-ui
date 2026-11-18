@@ -8,9 +8,10 @@ commit `vX.Y.Z`. The 2.x line is published from `release/2.x`.
 adk-ui 3.0.0 builds on crates that aren't published yet, so the order matters.
 
 1. **adk-rust.** Merge the `genui` work adk-ui 3 needs into adk-rust `main`:
-   - the axis-label fix for drawn charts;
-   - the extension-catalog docs;
-   - scenes and depth effects, the branch the spatial catalog projects onto.
+   - the axis-label fix for drawn charts (zavora-ai/adk-rust#1447);
+   - the extension-catalog docs (zavora-ai/adk-rust#1448);
+   - scenes and depth effects, the branch the spatial catalog projects onto
+     (zavora-ai/adk-rust#1449).
 
    The scenes branch is stacked on the other two. If they're squash-merged, rebase it onto
    `main` and rebuild `adk-surface/assets/web` (`npm run build` in `adk-surface/web`).
