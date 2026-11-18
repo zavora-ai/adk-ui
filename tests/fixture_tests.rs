@@ -17,8 +17,15 @@ fn every_sample_drawing_is_accepted_in_its_catalog_before_and_after_its_patches(
     for fixture in fixtures {
         let validator = Validator::new(fixture.catalog);
         let mut draft = draft(&fixture.screen);
-        if let Err(refusal) = validator.validate(&draft) {
-            panic!("{} is refused: {}", fixture.name, refusal.technical());
+        match validator.validate(&draft) {
+            Err(refusal) => panic!("{} is refused: {}", fixture.name, refusal.technical()),
+            // The dark-pattern warnings' false positives: none on a plain dashboard.
+            Ok(validated) => assert!(
+                validated.warnings.is_empty(),
+                "{} raises warnings: {:?}",
+                fixture.name,
+                validated.warnings
+            ),
         }
         for (index, patch) in fixture.patches.iter().enumerate() {
             let mut model = DataModel::new(draft.data_model.clone());
