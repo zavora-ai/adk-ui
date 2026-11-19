@@ -11,12 +11,27 @@ documentation = "https://docs.rs/adk-ui"
 keywords = ["ai", "agent", "ui", "generative", "a2ui"]
 categories = ["gui", "web-programming"]
 readme = "README.md"
-exclude = [".cargo", "packages", "examples/custom_host", "docs/archive", "package.json", "package-lock.json"]
+# What the crate ships: the library, its catalog documents and its docs. The examples, the
+# tests, the sample drawings and the React package stay in the repository.
+include = [
+    "/src/**/*",
+    "/catalogs/**/*",
+    "/docs/ARCHITECTURE.md",
+    "/docs/BRAND_KITS.md",
+    "/docs/MIGRATING_TO_3.md",
+    "/CHANGELOG.md",
+    "/LICENSE",
+    "/README.md",
+]
 
 # adk-ui 3 adds catalogs to adk-surface's `genui`; it owns no render tool, protocol,
 # provenance or approval path (spec 3.3 decision 11, as amended). To build against an
 # unreleased adk-rust, copy `.cargo/config.toml.example` to `.cargo/config.toml` (untracked)
 # and set its paths.
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
 adk-surface = { version = "3.0.0", default-features = false, features = ["genui"] }
@@ -25,7 +40,7 @@ schemars = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 thiserror = "2.0"
-# `apps`: the MCP server that shows model-written three.js in genui-apps' sandbox.
+# `apps`: adk-ui's MCP Apps server (`show_3d_app`, `show_drawing`).
 regex = { version = "1", optional = true }
 rmcp = { version = "3.9", default-features = false, features = ["server", "transport-io"], optional = true }
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "io-std"], optional = true }
@@ -58,7 +73,7 @@ tempfile = "3"
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "net", "time", "io-util"] }
 tower = { version = "0.5", features = ["util"] }
 
-# The `show_3d_app` MCP server over stdio.
+# adk-ui's MCP Apps server over stdio.
 [[bin]]
 name = "adk-ui-apps"
 path = "src/bin/adk-ui-apps.rs"
@@ -74,7 +89,12 @@ path = "examples/insight_home.rs"
 name = "insight_agent"
 path = "examples/insight_agent.rs"
 
-# `show_3d_app` end to end through genui-apps.
+# Scores the sample drawings, or a model's, the way genui will judge them.
+[[example]]
+name = "drawing_eval"
+path = "examples/drawing_eval.rs"
+
+# The MCP Apps server end to end: `show_3d_app` through genui-apps, both tools over stdio.
 [[test]]
 name = "apps_tests"
 path = "tests/apps_tests.rs"
