@@ -278,7 +278,9 @@ dependencies = [
  "chrono",
  "serde",
  "serde_json",
+ "tokio",
  "tracing",
+ "uuid",
 ]
 
 [[package]]
@@ -321,6 +323,7 @@ dependencies = [
  "adk-skill",
  "async-stream",
  "async-trait",
+ "chrono",
  "futures",
  "serde",
  "serde_json",
