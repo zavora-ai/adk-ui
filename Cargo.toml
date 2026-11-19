@@ -89,6 +89,12 @@ path = "examples/insight_home.rs"
 name = "insight_agent"
 path = "examples/insight_agent.rs"
 
+# A guided tour of what is new, in the web home; `--wire` prints what has no screen.
+[[example]]
+name = "capabilities_tour"
+path = "examples/capabilities_tour.rs"
+required-features = ["apps"]
+
 # Scores the sample drawings, or a model's, the way genui will judge them.
 [[example]]
 name = "drawing_eval"

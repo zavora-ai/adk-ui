@@ -102,6 +102,10 @@ a call the person decides. adk-ui 3 adds extension catalogs `genui` checks and d
   `insight_home` example (the ADK-Rust web home over a scripted agent that draws them), and
   `examples/custom_host` (a Vite app drawing them with `DrawnView`, adk-ui's renderers and two
   approved kits).
+- The `capabilities_tour` example (feature `apps`): the web home over a scripted agent that
+  walks through Vega-Lite charts, a live update, a held and sealed send, dark-pattern warnings
+  and a refusal, both MCP Apps tools and two MCP elicitations, one stop a message; `--wire`
+  prints what has no screen.
 - The `insight_agent` example: a harness agent on an Anthropic model (adaptive thinking, prompt
   caching) that studies a directory with its own workspace tools and answers with adk-ui's
   catalogs (spatial by default), everything configured from the environment and nothing
