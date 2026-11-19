@@ -132,8 +132,8 @@ a call the person decides. adk-ui 3 adds extension catalogs `genui` checks and d
 - The `adk-core`, `awp` and `remote-catalogs` features, and the 2.x examples (`ui_server`,
   `agentic_ui`, the Agent UI Studio client). The 2.x protocol migration notes, roadmaps and
   release notes stay on the `release/2.x` branch.
-- The crate-root re-exports of the kit types (`adk_ui::KitGenerator` and the rest): they are
-  under `adk_ui::kit`.
+- The crate-root re-exports of the kit types (`adk_ui::KitGenerator` and the rest) and the
+  public `kit::spec` and `kit::generator` modules: every kit type is at `adk_ui::kit`.
 - From `@zavora-ai/adk-ui-react`: the standalone `Scene3D` and its `three` peer (`DrawnView`
   draws every scene natively), `Renderer`, `StreamingRenderer`, the A2UI renderer, parser
   and store, the protocol client, `uiEventToMessage` (UI events no longer reach the model as the
