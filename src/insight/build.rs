@@ -129,6 +129,51 @@ macro_rules! component_builder {
     };
 }
 
+/// A chart written as a Vega-Lite spec (a subset: one mark over rows, `x`, `y`, `color`,
+/// `theta`), drawn as the home's own chart.
+///
+/// ```rust
+/// use adk_ui::insight::{VegaLite, bind};
+/// use serde_json::json;
+///
+/// let chart = VegaLite::new("latency", json!({
+///     "mark": "line",
+///     "encoding": { "x": { "field": "day", "type": "temporal" },
+///                   "y": { "field": "ms", "type": "quantitative" } }
+/// }))
+/// .data(bind("/latency"))
+/// .build();
+/// assert_eq!(chart["component"], "VegaLite");
+/// assert_eq!(chart["data"]["path"], "/latency");
+/// ```
+#[derive(Debug, Clone, PartialEq)]
+pub struct VegaLite(Props);
+
+impl VegaLite {
+    /// A Vega-Lite chart with id `id` drawing `spec`.
+    pub fn new(id: impl Into<String>, spec: Value) -> Self {
+        let mut props = Props::new(id, "VegaLite");
+        props.set("spec", spec);
+        Self(props)
+    }
+
+    /// Its title, over the spec's.
+    #[must_use]
+    pub fn title(mut self, title: impl Into<Value>) -> Self {
+        self.0.set("title", title);
+        self
+    }
+
+    /// Its rows, a [`bind`]ing in place of the spec's `data.values`.
+    #[must_use]
+    pub fn data(mut self, data: impl Into<Value>) -> Self {
+        self.0.set("data", data);
+        self
+    }
+}
+
+component_builder!(VegaLite);
+
 /// A chart of rows of data.
 ///
 /// ```rust

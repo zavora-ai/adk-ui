@@ -105,9 +105,10 @@ pub fn spatial() -> &'static Catalog {
     &SPATIAL
 }
 
-/// The components whose home view the home draws natively as a 3D scene or with depth, so a
-/// host needs no renderer of its own for them.
+/// The components whose home view the home draws natively, as its own chart (a Vega-Lite
+/// spec), a 3D scene or with depth, so a host needs no renderer of its own for them.
 pub const HOME_DRAWN: &[&str] = &[
+    "VegaLite",
     "Scene3D",
     "Bar3D",
     "Scatter3D",

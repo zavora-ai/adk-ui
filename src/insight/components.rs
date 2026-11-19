@@ -24,6 +24,7 @@ pub const MAX_PAIRS: usize = 50;
 pub fn components() -> Vec<Arc<dyn ExtensionComponent>> {
     vec![
         Arc::new(ChartComponent),
+        Arc::new(super::vega::VegaLiteComponent),
         Arc::new(SparklineComponent),
         Arc::new(MetricComponent),
         Arc::new(KeyValueComponent),
@@ -128,8 +129,7 @@ impl ExtensionComponent for ChartComponent {
             .get("key")
             .and_then(Value::as_str)
             .ok_or("its x axis has no key")?;
-        let x_type = x.get("type").and_then(Value::as_str).unwrap_or("category");
-        let mut specs: Vec<(&str, String)> = chart
+        let specs: Vec<(String, String)> = chart
             .get("series")
             .and_then(Value::as_array)
             .into_iter()
@@ -137,84 +137,131 @@ impl ExtensionComponent for ChartComponent {
             .filter_map(|series| {
                 let key = series.get("key")?.as_str()?;
                 let label = series.get("label").and_then(Value::as_str).unwrap_or(key);
-                Some((key, label.to_string()))
+                Some((key.to_string(), label.to_string()))
             })
             .collect();
-        if kind == HomeChartKind::Pie {
-            specs.truncate(1);
-        }
-        if specs.is_empty() {
-            return Err("it has no series".to_string());
-        }
-        let (axis, xs, ticks): (ChartAxis, Vec<Number>, Vec<ChartTick>) = match x_type {
-            "number" => (
-                ChartAxis::Number,
-                rows.iter()
-                    .enumerate()
-                    .map(|(i, row)| cell_number(row.get(x_key), i, x_key))
-                    .collect::<Result<_, _>>()?,
-                Vec::new(),
-            ),
-            "time" => {
-                let times: Vec<i64> = rows
-                    .iter()
-                    .enumerate()
-                    .map(|(i, row)| cell_time(row.get(x_key), i, x_key))
-                    .collect::<Result<_, _>>()?;
-                let ticks = match (times.iter().min(), times.iter().max()) {
-                    (Some(low), Some(high)) => time_ticks(*low, *high, chart.str("timeUnit"))
-                        .into_iter()
-                        .map(|(at, text)| ChartTick {
-                            at: Number::from(at),
-                            text,
-                        })
-                        .collect(),
-                    _ => Vec::new(),
-                };
-                (
-                    ChartAxis::Time,
-                    times.into_iter().map(Number::from).collect(),
-                    ticks,
-                )
-            }
-            _ => (
-                ChartAxis::Category {
-                    labels: rows
-                        .iter()
-                        .enumerate()
-                        .map(|(i, row)| cell_text(row.get(x_key), i, x_key))
-                        .collect::<Result<_, _>>()?,
-                },
-                Vec::new(),
-                Vec::new(),
-            ),
-        };
-        let series = specs
-            .into_iter()
-            .map(|(key, name)| {
-                let y = rows
-                    .iter()
-                    .enumerate()
-                    .map(|(i, row)| cell_number(row.get(key), i, key))
-                    .collect::<Result<Vec<_>, _>>()?;
-                Ok(ChartSeries {
-                    name,
-                    x: xs.clone(),
-                    y,
-                })
-            })
-            .collect::<Result<Vec<_>, String>>()?;
-        let drawn = DrawnChart {
+        chart_node(&ChartInput {
             kind,
-            x: axis,
-            x_label: x.get("label").and_then(Value::as_str).map(str::to_string),
-            y_label: chart.str("yLabel").map(str::to_string),
-            ticks,
-            series,
-            summary: String::new(),
-        };
-        Ok(titled(chart.str("title"), HomeNode::Chart(drawn)))
+            rows,
+            x_key,
+            x_type: x.get("type").and_then(Value::as_str).unwrap_or("category"),
+            x_label: x.get("label").and_then(Value::as_str),
+            series: specs,
+            y_label: chart.str("yLabel"),
+            title: chart.str("title"),
+            time_unit: chart.str("timeUnit"),
+        })
     }
+}
+
+/// What a chart draws, however it was written: a `Chart`'s properties or a Vega-Lite spec.
+pub(crate) struct ChartInput<'a> {
+    pub(crate) kind: HomeChartKind,
+    pub(crate) rows: &'a [Value],
+    pub(crate) x_key: &'a str,
+    pub(crate) x_type: &'a str,
+    pub(crate) x_label: Option<&'a str>,
+    /// Each series' key in the rows, and its label.
+    pub(crate) series: Vec<(String, String)>,
+    pub(crate) y_label: Option<&'a str>,
+    pub(crate) title: Option<&'a str>,
+    pub(crate) time_unit: Option<&'a str>,
+}
+
+/// The home's chart of `input`: every cell checked as a number, a time or a label.
+pub(crate) fn chart_node(input: &ChartInput<'_>) -> Result<HomeNode, String> {
+    let (kind, rows, x_key) = (input.kind, input.rows, input.x_key);
+    let mut specs: Vec<(&str, String)> = input
+        .series
+        .iter()
+        .map(|(key, label)| (key.as_str(), label.clone()))
+        .collect();
+    if kind == HomeChartKind::Pie {
+        specs.truncate(1);
+    }
+    if specs.is_empty() {
+        return Err("it has no series".to_string());
+    }
+    if specs.len() > MAX_CHART_SERIES {
+        return Err(format!(
+            "it has {} series; a chart draws at most {MAX_CHART_SERIES}",
+            specs.len()
+        ));
+    }
+    if rows.len() > MAX_CHART_ROWS {
+        return Err(format!(
+            "it has {} rows; a chart draws at most {MAX_CHART_ROWS}",
+            rows.len()
+        ));
+    }
+    let (axis, xs, ticks): (ChartAxis, Vec<Number>, Vec<ChartTick>) = match input.x_type {
+        "number" => (
+            ChartAxis::Number,
+            rows.iter()
+                .enumerate()
+                .map(|(i, row)| cell_number(row.get(x_key), i, x_key))
+                .collect::<Result<_, _>>()?,
+            Vec::new(),
+        ),
+        "time" => {
+            let times: Vec<i64> = rows
+                .iter()
+                .enumerate()
+                .map(|(i, row)| cell_time(row.get(x_key), i, x_key))
+                .collect::<Result<_, _>>()?;
+            let ticks = match (times.iter().min(), times.iter().max()) {
+                (Some(low), Some(high)) => time_ticks(*low, *high, input.time_unit)
+                    .into_iter()
+                    .map(|(at, text)| ChartTick {
+                        at: Number::from(at),
+                        text,
+                    })
+                    .collect(),
+                _ => Vec::new(),
+            };
+            (
+                ChartAxis::Time,
+                times.into_iter().map(Number::from).collect(),
+                ticks,
+            )
+        }
+        _ => (
+            ChartAxis::Category {
+                labels: rows
+                    .iter()
+                    .enumerate()
+                    .map(|(i, row)| cell_text(row.get(x_key), i, x_key))
+                    .collect::<Result<_, _>>()?,
+            },
+            Vec::new(),
+            Vec::new(),
+        ),
+    };
+    let series = specs
+        .into_iter()
+        .map(|(key, name)| {
+            let y = rows
+                .iter()
+                .enumerate()
+                .map(|(i, row)| cell_number(row.get(key), i, key))
+                .collect::<Result<Vec<_>, _>>()?;
+            Ok(ChartSeries {
+                name,
+                x: xs.clone(),
+                y,
+            })
+        })
+        .collect::<Result<Vec<_>, String>>()?;
+    let drawn = DrawnChart {
+        kind,
+        x: axis,
+        x_label: input.x_label.map(str::to_string),
+        y_label: input.y_label.map(str::to_string),
+        ticks,
+        series,
+        summary: String::new(),
+    };
+    Ok(titled(input.title, HomeNode::Chart(drawn)))
 }
 
 /// A small line of numbers, no axes.

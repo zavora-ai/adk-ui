@@ -57,6 +57,9 @@
           "$ref": "#/components/Chart"
         },
         {
+          "$ref": "#/components/VegaLite"
+        },
+        {
           "$ref": "#/components/Sparkline"
         },
         {
@@ -1570,6 +1573,50 @@
           "required": [
             "component",
             "label"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object",
+      "unevaluatedProperties": false
+    },
+    "VegaLite": {
+      "allOf": [
+        {
+          "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/ComponentCommon"
+        },
+        {
+          "$ref": "#/$defs/CatalogComponentCommon"
+        },
+        {
+          "properties": {
+            "component": {
+              "const": "VegaLite"
+            },
+            "data": {
+              "oneOf": [
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                },
+                {
+                  "items": {
+                    "type": "object"
+                  },
+                  "maxItems": 500,
+                  "type": "array"
+                }
+              ]
+            },
+            "spec": {
+              "type": "object"
+            },
+            "title": {
+              "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DynamicString"
+            }
+          },
+          "required": [
+            "component",
+            "spec"
           ],
           "type": "object"
         }
