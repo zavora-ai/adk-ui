@@ -7,9 +7,10 @@
 //! (charts natively), and any form it draws asks you on the home's card before a tool runs.
 //!
 //! With `--features apps` and `ADK_UI_3D_APPS=1`, the agent can also write three.js with
-//! `show_3d_app` (adk-ui's MCP server, in process). The home frames each app sandboxed on a
-//! second origin (`http://localhost:APPS_PORT`, a different site from the home's
-//! `127.0.0.1`), under "App from 3D sandbox · it can't approve anything".
+//! `show_3d_app` (adk-ui's MCP Apps server, in process). The home frames each app sandboxed
+//! on an origin of its own under `http://localhost:APPS_PORT` (a subdomain per MCP server, and
+//! a different site from the home's `127.0.0.1`), under "App from 3D sandbox · it can't
+//! approve anything".
 //!
 //! Configuration, all from the environment:
 //!

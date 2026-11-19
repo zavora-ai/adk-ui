@@ -65,7 +65,7 @@ impl ExtensionComponent for VegaLiteComponent {
     fn usage(&self) -> &'static str {
         "VegaLite: {\"component\": \"VegaLite\", \"title\", \"spec\": a Vega-Lite spec with one \
          mark (bar, line, area, point or arc) and encoding x, y, color (a series per value) or \
-         theta (a pie), \"data\": {\"path\": \"/rows\"} or the spec's data.values (at most 500 \
+         theta (a pie), \"data\": {\"@path\": \"/rows\"} or the spec's data.values (at most 500 \
          rows); no transforms, layers, facets or URLs."
     }
 

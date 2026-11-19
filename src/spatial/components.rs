@@ -185,7 +185,7 @@ impl ExtensionComponent for Bar3DComponent {
     }
 
     fn usage(&self) -> &'static str {
-        "Bar3D: {\"component\": \"Bar3D\", \"title\", \"data\": {\"path\": \"/rows\"}, \"x\": {\"key\", \
+        "Bar3D: {\"component\": \"Bar3D\", \"title\", \"data\": {\"@path\": \"/rows\"}, \"x\": {\"key\", \
          \"label\"}, \"series\": [{\"key\", \"label\"}] (1 to 8), \"yLabel\"}: a value over two \
          categories, rows along x and series in depth; at most 50 rows."
     }
@@ -343,7 +343,7 @@ impl ExtensionComponent for Scatter3DComponent {
     }
 
     fn usage(&self) -> &'static str {
-        "Scatter3D: {\"component\": \"Scatter3D\", \"title\", \"data\": {\"path\"}, \"x\", \"y\", \
+        "Scatter3D: {\"component\": \"Scatter3D\", \"title\", \"data\": {\"@path\": \"/points\"}, \"x\", \"y\", \
          \"z\": {\"key\", \"label\"}, \"group\": \"<key>\", \"labelKey\": \"<key>\"}: points over \
          three measures, coloured by group (at most 8); at most 2000 points, 24 labelled."
     }
@@ -469,7 +469,7 @@ impl ExtensionComponent for SurfacePlotComponent {
     }
 
     fn usage(&self) -> &'static str {
-        "SurfacePlot: {\"component\": \"SurfacePlot\", \"title\", \"values\": {\"path\"} (rows of \
+        "SurfacePlot: {\"component\": \"SurfacePlot\", \"title\", \"values\": {\"@path\": \"/grid\"} (rows of \
          numbers, 2 to 64 by 2 to 64), \"xLabel\", \"yLabel\" (the value), \"zLabel\", \
          \"wireframe\"}: a value over a grid, coloured by height."
     }

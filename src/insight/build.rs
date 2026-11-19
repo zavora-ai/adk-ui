@@ -1,7 +1,9 @@
 //! Builders for the insight components: each produces one A2UI component, as a JSON value, for
 //! a [`Screen`](crate::draft::Screen) or an agent's `render_screen` call.
 
-use serde_json::{Map, Value, json};
+use serde_json::{Value, json};
+
+use crate::build::{Props, component_builder};
 
 /// A data binding: `{ "path": path }`, the value at a data model path. Use it wherever a
 /// component takes text, a value or data.
@@ -93,40 +95,6 @@ impl XAxis {
         self.0["label"] = label.into();
         self
     }
-}
-
-/// A component under construction: its id, type and properties.
-#[derive(Debug, Clone, PartialEq)]
-struct Props(Map<String, Value>);
-
-impl Props {
-    fn new(id: impl Into<String>, component: &str) -> Self {
-        let mut map = Map::new();
-        map.insert("id".into(), Value::String(id.into()));
-        map.insert("component".into(), Value::String(component.into()));
-        Self(map)
-    }
-
-    fn set(&mut self, name: &str, value: impl Into<Value>) {
-        self.0.insert(name.into(), value.into());
-    }
-}
-
-macro_rules! component_builder {
-    ($name:ident) => {
-        impl From<$name> for Value {
-            fn from(builder: $name) -> Value {
-                builder.build()
-            }
-        }
-
-        impl $name {
-            /// The component, as A2UI JSON.
-            pub fn build(self) -> Value {
-                Value::Object(self.0.0)
-            }
-        }
-    };
 }
 
 /// A chart written as a Vega-Lite spec (a subset: one mark over rows, `x`, `y`, `color`,

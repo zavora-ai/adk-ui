@@ -35,8 +35,8 @@ static INSIGHT: LazyLock<Catalog> = LazyLock::new(|| {
     .with_rules()
 });
 
-/// The insight catalog: `forms` 1.0 plus charts, sparklines, metrics, key-value lists,
-/// progress and badges.
+/// The insight catalog: `forms` 1.0 plus charts, Vega-Lite charts, sparklines, metrics,
+/// key-value lists, progress and badges.
 ///
 /// ```rust
 /// let insight = adk_ui::catalogs::insight();

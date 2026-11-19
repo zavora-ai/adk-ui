@@ -108,7 +108,7 @@ impl ExtensionComponent for ChartComponent {
 
     fn usage(&self) -> &'static str {
         "Chart: {\"component\": \"Chart\", \"kind\": \"bar|line|area|pie|scatter\", \"title\", \
-         \"data\": {\"path\": \"/rows\"} (at most 500 row objects), \"x\": {\"key\", \"type\": \
+         \"data\": {\"@path\": \"/rows\"} (at most 500 row objects), \"x\": {\"key\", \"type\": \
          \"category|number|time\", \"label\"}, \"series\": [{\"key\", \"label\"}] (1 to 8; a pie \
          uses the first), \"yLabel\", \"valueFormat\": \"number|percent|currency\", \"currency\", \
          \"timeUnit\", \"window\"}."
@@ -287,7 +287,7 @@ impl ExtensionComponent for SparklineComponent {
     }
 
     fn usage(&self) -> &'static str {
-        "Sparkline: {\"component\": \"Sparkline\", \"data\": {\"path\": \"/values\"} (numbers, or \
+        "Sparkline: {\"component\": \"Sparkline\", \"data\": {\"@path\": \"/values\"} (numbers, or \
          rows with \"key\"), \"label\", \"tone\", \"window\"}."
     }
 
@@ -362,7 +362,7 @@ impl ExtensionComponent for MetricComponent {
         "Metric: {\"component\": \"Metric\", \"label\", \"value\", \"unit\", \"format\": \
          \"number|percent|currency\", \"currency\", \"delta\": {\"value\", \"goodWhen\": \
          \"up|down\"}, \"caption\", \"status\": \"ok|warning|critical|info|neutral\", \"trend\": \
-         {\"path\": \"/numbers\"}}."
+         {\"@path\": \"/numbers\"}}."
     }
 
     fn home(&self, metric: &ResolvedComponent<'_>) -> Result<HomeNode, String> {
@@ -474,7 +474,7 @@ impl ExtensionComponent for KeyValueComponent {
 
     fn usage(&self) -> &'static str {
         "KeyValue: {\"component\": \"KeyValue\", \"title\", \"items\": [{\"key\", \"value\"}] (at \
-         most 50), or \"data\": {\"path\": \"/rows\"} with \"keyField\" and \"valueField\"}."
+         most 50), or \"data\": {\"@path\": \"/rows\"} with \"keyField\" and \"valueField\"}."
     }
 
     fn home(&self, list: &ResolvedComponent<'_>) -> Result<HomeNode, String> {

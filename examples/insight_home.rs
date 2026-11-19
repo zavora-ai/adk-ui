@@ -226,7 +226,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_ag_ui_extension(Arc::new(adk_ui::catalogs::ag_ui()))
         .add_api_routes(adk_kernel::control::router(kernel))
         .add_api_routes(adk_surface::web::router(engine.clone()))
-        .add_api_routes(adk_surface::web::genui::router(engine))
+        // AG-UI is wired above, so the Protocols tab claims it.
+        .add_api_routes(adk_surface::web::genui::router_wired(
+            engine,
+            adk_surface::genui::GenuiWiring {
+                ag_ui: true,
+                mcp_apps: false,
+            },
+        ))
         .add_root_routes(adk_surface::web::home())
         .build();
     let listener = tokio::net::TcpListener::bind(("127.0.0.1", port)).await?;
