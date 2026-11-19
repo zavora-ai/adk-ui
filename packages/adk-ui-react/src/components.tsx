@@ -1,4 +1,4 @@
-import { lazy, useCallback, useId, useState } from 'react';
+import { lazy, useId, useState } from 'react';
 import type { ReactNode } from 'react';
 import { OptionalRenderer } from './OptionalRenderer';
 import { formatNumber, formatValue, seriesColour } from './format';
@@ -12,12 +12,10 @@ import type {
     ProgressProps,
     RegionProps,
     Row,
-    Scene3DProps,
     SparklineProps,
 } from './types';
 
 const ChartBody = lazy(() => import('./lazy/ChartBody'));
-const SceneBody = lazy(() => import('./lazy/SceneBody'));
 
 /** What to draw while a rich renderer loads, or instead of it: the home's own view. */
 interface Fallback {
@@ -262,45 +260,5 @@ export function RegionView({ title, layout, columns, tone, variant, content }: O
             {title && <h4 className="adk-ui-heading">{title}</h4>}
             <div className="adk-ui-region__content">{content}</div>
         </section>
-    );
-}
-
-/**
- * A scene of primitive shapes, drawn with `three` (an optional peer). Its labels are listed
- * beside it as text; nothing in it can be pressed. Until it loads, or without `three` or a
- * capable device, `fallback` is drawn, or the list alone.
- *
- * @deprecated For a host's own data only. Drawings in adk-ui's catalogs are drawn by
- * `DrawnView` itself, natively, from genui's checked scene; this component is frozen and goes in
- * 4.0.
- */
-export function Scene3D({ fallback, ...scene }: Scene3DProps & Fallback) {
-    const [unavailable, setUnavailable] = useState(false);
-    const onUnavailable = useCallback(() => setUnavailable(true), []);
-    const labels = scene.objects.filter((object) => object.label?.trim());
-    const list = (
-        <ul className="adk-ui-scene__labels" aria-label="What the scene holds">
-            {labels.map((object) => (
-                <li key={object.id}>{object.label}</li>
-            ))}
-        </ul>
-    );
-    return (
-        <figure className="adk-ui-scene">
-            {(scene.title || scene.description) && (
-                <figcaption>
-                    {scene.title && <strong className="adk-ui-heading">{scene.title}</strong>}
-                    {scene.description && <span className="adk-ui-caption">{scene.description}</span>}
-                </figcaption>
-            )}
-            {unavailable ? (
-                (fallback ?? null)
-            ) : (
-                <OptionalRenderer peerDependency="three" capability="3D scene" fallback={fallback ?? null}>
-                    <SceneBody scene={scene} onUnavailable={onUnavailable} />
-                </OptionalRenderer>
-            )}
-            {labels.length > 0 && list}
-        </figure>
     );
 }
