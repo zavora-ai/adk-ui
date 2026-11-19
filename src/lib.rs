@@ -45,6 +45,7 @@ pub mod apps;
 mod build;
 pub mod catalogs;
 pub mod draft;
+pub mod eval;
 pub mod insight;
 pub mod kit;
 pub mod prompts;

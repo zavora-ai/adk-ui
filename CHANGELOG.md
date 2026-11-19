@@ -63,6 +63,12 @@ a call the person decides. adk-ui 3 adds extension catalogs `genui` checks and d
     `RegionView` need no peer and also draw a host's own data. The standalone `Scene3D` is
     deprecated.
   - `KitProvider` applies approved kits only.
+- **Drawing evaluation**: `eval::score` checks a drawing as genui will and reports whether it
+  is shown (with the refusal the model is told), its dark-pattern warnings, the expected
+  components it lacks, unlabelled fields, size and depth, folded into 0 to 100 points;
+  `eval::scenarios` are prompts across the three catalogs, and `examples/drawing_eval.rs`
+  scores the sample drawings or a JSONL file of a model's drawings, exiting non-zero on a
+  refusal.
 - **MCP Apps** (feature `apps`): `apps::UiApps`, an MCP server with two tools
   (`adk-ui-apps` serves both over stdio; `UiApps::three_d()` serves the first alone).
   - `show_drawing` shows a drawing in adk-ui's catalogs read-only in any MCP Apps host:
