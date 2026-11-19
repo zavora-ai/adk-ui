@@ -63,9 +63,13 @@ a call the person decides. adk-ui 3 adds extension catalogs `genui` checks and d
     `RegionView` need no peer and also draw a host's own data. The standalone `Scene3D` is
     deprecated.
   - `KitProvider` applies approved kits only.
-- **3D apps** (feature `apps`): `apps::ThreeApps`, an MCP server whose one tool,
-  `show_3d_app`, shows three.js the model writes in genui-apps' sandbox, on its own origin
-  (`adk-ui-apps` serves it over stdio).
+- **MCP Apps** (feature `apps`): `apps::UiApps`, an MCP server with two tools
+  (`adk-ui-apps` serves both over stdio; `UiApps::three_d()` serves the first alone).
+  - `show_drawing` shows a drawing in adk-ui's catalogs read-only in any MCP Apps host:
+    checked by rule 5 and resolved on the server (`genui::drawn_tree`), drawn by a page that
+    sets text only and reaches no site. It declares no actions, so a button is refused.
+- **3D apps**: `show_3d_app` shows three.js the model writes in genui-apps' sandbox, on its
+  own origin.
   - The page loads three.js 0.185.1 from its one declared site. It runs the code in a block
     of its own, given `THREE`, `scene`, `camera`, `onFrame`, `label`, `theme` and more, so
     code that declares a given name again still runs.

@@ -123,7 +123,7 @@ async fn sandbox() -> Result<Sandbox, Box<dyn std::error::Error>> {
 
     let (server_io, client_io) = tokio::io::duplex(1 << 20);
     tokio::spawn(async move {
-        if let Ok(running) = adk_ui::apps::ThreeApps::default().serve(server_io).await {
+        if let Ok(running) = adk_ui::apps::UiApps::three_d().serve(server_io).await {
             let _ = running.waiting().await;
         }
     });

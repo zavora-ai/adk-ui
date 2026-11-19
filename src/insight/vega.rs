@@ -105,10 +105,10 @@ pub(crate) struct ReadSpec {
     pub(crate) title: Option<String>,
 }
 
-fn field<'a>(
-    channel: Option<&'a Value>,
-    name: &str,
-) -> Result<Option<(&'a str, &'a str, Option<&'a str>)>, String> {
+/// An encoding channel read: its field, its type and its title.
+type Channel<'a> = (&'a str, &'a str, Option<&'a str>);
+
+fn field<'a>(channel: Option<&'a Value>, name: &str) -> Result<Option<Channel<'a>>, String> {
     let Some(channel) = channel else {
         return Ok(None);
     };

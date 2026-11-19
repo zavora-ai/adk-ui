@@ -32,9 +32,9 @@ tokio = { version = "1", features = ["rt-multi-thread", "macros", "io-std"], opt
 
 [features]
 default = []
-# An MCP server (stdio) whose `show_3d_app` tool shows model-written three.js as an MCP App,
-# only ever framed in genui-apps' sandbox on a second origin: `adk_ui::apps::ThreeApps` and
-# the `adk-ui-apps` binary.
+# An MCP Apps server (stdio): `show_3d_app` shows model-written three.js, framed in
+# genui-apps' sandbox on a second origin; `show_drawing` shows a checked drawing read-only in
+# any MCP Apps host. `adk_ui::apps::UiApps` and the `adk-ui-apps` binary.
 apps = ["dep:regex", "dep:rmcp", "dep:tokio"]
 
 [dev-dependencies]

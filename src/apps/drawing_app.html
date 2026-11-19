@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Drawing</title>
+<style>
+  :root { color-scheme: light dark; --bg: #ffffff; --text: #0f172a; --muted: #64748b; --line: #e6e8ec;
+          --field: #f6f7f9; --bar: #2563eb; }
+  :root[data-scheme="dark"] { --bg: #111418; --text: #e6e8ec; --muted: #94a3b8; --line: #2a2f37;
+                              --field: #1a1e24; --bar: #60a5fa; }
+  html, body { margin: 0; background: transparent; color: var(--text); font: 14px/1.45 system-ui, sans-serif; }
+  #app { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px 12px; }
+  h1 { margin: 0; font-size: 16px; font-weight: 600; }
+  .note, .caption { margin: 0; color: var(--muted); font-size: 12.5px; }
+  .h1, .h2 { margin: 4px 0 0; font-size: 17px; font-weight: 650; }
+  .h3, .h4, .h5 { margin: 2px 0 0; font-size: 15px; font-weight: 600; }
+  p { margin: 0; }
+  .column, .list { display: flex; flex-direction: column; gap: 8px; }
+  .row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; }
+  .row > * { flex: 1 1 140px; min-width: 0; }
+  .card { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border: 1px solid var(--line);
+          border-radius: 10px; background: var(--bg); }
+  hr { width: 100%; border: 0; border-top: 1px solid var(--line); margin: 2px 0; }
+  .field { display: flex; flex-direction: column; gap: 2px; }
+  .field .label { font-weight: 600; font-size: 13px; }
+  .field .value { padding: 6px 10px; border-radius: 8px; background: var(--field); min-height: 1.4em; }
+  .chart { display: flex; flex-direction: column; gap: 4px; }
+  .bars { display: grid; grid-template-columns: max-content 1fr max-content; gap: 3px 8px; align-items: center; }
+  .bar { height: 10px; border-radius: 3px; background: var(--bar); }
+  .tab { font-weight: 600; }
+</style>
+</head>
+<body>
+<div id="app">
+  <h1 id="title">Drawing</h1>
+  <div id="drawing" class="column"></div>
+  <p class="note" id="note">It only shows here: sending happens in the ADK-Rust home, where you decide.</p>
+</div>
+<script>
+"use strict";
+// A drawing adk-ui checked (rule 5) and resolved before it reached this page: only text is
+// set, never HTML, and nothing here opens, sends or calls anything.
+const $ = (id) => document.getElementById(id);
+let scheme = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+
+function post(message) { window.parent.postMessage(message, "*"); }
+function resized() {
+  post({ jsonrpc: "2.0", method: "ui/notifications/size-changed",
+         params: { height: Math.ceil(document.documentElement.scrollHeight) } });
+}
+function el(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined && text !== null) node.textContent = String(text);
+  return node;
+}
+function shown(value) {
+  if (value === null || value === undefined || value === "") return "—";
+  if (value === true) return "Yes";
+  if (value === false) return "No";
+  if (Array.isArray(value)) return value.join(", ");
+  return String(value);
+}
+
+/** A chart as its summary and, for one series over categories, bars sized by value. */
+function chart(spec) {
+  const box = el("div", "chart");
+  box.append(el("p", "", spec.summary));
+  const series = spec.series || [];
+  const labels = spec.x && spec.x.labels;
+  if (series.length === 1 && Array.isArray(labels) && labels.length <= 24) {
+    const values = series[0].y || [];
+    const top = Math.max(1, ...values.filter((v) => typeof v === "number").map(Math.abs));
+    const bars = el("div", "bars");
+    labels.forEach((label, i) => {
+      const value = values[i];
+      const bar = el("div", "bar");
+      bar.style.width = `${Math.max(2, (Math.abs(value || 0) / top) * 100)}%`;
+      bars.append(el("span", "caption", label), bar, el("span", "caption", shown(value)));
+    });
+    box.append(bars);
+  }
+  return box;
+}
+
+function render(node) {
+  if (!node) return el("div");
+  if (node.chart) return chart(node.chart);
+  if (node.scene) return el("p", "", node.scene.summary);
+  if (node.field) {
+    const box = el("div", "field");
+    box.append(el("span", "label", node.text || node.field.path));
+    let value = node.field.value;
+    const options = node.field.options || [];
+    if (options.length) {
+      const picked = Array.isArray(value) ? value : [value];
+      value = options.filter((o) => picked.includes(o.value)).map((o) => o.label);
+    }
+    box.append(el("span", "value", shown(value)));
+    return box;
+  }
+  const children = node.children || [];
+  switch (node.component) {
+    case "Text": {
+      const variant = node.variant || "body";
+      if (/^h[1-5]$/.test(variant)) return el("p", variant, node.text);
+      return el("p", variant === "caption" ? "caption" : "", node.text);
+    }
+    case "Divider": return el("hr");
+    case "Button": return el("p", "caption", `${node.text || "A button"} — sent from the ADK-Rust home`);
+    case "Row": { const row = el("div", "row"); children.forEach((c) => row.append(render(c))); return row; }
+    case "Card": { const card = el("div", "card"); children.forEach((c) => card.append(render(c))); return card; }
+    case "Tabs": {
+      const box = el("div", "column");
+      children.forEach((c, i) => { box.append(el("p", "tab", (node.tabs || [])[i] || "")); box.append(render(c)); });
+      return box;
+    }
+    default: {
+      const box = el("div", node.component === "List" ? "list" : "column");
+      children.forEach((c) => box.append(render(c)));
+      if (node.showAllText) box.append(el("p", "caption", node.showAllText));
+      return box;
+    }
+  }
+}
+
+function show(result) {
+  const data = (result && result.structuredContent) || {};
+  if (!data.tree) return;
+  $("title").textContent = data.title || "Drawing";
+  const drawing = $("drawing");
+  drawing.replaceChildren(render(data.tree));
+  resized();
+}
+
+window.addEventListener("message", (event) => {
+  if (event.source !== window.parent) return;
+  const message = event.data;
+  if (!message || message.jsonrpc !== "2.0") return;
+  if (message.id === 1 && message.result) {
+    const host = message.result.hostContext || {};
+    if (host.theme === "dark" || host.theme === "light") scheme = host.theme;
+    document.documentElement.dataset.scheme = scheme;
+    post({ jsonrpc: "2.0", method: "ui/notifications/initialized", params: {} });
+  } else if (message.method === "ui/notifications/tool-result") {
+    show(message.params);
+  } else if (message.method === "ui/notifications/host-context-changed") {
+    const theme = (message.params || {}).theme;
+    if (theme === "dark" || theme === "light") document.documentElement.dataset.scheme = theme;
+  }
+});
+document.documentElement.dataset.scheme = scheme;
+post({ jsonrpc: "2.0", id: 1, method: "ui/initialize",
+       params: { protocolVersion: "2026-01-26", appInfo: { name: "adk-ui drawing", version: "1" },
+                 appCapabilities: {} } });
+resized();
+</script>
+</body>
+</html>
