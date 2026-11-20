@@ -439,6 +439,7 @@ dependencies = [
  "adk-tool",
  "async-trait",
  "axum",
+ "base64 0.22.1",
  "chrono",
  "futures",
  "hmac 0.12.1",
