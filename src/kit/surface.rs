@@ -6,7 +6,9 @@
 use serde_json::{Value, json};
 
 use super::generator::{css_string, radius_value};
-use super::spec::{BrandKitManifest, KitStatus, KitValidationError, is_css_color_token};
+use super::spec::{
+    BrandKitManifest, KitSemanticTokens, KitStatus, KitValidationError, is_css_color_token,
+};
 
 /// A brand kit a host may apply: approved, with its reviewer and approval date, and valid.
 ///
@@ -68,58 +70,13 @@ impl ApprovedKit {
     /// colours, the accent and focus ring, the fonts, the radius and the eight chart colours.
     /// Decision and status colours are never set. A value that is not a CSS colour is left out.
     pub fn surface_tokens(&self) -> Vec<(String, String)> {
-        let tokens = &self.0.tokens;
-        let colors = &tokens.colors;
-        let mut out = Vec::new();
-        let mut color = |name: &str, value: &str| {
-            if is_css_color_token(value) {
-                out.push((name.to_string(), value.trim().to_string()));
-            }
-        };
-        color("--bg", &colors.background);
-        color("--card", &colors.surface);
-        color("--raised", &colors.muted);
-        color("--border", &colors.border);
-        color("--text", &colors.surface_foreground);
-        color("--text-2", &colors.muted_foreground);
-        color("--label", &colors.muted_foreground);
-        color("--accent", &colors.primary);
-        color("--focus", &colors.ring);
-        color("--chart-grid", &colors.muted);
-        color("--chart-axis", &colors.muted_foreground);
-        for (index, value) in colors.chart.iter().take(8).enumerate() {
-            color(&format!("--chart-{}", index + 1), value);
-        }
-        let font = |family: &str| {
-            format!(
-                "\"{}\", ui-sans-serif, system-ui, sans-serif",
-                css_string(family)
-            )
-        };
-        out.push(("--font".to_string(), font(&tokens.typography.body_family)));
-        out.push((
-            "--mono".to_string(),
-            format!(
-                "\"{}\", ui-monospace, monospace",
-                css_string(&tokens.typography.mono_family)
-            ),
-        ));
-        out.push((
-            "--radius".to_string(),
-            radius_value(&tokens.radius).to_string(),
-        ));
-        out
+        surface_declarations(&self.0.tokens)
     }
 
     /// [`Self::surface_tokens`] as a CSS rule for `[data-adk-ui-kit="<kit id>"]`: put the
     /// attribute on the element around the host's `DrawnView`s.
     pub fn surface_css(&self) -> String {
-        let mut css = format!("[data-adk-ui-kit=\"{}\"] {{\n", css_string(&self.0.id));
-        for (name, value) in self.surface_tokens() {
-            css.push_str(&format!("  {name}: {value};\n"));
-        }
-        css.push_str("}\n");
-        css
+        surface_rule(&self.0.id, &self.0.tokens)
     }
 
     /// The A2UI `theme` a host's transport adds to `createSurface` for a third-party A2UI
@@ -127,10 +84,113 @@ impl ApprovedKit {
     /// drawing pass for someone else, and never part of the stored drawing.
     pub fn a2ui_theme(&self) -> Value {
         let primary = &self.0.tokens.colors.primary;
-        if is_css_color_token(primary) {
+        if is_css_color_token(primary) && !primary.trim().starts_with("var(") {
             json!({ "primaryColor": primary.trim() })
         } else {
             json!({})
         }
+    }
+}
+
+/// The adk-surface tokens `tokens` set, as CSS declarations (see
+/// [`ApprovedKit::surface_tokens`]).
+pub(crate) fn surface_declarations(tokens: &KitSemanticTokens) -> Vec<(String, String)> {
+    let colors = &tokens.colors;
+    let mut out = Vec::new();
+    // A literal colour only: `var(--decision)` would let an accent borrow a decision's colour.
+    let mut color = |name: &str, value: &str| {
+        if is_css_color_token(value) && !value.trim().starts_with("var(") {
+            out.push((name.to_string(), value.trim().to_string()));
+        }
+    };
+    color("--bg", &colors.background);
+    color("--card", &colors.surface);
+    color("--raised", &colors.muted);
+    color("--border", &colors.border);
+    color("--text", &colors.surface_foreground);
+    color("--text-2", &colors.muted_foreground);
+    color("--label", &colors.muted_foreground);
+    color("--accent", &colors.primary);
+    color("--focus", &colors.ring);
+    color("--chart-grid", &colors.muted);
+    color("--chart-axis", &colors.muted_foreground);
+    for (index, value) in colors.chart.iter().take(8).enumerate() {
+        color(&format!("--chart-{}", index + 1), value);
+    }
+    out.push((
+        "--font".to_string(),
+        font_stack(
+            &tokens.typography.body_family,
+            "ui-sans-serif, system-ui, sans-serif",
+        ),
+    ));
+    out.push((
+        "--mono".to_string(),
+        font_stack(&tokens.typography.mono_family, "ui-monospace, monospace"),
+    ));
+    out.push((
+        "--radius".to_string(),
+        radius_value(&tokens.radius).to_string(),
+    ));
+    out
+}
+
+/// `tokens` as a CSS rule for `[data-adk-ui-kit="<kit_id>"]`.
+pub(crate) fn surface_rule(kit_id: &str, tokens: &KitSemanticTokens) -> String {
+    let mut css = format!("[data-adk-ui-kit=\"{}\"] {{\n", css_string(kit_id));
+    for (name, value) in surface_declarations(tokens) {
+        css.push_str(&format!("  {name}: {value};\n"));
+    }
+    css.push_str("}\n");
+    css
+}
+
+/// The CSS generic font families, written without quotes.
+const GENERIC_FAMILIES: &[&str] = &[
+    "serif",
+    "sans-serif",
+    "monospace",
+    "cursive",
+    "fantasy",
+    "system-ui",
+    "ui-serif",
+    "ui-sans-serif",
+    "ui-monospace",
+    "ui-rounded",
+    "math",
+    "emoji",
+];
+
+/// `families` (one name, or a comma-separated list) as a CSS font stack ending in
+/// `fallbacks`: each name quoted on its own, generic families left bare.
+fn font_stack(families: &str, fallbacks: &str) -> String {
+    let mut stack: Vec<String> = families
+        .split(',')
+        .map(str::trim)
+        .filter(|family| !family.is_empty())
+        .map(|family| {
+            if GENERIC_FAMILIES.contains(&family.to_ascii_lowercase().as_str()) {
+                family.to_ascii_lowercase()
+            } else {
+                format!("\"{}\"", css_string(family))
+            }
+        })
+        .collect();
+    stack.push(fallbacks.to_string());
+    stack.join(", ")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_family_list_is_quoted_name_by_name() {
+        assert_eq!(
+            font_stack("Avenir Next, sans-serif", "ui-sans-serif"),
+            "\"Avenir Next\", sans-serif, ui-sans-serif"
+        );
+        assert_eq!(font_stack("Inter", "monospace"), "\"Inter\", monospace");
+        assert_eq!(font_stack("", "monospace"), "monospace");
     }
 }

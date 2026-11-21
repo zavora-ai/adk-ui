@@ -9,7 +9,7 @@ const watch = process.argv.includes('--watch');
 const shared = {
     entryPoints: ['src/index.ts'],
     bundle: true,
-    external: ['react', 'react/*', 'react-dom', 'react-dom/*', 'recharts', 'three', 'three/*'],
+    external: ['react', 'react/*', 'react-dom', 'react-dom/*', 'recharts'],
     logLevel: 'info',
     platform: 'browser',
     target: 'es2020',

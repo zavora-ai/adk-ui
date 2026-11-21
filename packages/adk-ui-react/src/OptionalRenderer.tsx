@@ -18,10 +18,10 @@ interface OptionalRendererState {
 }
 
 /**
- * `three` and `recharts` are optional peer dependencies: hosts that never render 3D scenes or
- * rich charts need not install them. Their renderers load from separate chunks, so a missing
- * peer surfaces as a rejected dynamic import. This boundary keeps that rejection from taking
- * down the drawing and draws the fallback instead.
+ * `recharts` is an optional peer dependency: a host that never draws rich charts need not
+ * install it. Its renderer loads from a separate chunk, so a missing peer surfaces as a
+ * rejected dynamic import. This boundary keeps that rejection from taking down the drawing and
+ * draws the fallback instead.
  */
 export class OptionalRenderer extends React.Component<OptionalRendererProps, OptionalRendererState> {
     state: OptionalRendererState = { failed: false };

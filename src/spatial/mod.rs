@@ -5,8 +5,8 @@
 //!
 //! Each one only shows. The web home, and any host drawing with `DrawnView`, draws them
 //! natively: scenes with WebGL from `genui`'s checked `DrawnScene`, cards and layouts with CSS
-//! 3D. The terminal and the phone show their words. Colours come from the home's palette and
-//! state tokens, never from the agent.
+//! 3D. The terminal shows their words. Colours come from the home's palette and state tokens,
+//! never from the agent.
 
 mod build;
 mod components;

@@ -3,7 +3,8 @@
 Renderers of [adk-ui](https://github.com/zavora-ai/adk-ui)'s extension catalogs (charts,
 metrics, key-value lists, progress, badges, apps of pages and regions) for
 `@zavora-ai/adk-surface-react`'s `DrawnView`, and the same components for a host's own data.
-3D scenes, cards with depth and 3D layouts need no renderer: `DrawnView` draws them itself.
+Vega-Lite charts, 3D scenes, cards with depth and 3D layouts need no renderer: `DrawnView`
+draws them itself.
 
 ADK-Rust 3 draws agent UI with `adk-surface`'s `genui`: every drawing is recorded, checked by
 rule 5 (no approval controls, secrets or links) and shown by `DrawnView`. In a drawing, a
@@ -21,7 +22,8 @@ npm install recharts
 Without `recharts`, a chart in a drawing is drawn as the ADK-Rust home draws it (an SVG chart).
 Studio's `Scene3D` and every 3D component of the spatial catalog are drawn by `DrawnView`
 natively, with WebGL loaded only for a drawing that has one, in the home's palette, with picking
-into the drawing's form, and in words where WebGL is missing.
+into the drawing's form, and in words where WebGL is missing. Which components `DrawnView`
+draws itself is `homeDrawn` in the catalogs' `index.json`.
 
 ## In a DrawnView
 
@@ -58,15 +60,15 @@ import { Chart, Metric } from "@zavora-ai/adk-ui-react";
 ```
 
 `Chart`, `Sparkline`, `Metric`, `KeyValueList`, `ProgressBar`, `Badge`, `AppShell`, `PageView`
-and `RegionView` take the catalog's properties (see the exported types). The standalone
-`Scene3D` (with `three` as an optional peer) is deprecated and goes in 4.0.
+and `RegionView` take the catalog's properties (see the exported types).
 
 ## Brand kits
 
 `KitProvider` applies an approved adk-ui brand kit to everything inside it, `DrawnView`
 included, by setting the adk-surface tokens (`--card`, `--text`, `--accent`, `--chart-1` …).
-A draft or unsigned kit throws unless `allowDraft` is set, which a production host never does,
-and no kit sets a decision's colours. The ADK-Rust web home keeps its own tokens.
+A kit that is not approved (status `approved`, with `reviewedBy` and `approvedAt` filled)
+throws unless `allowDraft` is set, which a production host never does, and no kit sets a
+decision's colours. The ADK-Rust web home keeps its own tokens.
 
 ```tsx
 <KitProvider kit={approvedManifest}>
@@ -81,4 +83,4 @@ and no kit sets a decision's colours. The ADK-Rust web home keeps its own tokens
 
 ## License
 
-Apache-2.0
+Apache-2.0. See [LICENSE](https://github.com/zavora-ai/adk-ui/blob/main/LICENSE).

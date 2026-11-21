@@ -57,6 +57,9 @@
           "$ref": "#/components/Chart"
         },
         {
+          "$ref": "#/components/VegaLite"
+        },
+        {
           "$ref": "#/components/Sparkline"
         },
         {
@@ -1016,6 +1019,10 @@
               "description": "The minimum value of the slider.",
               "type": "number"
             },
+            "steps": {
+              "description": "Snaps the value to intervals of this size (A2UI 1.0).",
+              "type": "number"
+            },
             "value": {
               "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DynamicNumber",
               "description": "The current value of the slider."
@@ -1205,6 +1212,10 @@
               "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DynamicString",
               "description": "The text label for the input field."
             },
+            "placeholder": {
+              "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DynamicString",
+              "description": "The placeholder text for the input field (A2UI 1.0)."
+            },
             "validationRegexp": {
               "description": "A regular expression used for client-side validation of the input.",
               "type": "string"
@@ -1227,6 +1238,50 @@
           "required": [
             "component",
             "label"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "object",
+      "unevaluatedProperties": false
+    },
+    "VegaLite": {
+      "allOf": [
+        {
+          "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/ComponentCommon"
+        },
+        {
+          "$ref": "#/$defs/CatalogComponentCommon"
+        },
+        {
+          "properties": {
+            "component": {
+              "const": "VegaLite"
+            },
+            "data": {
+              "oneOf": [
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                },
+                {
+                  "items": {
+                    "type": "object"
+                  },
+                  "maxItems": 500,
+                  "type": "array"
+                }
+              ]
+            },
+            "spec": {
+              "type": "object"
+            },
+            "title": {
+              "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DynamicString"
+            }
+          },
+          "required": [
+            "component",
+            "spec"
           ],
           "type": "object"
         }

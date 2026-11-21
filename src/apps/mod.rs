@@ -1,32 +1,32 @@
-//! Model-written three.js, shown only in genui-apps' sandbox (feature `apps`).
+//! MCP Apps from adk-ui (feature `apps`): [`UiApps`], an MCP server with two tools.
 //!
-//! Some 3D is beyond what a catalog can declare, such as a solar system in motion, a particle
-//! field or a procedural landscape. [`ThreeApps`] is an MCP server with one tool,
-//! `show_3d_app`, which takes the model's three.js code and shows it as an MCP App
-//! (2026-01-26). The code is never a drawing: genui-apps frames it sandboxed on a second origin,
-//! under "App from 3D sandbox · it can't approve anything", where:
-//! - it can't reach the network (`connect-src 'none'`) or start a worker;
-//! - it can't touch the home; every tool call it could ask for is held for the person;
-//! - this server publishes no tool the app may call (`visibility: ["model"]`).
+//! - `show_3d_app` takes model-written three.js for 3D beyond what a catalog can declare,
+//!   such as a solar system in motion, a particle field or a procedural landscape. In the home,
+//!   genui-apps frames it sandboxed on a second origin, under "App from 3D sandbox · it can't
+//!   approve anything", where it can't reach the network (`connect-src 'none'`) or start a
+//!   worker, can't touch the home, and every tool call it could ask for is held for the person.
+//!   Before an app record is written the server refuses code that shows a decision's words or
+//!   reaches outside its frame ([`check`]). The page loads three.js ([`THREE_VERSION`]) and its
+//!   addons from [`CDN`], the one site it declares, and owns the render loop, which pauses off
+//!   screen, honours reduced motion and slows down for heavy scenes.
+//! - `show_drawing` ([`drawing`]) shows a drawing in adk-ui's catalogs read-only, for hosts
+//!   other than the home: checked by rule 5 and resolved on the server, drawn by a page that
+//!   sets text only and reaches no site, with no buttons.
 //!
-//! Before an app record is written, the server refuses code that shows a decision's words or
-//! reaches outside its frame ([`check`]). The page loads three.js
-//! ([`THREE_VERSION`]) and its addons from [`CDN`], the one site it declares, and runs the code
-//! as the body of an async function given `{THREE, addons, scene, camera, renderer, controls,
-//! onFrame, label, size, theme, reducedMotion}`. The page owns the render loop, which pauses
-//! off screen, honours reduced motion and slows down for heavy scenes.
+//! The server publishes no tool an app may call (`visibility: ["model"]`).
 //!
 //! ```rust,no_run
 //! # async fn serve() -> Result<(), Box<dyn std::error::Error>> {
 //! use rmcp::ServiceExt;
 //!
-//! let running = adk_ui::apps::ThreeApps::default().serve(rmcp::transport::stdio()).await?;
+//! let running = adk_ui::apps::UiApps::default().serve(rmcp::transport::stdio()).await?;
 //! running.waiting().await?;
 //! # Ok(())
 //! # }
 //! ```
 
 pub mod check;
+pub mod drawing;
 
 use std::sync::Arc;
 
@@ -41,6 +41,7 @@ use rmcp::{RoleServer, ServerHandler};
 use serde_json::{Value, json};
 
 pub use check::{AppInput, refusal};
+pub use drawing::{DRAWING_PAGE, DRAWING_TOOL, DRAWING_URI, DrawingInput};
 
 /// The tool's name.
 pub const TOOL: &str = "show_3d_app";
@@ -55,14 +56,54 @@ pub const CDN: &str = "https://cdn.jsdelivr.net";
 /// The page's template. The code arrives as the call's input, after it starts.
 pub const PAGE: &str = include_str!("three_app.html");
 
-/// The MCP server behind `show_3d_app`. It serves over any rmcp transport: stdio
-/// (`adk-ui-apps`), or in process over `tokio::io::duplex`.
-#[derive(Debug, Clone, Default)]
-pub struct ThreeApps {
-    _private: (),
+/// adk-ui's MCP Apps server: `show_3d_app` and `show_drawing` ([`UiApps::default`]), or one
+/// of them. It serves over any rmcp transport: stdio (`adk-ui-apps`), or in process over
+/// `tokio::io::duplex`.
+#[derive(Debug, Clone)]
+pub struct UiApps {
+    three_d: bool,
+    drawings: bool,
 }
 
-impl ThreeApps {
+impl Default for UiApps {
+    /// Both tools: what a host other than the home, such as a desktop chat app, gives a model.
+    fn default() -> Self {
+        Self {
+            three_d: true,
+            drawings: true,
+        }
+    }
+}
+
+impl UiApps {
+    /// `show_3d_app` alone: what the home gives a model that draws with `render_screen`.
+    pub fn three_d() -> Self {
+        Self {
+            three_d: true,
+            drawings: false,
+        }
+    }
+
+    /// `show_drawing` alone.
+    pub fn drawings() -> Self {
+        Self {
+            three_d: false,
+            drawings: true,
+        }
+    }
+
+    /// The tools this server lists.
+    pub fn tools(&self) -> Vec<Tool> {
+        let mut tools = Vec::new();
+        if self.three_d {
+            tools.push(Self::tool());
+        }
+        if self.drawings {
+            tools.push(drawing::drawing_tool());
+        }
+        tools
+    }
+
     /// The `show_3d_app` tool as `tools/list` lists it.
     pub fn tool() -> Tool {
         let schema: JsonObject = serde_json::from_value(json!({
@@ -152,7 +193,7 @@ fn page_meta() -> Value {
     json!({ "ui": { "csp": { "resourceDomains": [CDN] }, "prefersBorder": true } })
 }
 
-fn meta(value: Value) -> MetaObject {
+pub(crate) fn meta(value: Value) -> MetaObject {
     MetaObject(serde_json::from_value(value).expect("_meta is an object"))
 }
 
@@ -162,7 +203,7 @@ fn refused(reason: &str) -> CallToolResult {
     ))])
 }
 
-impl ServerHandler for ThreeApps {
+impl ServerHandler for UiApps {
     fn get_info(&self) -> InitializeResult {
         InitializeResult::new(
             ServerCapabilities::builder()
@@ -175,7 +216,8 @@ impl ServerHandler for ThreeApps {
             env!("CARGO_PKG_VERSION"),
         ))
         .with_instructions(
-            "show_3d_app shows model-written three.js, sandboxed, in the person's thread.",
+            "show_3d_app shows model-written three.js, sandboxed; show_drawing shows a checked \
+             drawing of adk-ui's catalogs, read-only.",
         )
     }
 
@@ -184,7 +226,7 @@ impl ServerHandler for ThreeApps {
         _request: Option<PaginatedRequestParams>,
         _context: RequestContext<RoleServer>,
     ) -> Result<ListToolsResult, ErrorData> {
-        Ok(ListToolsResult::with_all_items(vec![Self::tool()]))
+        Ok(ListToolsResult::with_all_items(self.tools()))
     }
 
     async fn call_tool(
@@ -192,13 +234,14 @@ impl ServerHandler for ThreeApps {
         request: CallToolRequestParams,
         _context: RequestContext<RoleServer>,
     ) -> Result<CallToolResponse, ErrorData> {
-        if request.name != TOOL {
-            return Err(ErrorData::invalid_params(
-                format!("no tool {}", request.name),
-                None,
-            ));
-        }
-        Ok(CallToolResponse::Complete(Self::show(request.arguments)))
+        let result = match request.name.as_ref() {
+            TOOL if self.three_d => Self::show(request.arguments),
+            DRAWING_TOOL if self.drawings => drawing::show_drawing(request.arguments),
+            other => {
+                return Err(ErrorData::invalid_params(format!("no tool {other}"), None));
+            }
+        };
+        Ok(CallToolResponse::Complete(result))
     }
 
     async fn list_resources(
@@ -206,12 +249,23 @@ impl ServerHandler for ThreeApps {
         _request: Option<PaginatedRequestParams>,
         _context: RequestContext<RoleServer>,
     ) -> Result<ListResourcesResult, ErrorData> {
-        Ok(ListResourcesResult::with_all_items(vec![
-            Resource::new(RESOURCE_URI, "three-app")
-                .with_title("A 3D app")
-                .with_mime_type(APP_MIME_TYPE)
-                .with_meta(meta(page_meta())),
-        ]))
+        let mut resources = Vec::new();
+        if self.three_d {
+            resources.push(
+                Resource::new(RESOURCE_URI, "three-app")
+                    .with_title("A 3D app")
+                    .with_mime_type(APP_MIME_TYPE)
+                    .with_meta(meta(page_meta())),
+            );
+        }
+        if self.drawings {
+            resources.push(
+                Resource::new(DRAWING_URI, "drawing")
+                    .with_title("A drawing")
+                    .with_mime_type(APP_MIME_TYPE),
+            );
+        }
+        Ok(ListResourcesResult::with_all_items(resources))
     }
 
     async fn read_resource(
@@ -219,13 +273,17 @@ impl ServerHandler for ThreeApps {
         request: ReadResourceRequestParams,
         _context: RequestContext<RoleServer>,
     ) -> Result<ReadResourceResponse, ErrorData> {
-        if request.uri != RESOURCE_URI {
-            return Err(ErrorData::resource_not_found(
-                format!("no resource {}", request.uri),
-                None,
-            ));
-        }
-        Ok(ReadResourceResult::new(vec![Self::page()]).into())
+        let page = match request.uri.as_str() {
+            RESOURCE_URI if self.three_d => Self::page(),
+            DRAWING_URI if self.drawings => drawing::drawing_page(),
+            other => {
+                return Err(ErrorData::resource_not_found(
+                    format!("no resource {other}"),
+                    None,
+                ));
+            }
+        };
+        Ok(ReadResourceResult::new(vec![page]).into())
     }
 }
 
@@ -271,7 +329,7 @@ mod tests {
 
     #[test]
     fn the_tool_declares_its_page_for_the_model_only() {
-        let tool = ThreeApps::tool();
+        let tool = UiApps::tool();
         let ui = &tool.meta.as_ref().unwrap().0["ui"];
         assert_eq!(ui["resourceUri"], RESOURCE_URI);
         assert_eq!(ui["visibility"], json!(["model"]));
@@ -286,13 +344,13 @@ mod tests {
     #[test]
     fn a_refused_call_is_an_error_and_never_echoes_the_code() {
         let code = "fetch('https://example.com/secret-data')";
-        let result = ThreeApps::show(Some(
+        let result = UiApps::show(Some(
             serde_json::from_value(json!({ "title": "Field", "code": code })).unwrap(),
         ));
         assert_eq!(result.is_error, Some(true));
         let text = serde_json::to_string(&result.content).unwrap();
         assert!(!text.contains("secret-data"));
-        let shown = ThreeApps::show(Some(
+        let shown = UiApps::show(Some(
             serde_json::from_value(
                 json!({ "title": "Field", "code": "scene.add(new THREE.Mesh())" }),
             )

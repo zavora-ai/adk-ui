@@ -7,17 +7,16 @@ commit `vX.Y.Z`. The 2.x line is published from `release/2.x`.
 
 adk-ui 3.0.0 builds on crates that aren't published yet, so the order matters.
 
-1. **adk-rust.** Merge the `genui` work adk-ui 3 needs into adk-rust `main`:
-   - the axis-label fix for drawn charts (zavora-ai/adk-rust#1447);
-   - the extension-catalog docs (zavora-ai/adk-rust#1448);
-   - scenes and depth effects, the branch the spatial catalog projects onto
-     (zavora-ai/adk-rust#1449).
-
-   The scenes branch is stacked on the other two. If they're squash-merged, rebase it onto
-   `main` and rebuild `adk-surface/assets/web` (`npm run build` in `adk-surface/web`).
+1. **adk-rust.** genui's scenes and depth (zavora-ai/adk-rust#1449), the axis-label fix
+   (#1447) and the extension-catalog docs (#1448) are merged. adk-ui 3 also needs genui's
+   2026-11 work on branch `feat/genui-sota`, not yet opened as a pull request: A2UI 1.0 on
+   the wire and catalogs as A2UI 1.0 documents (`Catalog::with_instructions`,
+   `document_for`, `components_in`), `drawn_tree` (`show_drawing`, `eval`), dark-pattern
+   warnings (the fixtures test), and an origin per MCP server (`apps_tests`). It is rebased
+   onto `main`; open its pull request and merge it first (rebase again if `main` moved).
 2. **ADK-Rust 3.0.0.** Wait until it's on crates.io (every `adk-*` crate in `Cargo.toml`) and
-   `@zavora-ai/adk-surface-react` 3.0.0 is on npm. If scenes ship after 3.0.0, raise
-   `adk-surface` in `Cargo.toml` to the first release that has them.
+   `@zavora-ai/adk-surface-react` 3.0.0 is on npm. If that work ships after 3.0.0, raise
+   `adk-surface` in `Cargo.toml` to the first release that has it.
 3. **Build against the registry**, from a clean checkout of `main`:
 
    ```bash
@@ -26,8 +25,10 @@ adk-ui 3.0.0 builds on crates that aren't published yet, so the order matters.
    cargo fmt --check
    cargo clippy --all-targets --all-features -- -D warnings
    cargo test --all-features
+   cargo run --example drawing_eval         # every sample drawing shown
+   RUSTDOCFLAGS="--cfg docsrs" cargo +nightly doc --no-deps --all-features
    cargo publish --dry-run
-   cargo package --list                     # no .cargo, packages/, custom_host or archive
+   cargo package --list                     # src/, catalogs/, three docs, README, CHANGELOG, LICENSE
    ```
 
 4. **The React package:**
@@ -36,14 +37,17 @@ adk-ui 3.0.0 builds on crates that aren't published yet, so the order matters.
    npm ci
    cd packages/adk-ui-react
    npm run lint && npm run typecheck && npm test
-   npm pack --dry-run                       # dist/ and README.md only
+   npm pack --dry-run                       # dist/, README.md and LICENSE
    ```
 
 5. **The custom host.** Replace the source aliases in `examples/custom_host/vite.config.ts`
-   and `tsconfig.json` with the published packages, then run
-   `npm install && npm run typecheck && npm run build` there.
+   and `tsconfig.json` with the published packages, add
+   `import "@zavora-ai/adk-surface-react/style.css"` to `src/main.tsx` (the source alias
+   brought it in), then run `npm install && npm run typecheck && npm run build` there.
 6. **Date the release.** In `CHANGELOG.md`, turn `## [Unreleased] — 3.0.0` into
-   `## [3.0.0] - YYYY-MM-DD`, then commit and tag `v3.0.0`.
+   `## [3.0.0] - YYYY-MM-DD`, delete `.cargo/config.toml.example` and the "build against an
+   unreleased adk-rust" notes (README "Developing", the comment in `Cargo.toml`), then commit
+   and tag `v3.0.0`.
 7. **Publish:**
 
    ```bash

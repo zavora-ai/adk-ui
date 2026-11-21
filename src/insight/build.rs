@@ -1,7 +1,9 @@
 //! Builders for the insight components: each produces one A2UI component, as a JSON value, for
 //! a [`Screen`](crate::draft::Screen) or an agent's `render_screen` call.
 
-use serde_json::{Map, Value, json};
+use serde_json::{Value, json};
+
+use crate::build::{Props, component_builder};
 
 /// A data binding: `{ "path": path }`, the value at a data model path. Use it wherever a
 /// component takes text, a value or data.
@@ -95,39 +97,50 @@ impl XAxis {
     }
 }
 
-/// A component under construction: its id, type and properties.
+/// A chart written as a Vega-Lite spec (a subset: one mark over rows, `x`, `y`, `color`,
+/// `theta`), drawn as the home's own chart.
+///
+/// ```rust
+/// use adk_ui::insight::{VegaLite, bind};
+/// use serde_json::json;
+///
+/// let chart = VegaLite::new("latency", json!({
+///     "mark": "line",
+///     "encoding": { "x": { "field": "day", "type": "temporal" },
+///                   "y": { "field": "ms", "type": "quantitative" } }
+/// }))
+/// .data(bind("/latency"))
+/// .build();
+/// assert_eq!(chart["component"], "VegaLite");
+/// assert_eq!(chart["data"]["path"], "/latency");
+/// ```
 #[derive(Debug, Clone, PartialEq)]
-struct Props(Map<String, Value>);
+pub struct VegaLite(Props);
 
-impl Props {
-    fn new(id: impl Into<String>, component: &str) -> Self {
-        let mut map = Map::new();
-        map.insert("id".into(), Value::String(id.into()));
-        map.insert("component".into(), Value::String(component.into()));
-        Self(map)
+impl VegaLite {
+    /// A Vega-Lite chart with id `id` drawing `spec`.
+    pub fn new(id: impl Into<String>, spec: Value) -> Self {
+        let mut props = Props::new(id, "VegaLite");
+        props.set("spec", spec);
+        Self(props)
     }
 
-    fn set(&mut self, name: &str, value: impl Into<Value>) {
-        self.0.insert(name.into(), value.into());
+    /// Its title, over the spec's.
+    #[must_use]
+    pub fn title(mut self, title: impl Into<Value>) -> Self {
+        self.0.set("title", title);
+        self
+    }
+
+    /// Its rows, a [`bind`]ing in place of the spec's `data.values`.
+    #[must_use]
+    pub fn data(mut self, data: impl Into<Value>) -> Self {
+        self.0.set("data", data);
+        self
     }
 }
 
-macro_rules! component_builder {
-    ($name:ident) => {
-        impl From<$name> for Value {
-            fn from(builder: $name) -> Value {
-                builder.build()
-            }
-        }
-
-        impl $name {
-            /// The component, as A2UI JSON.
-            pub fn build(self) -> Value {
-                Value::Object(self.0.0)
-            }
-        }
-    };
-}
+component_builder!(VegaLite);
 
 /// A chart of rows of data.
 ///

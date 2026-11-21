@@ -1,7 +1,32 @@
 {
     "name": "@zavora-ai/adk-ui-react",
     "version": "3.0.0",
-    "description": "Renderers of adk-ui's extension catalogs (charts, metrics, pages, scenes) for @zavora-ai/adk-surface-react's DrawnView, and the same components for a host's own data",
+    "description": "Renderers of adk-ui's extension catalogs (charts, metrics, apps, pages) for @zavora-ai/adk-surface-react's DrawnView, and the same components for a host's own data",
+    "keywords": [
+        "adk",
+        "adk-rust",
+        "agent",
+        "a2ui",
+        "genui",
+        "generative-ui",
+        "charts",
+        "react",
+        "zavora"
+    ],
+    "homepage": "https://github.com/zavora-ai/adk-ui/tree/main/packages/adk-ui-react#readme",
+    "bugs": {
+        "url": "https://github.com/zavora-ai/adk-ui/issues"
+    },
+    "license": "Apache-2.0",
+    "author": "Zavora Technologies Ltd",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/zavora-ai/adk-ui.git",
+        "directory": "packages/adk-ui-react"
+    },
+    "engines": {
+        "node": ">=20"
+    },
     "main": "dist/index.js",
     "module": "dist/index.mjs",
     "types": "dist/index.d.ts",
@@ -16,7 +41,11 @@
     },
     "files": [
         "dist",
-        "README.md"
+        "README.md",
+        "LICENSE"
+    ],
+    "sideEffects": [
+        "*.css"
     ],
     "scripts": {
         "build": "node scripts/build.mjs",
@@ -25,14 +54,14 @@
         "prepublishOnly": "npm run lint && npm run typecheck && npm test",
         "pretest": "npm run build",
         "test": "node --test ./test/*.cjs",
-        "typecheck": "tsc --noEmit"
+        "typecheck": "tsc --noEmit",
+        "prepack": "node -e \"require('fs').copyFileSync('../../LICENSE', 'LICENSE')\""
     },
     "peerDependencies": {
         "@zavora-ai/adk-surface-react": "^3.0.0",
         "react": ">=18.3.0 <20",
         "react-dom": ">=18.3.0 <20",
-        "recharts": "^3.0.0",
-        "three": ">=0.180.0"
+        "recharts": "^3.0.0"
     },
     "peerDependenciesMeta": {
         "@zavora-ai/adk-surface-react": {
@@ -40,16 +69,12 @@
         },
         "recharts": {
             "optional": true
-        },
-        "three": {
-            "optional": true
         }
     },
     "devDependencies": {
         "@eslint/js": "^9.39.1",
         "@types/react": "^19.2.5",
         "@types/react-dom": "^19.2.3",
-        "@types/three": "^0.185.0",
         "esbuild": "^0.28.2",
         "eslint": "^9.39.1",
         "eslint-plugin-react-hooks": "^7.0.1",
@@ -57,30 +82,10 @@
         "react": "^19.2.0",
         "react-dom": "^19.2.0",
         "recharts": "^3.10.1",
-        "three": "^0.185.1",
         "typescript": "~5.9.3",
         "typescript-eslint": "^8.46.4"
     },
-    "keywords": [
-        "adk",
-        "adk-rust",
-        "agent",
-        "a2ui",
-        "genui",
-        "generative-ui",
-        "charts",
-        "react",
-        "zavora"
-    ],
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/zavora-ai/adk-ui.git"
-    },
-    "license": "Apache-2.0",
     "publishConfig": {
         "access": "public"
-    },
-    "sideEffects": [
-        "*.css"
-    ]
+    }
 }

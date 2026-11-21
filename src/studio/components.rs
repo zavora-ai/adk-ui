@@ -87,6 +87,10 @@ impl ExtensionComponent for AppComponent {
         }]
     }
 
+    fn allowed_children(&self) -> &'static [&'static str] {
+        &["Page"]
+    }
+
     fn usage(&self) -> &'static str {
         "App: {\"component\": \"App\", \"title\", \"pages\": [{\"id\", \"title\", \"child\": \
          \"<a Page's id>\"}] (1 to 24), \"navigation\": \"top|side\", \"initialPage\"}; the home \
@@ -146,6 +150,10 @@ impl ExtensionComponent for PageComponent {
 
     fn children(&self) -> &'static [ChildSlot] {
         &[ChildSlot::Many("children")]
+    }
+
+    fn allowed_parents(&self) -> &'static [&'static str] {
+        &["App"]
     }
 
     fn usage(&self) -> &'static str {

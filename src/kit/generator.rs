@@ -1,3 +1,5 @@
+//! Drafting a brand kit from brand inputs ([`KitGenerator`]).
+
 use std::collections::BTreeMap;
 
 use serde_json::{Value, json};
@@ -13,23 +15,30 @@ use super::spec::{
 /// adk-ui's catalogs alone, and the host, not the model, chooses the kit.
 #[derive(Debug, Clone)]
 pub struct KitArtifacts {
+    /// The draft manifest, for the host to review and approve.
     pub manifest: BrandKitManifest,
+    /// The manifest's semantic tokens, as JSON.
     pub tokens: Value,
+    /// The CSS rule [`ApprovedKit::surface_css`](super::ApprovedKit::surface_css) gives for the
+    /// kit, so a draft previews as it will look once approved.
     pub theme_css: String,
 }
 
 /// The components a kit's recipes style, by their `forms` names.
 const RECIPE_COMPONENTS: &[&str] = &["Button", "Card", "TextField"];
 
+/// Drafts brand kits from brand inputs.
 #[derive(Debug, Default)]
 pub struct KitGenerator;
 
 impl KitGenerator {
+    /// A generator.
     pub fn new() -> Self {
         Self
     }
 
-    /// Generate a draft kit. Approval remains an explicit host-side operation.
+    /// Drafts a kit from `spec`. Approving it is the host's step: set `status`, `reviewedBy`
+    /// and `approvedAt`, then [`ApprovedKit::try_from`](super::ApprovedKit) checks it.
     pub fn generate(&self, spec: &KitSpec) -> KitArtifacts {
         let kit_name = non_empty(&spec.name, "Untitled Kit");
         let kit_version = non_empty(&spec.version, "0.1.0");
@@ -58,7 +67,7 @@ impl KitGenerator {
         if provenance.generated_by.is_none()
             && matches!(provenance.source, KitSource::Generated | KitSource::Hybrid)
         {
-            provenance.generated_by = Some("adk-ui/render_kit".to_string());
+            provenance.generated_by = Some("adk-ui/KitGenerator".to_string());
         }
 
         let manifest = BrandKitManifest {
@@ -191,36 +200,11 @@ fn semantic_tokens(spec: &KitSpec) -> KitSemanticTokens {
     }
 }
 
+/// The CSS that applies `tokens` to a host's `DrawnView`s: the adk-surface tokens an approved
+/// kit sets ([`ApprovedKit::surface_css`](super::ApprovedKit::surface_css)), so a draft
+/// previews exactly as it will look once approved.
 fn theme_css(kit_id: &str, tokens: &KitSemanticTokens) -> String {
-    let colors = &tokens.colors;
-    let selector_id = css_string(kit_id);
-    let body_family = css_string(&tokens.typography.body_family);
-    let heading_family = css_string(&tokens.typography.heading_family);
-    let mono_family = css_string(&tokens.typography.mono_family);
-    format!(
-        "[data-adk-ui-kit=\"{selector_id}\"] {{\n  --adk-ui-primary: {};\n  --adk-ui-primary-foreground: {};\n  --adk-ui-secondary: {};\n  --adk-ui-secondary-foreground: {};\n  --adk-ui-background: {};\n  --adk-ui-foreground: {};\n  --adk-ui-surface: {};\n  --adk-ui-surface-foreground: {};\n  --adk-ui-muted: {};\n  --adk-ui-muted-foreground: {};\n  --adk-ui-border: {};\n  --adk-ui-input: {};\n  --adk-ui-ring: {};\n  --adk-ui-destructive: {};\n  --adk-ui-destructive-foreground: {};\n  --adk-ui-success: {};\n  --adk-ui-warning: {};\n  --adk-ui-info: {};\n  --adk-ui-font-body: \"{body_family}\";\n  --adk-ui-font-heading: \"{heading_family}\";\n  --adk-ui-font-mono: \"{mono_family}\";\n  --adk-ui-radius: {};\n  --adk-ui-space: {}px;\n  --adk-ui-motion-duration: {}ms;\n}}\n",
-        colors.primary,
-        colors.primary_foreground,
-        colors.secondary,
-        colors.secondary_foreground,
-        colors.background,
-        colors.foreground,
-        colors.surface,
-        colors.surface_foreground,
-        colors.muted,
-        colors.muted_foreground,
-        colors.border,
-        colors.input,
-        colors.ring,
-        colors.destructive,
-        colors.destructive_foreground,
-        colors.success,
-        colors.warning,
-        colors.info,
-        radius_value(&tokens.radius),
-        tokens.spacing,
-        tokens.motion_duration,
-    )
+    super::surface::surface_rule(kit_id, tokens)
 }
 
 fn density_spacing(density: &KitDensity) -> u8 {
@@ -350,7 +334,15 @@ mod tests {
             ["Button", "Card", "TextField"]
         );
         assert!(artifacts.tokens["colors"]["primary"].is_string());
-        assert!(artifacts.theme_css.contains("--adk-ui-primary"));
+        assert!(
+            artifacts.theme_css.contains("--accent: #2F6BFF;"),
+            "{}",
+            artifacts.theme_css
+        );
+        assert!(
+            !artifacts.theme_css.contains("--adk-ui-"),
+            "only the tokens a host reads"
+        );
     }
 
     #[test]
