@@ -20,6 +20,15 @@ drawn. The web home draws charts and 3D scenes natively, in its own palette (sce
 loaded only for a drawing that has one), and the rest as its own components; a host of your own
 draws them richly with `@zavora-ai/adk-ui-react`. The terminal shows each one in words.
 
+| | | |
+|---|---|---|
+| ![Revenue in 3D bars](docs/images/spatial-revenue-bars.png) | ![A fleet on a globe](docs/images/spatial-fleet-globe-dark.png) | ![A yard to pick a dock in](docs/images/spatial-warehouse-pick.png) |
+| `Bar3D` in a `Stage` | A `Globe`, dark | A `Scene`: picking a dock fills the form, and **Reserve** asks first |
+| ![This week in the store](docs/images/brand-commerce.png) | ![A release room](docs/images/release-room.png) | ![A service network](docs/images/spatial-service-graph.png) |
+| `Metric`s and a `Chart` | An `App` of pages | A `Graph3D` beside a `DepthCard` |
+
+All eleven sample drawings, light and dark, as the web home draws them: [docs/GALLERY.md](docs/GALLERY.md).
+
 > adk-ui 2.x, with its own render tools and protocol adapters, stays on crates.io and npm for
 > ADK-Rust 2. Moving over: [docs/MIGRATING_TO_3.md](docs/MIGRATING_TO_3.md).
 
@@ -189,6 +198,8 @@ Rust 1.95 or later. React 18.3 or 19.
 - [docs/MIGRATING_TO_3.md](docs/MIGRATING_TO_3.md): every 2.x tool, adapter and renderer, and
   what replaces it.
 - [docs/BRAND_KITS.md](docs/BRAND_KITS.md): approved design tokens a host applies to its pages.
+- [docs/GALLERY.md](docs/GALLERY.md): the eleven sample drawings as the web home draws them,
+  light and dark.
 - [CHANGELOG.md](CHANGELOG.md) and [RELEASING.md](RELEASING.md).
 - API: [docs.rs/adk-ui](https://docs.rs/adk-ui).
 
