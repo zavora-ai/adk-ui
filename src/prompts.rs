@@ -15,27 +15,42 @@ use adk_surface::genui::{Catalog, RESERVED_LABELS, RESERVED_PHRASES};
 /// ```
 pub fn instructions(catalog: &Catalog) -> String {
     let added: Vec<&str> = catalog.extensions().collect();
+    format!(
+        "You can show the person charts and figures in their thread with render_screen, in the \
+         {label} catalog: the forms components and {added}. These components only show; only a \
+         Button asks for an action, and pressing it never runs a tool: it asks the person first, \
+         on the home's own card. When numbers change, call patch_surface with the new data \
+         instead of drawing again.\n{rules}",
+        label = catalog.label(),
+        added = added.join(", "),
+        rules = catalog_rules(catalog),
+    )
+}
+
+/// The rules of drawing in `catalog`, whatever draws in it: how to bind data, the limits,
+/// and what a drawing never contains. They are the catalog's A2UI 1.0 `instructions`
+/// (`catalogs/a2ui-1.0/`).
+///
+/// ```rust
+/// let rules = adk_ui::prompts::catalog_rules(adk_ui::catalogs::insight());
+/// assert!(rules.contains("{\"@path\": \"/sales\"}"));
+/// assert!(!rules.contains("render_screen"));
+/// ```
+pub fn catalog_rules(catalog: &Catalog) -> String {
     let reserved: Vec<&str> = RESERVED_PHRASES
         .iter()
         .chain(RESERVED_LABELS.iter())
         .copied()
         .collect();
     format!(
-        "You can show the person charts and figures in their thread with render_screen, in the \
-         {label} catalog: the forms components and {added}. These components only show; only a \
-         Button asks for an action, and pressing it never runs a tool: it asks the person first, \
-         on the home's own card.\n\
-         - Put the numbers in dataModel and bind them, as {{\"path\": \"/sales\"}}; never paste \
+        "- Put the numbers in dataModel and bind them, as {{\"@path\": \"/sales\"}}; never paste \
          data into labels.\n\
          - A chart draws at most 500 rows and 8 series: aggregate or downsample first, and say \
          so in its title.\n\
-         - When numbers change, call patch_surface with the new data instead of drawing again.\n\
          - Label things with plain words. A drawing never shows a decision's words ({reserved}), \
          links, images or password fields, and is refused if it does: say it in your reply or \
          draw it another way.\n\
          - Every component needs a unique id, and one has the id root.{spatial}",
-        label = catalog.label(),
-        added = added.join(", "),
         reserved = reserved.join(", "),
         spatial = if catalog.has_component("Scene") {
             SPATIAL

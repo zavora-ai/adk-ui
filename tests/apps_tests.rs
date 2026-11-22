@@ -21,7 +21,7 @@ use adk_tool::mcp::rmcp::ServiceExt;
 use adk_tool::mcp::rmcp::model::CallToolRequestParams;
 use adk_tool::mcp::rmcp::transport::TokioChildProcess;
 use adk_tool::mcp::{AdkClientHandler, AutoDeclineElicitationHandler, McpAppResource, McpToolset};
-use adk_ui::apps::{CDN, RESOURCE_URI, THREE_VERSION, TOOL, ThreeApps};
+use adk_ui::apps::{CDN, DRAWING_TOOL, RESOURCE_URI, THREE_VERSION, TOOL, UiApps};
 use async_trait::async_trait;
 use axum::body::Body;
 use axum::http::{Request, StatusCode};
@@ -71,7 +71,7 @@ impl RequestContextExtractor for Owner {
 async fn sandbox() -> (Arc<dyn adk_core::Toolset>, Arc<dyn AppServers>) {
     let (server_io, client_io) = tokio::io::duplex(1 << 20);
     tokio::spawn(async move {
-        if let Ok(running) = ThreeApps::default().serve(server_io).await {
+        if let Ok(running) = UiApps::three_d().serve(server_io).await {
             let _ = running.waiting().await;
         }
     });
@@ -280,13 +280,17 @@ async fn a_3d_app_is_framed_sandboxed_on_the_apps_origin_and_never_on_the_phone(
     else {
         panic!("not shown: {opened:?}");
     };
-    assert_eq!(frame_origin, APPS_ORIGIN);
+    // Each MCP server's apps get an origin of their own under the apps origin.
+    assert!(
+        frame_origin.starts_with("http://") && frame_origin.ends_with(".localhost:41234"),
+        "{frame_origin}"
+    );
     assert_eq!(
         tool_input["code"], ORBITS,
         "the code reaches the frame as the call's input"
     );
 
-    let path = frame_url.strip_prefix(APPS_ORIGIN).unwrap();
+    let path = frame_url.strip_prefix(frame_origin.as_str()).unwrap();
     let page = home
         .host
         .sandbox_router()
@@ -357,8 +361,20 @@ async fn the_binary_serves_the_tool_over_stdio() {
             .iter()
             .map(|tool| tool.name.as_ref())
             .collect::<Vec<_>>(),
-        vec![TOOL]
+        vec![TOOL, DRAWING_TOOL]
     );
+    let drawing = json!({ "title": "Today", "catalog": "insight", "components": [
+        { "id": "root", "component": "Metric", "label": "Open incidents", "value": 3 }
+    ] });
+    let shown = client
+        .call_tool(
+            CallToolRequestParams::new(DRAWING_TOOL)
+                .with_arguments(serde_json::from_value(drawing).unwrap()),
+        )
+        .await
+        .unwrap();
+    assert_ne!(shown.is_error, Some(true), "{:?}", shown.content);
+    assert_eq!(shown.structured_content.unwrap()["title"], "Today");
     let arguments = json!({ "title": "Field", "code": "new WebSocket(u)" });
     let refused = client
         .call_tool(

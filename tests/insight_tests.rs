@@ -12,7 +12,7 @@ use adk_surface::genui::{
 use adk_ui::catalogs::{self, INSIGHT_ID};
 use adk_ui::draft::{Screen, column};
 use adk_ui::insight::{
-    Badge, Chart, ChartKind, KeyValue, Metric, Progress, Sparkline, Tone, XAxis, bind,
+    Badge, Chart, ChartKind, KeyValue, Metric, Progress, Sparkline, Tone, VegaLite, XAxis, bind,
 };
 use serde_json::{Value, json};
 
@@ -90,6 +90,19 @@ fn baselines() -> Vec<(&'static str, Value, Value)> {
             json!({ "component": "Badge", "text": "Shipped", "tone": "success" }),
             json!({}),
         ),
+        (
+            "VegaLite",
+            json!({
+                "component": "VegaLite", "title": "Latency",
+                "spec": {
+                    "mark": "line",
+                    "encoding": { "x": { "field": "day", "type": "ordinal" },
+                                  "y": { "field": "ms", "type": "quantitative" } }
+                },
+                "data": { "path": "/rows" }
+            }),
+            json!({ "rows": [{ "day": "Mon", "ms": 120 }, { "day": "Tue", "ms": 98 }] }),
+        ),
     ]
 }
 
@@ -124,7 +137,7 @@ fn own_properties(schema: &Value) -> &Value {
 }
 
 #[test]
-fn the_insight_catalog_is_forms_and_its_six_components() {
+fn the_insight_catalog_is_forms_and_its_seven_components() {
     assert_eq!(insight().id(), INSIGHT_ID);
     assert_eq!(insight().label(), "insight 1.0");
     assert!(
@@ -142,7 +155,8 @@ fn the_insight_catalog_is_forms_and_its_six_components() {
             "KeyValue",
             "Metric",
             "Progress",
-            "Sparkline"
+            "Sparkline",
+            "VegaLite"
         ]
     );
     assert_eq!(catalogs::all().len(), 3, "insight, studio and spatial");
@@ -508,4 +522,96 @@ fn a_projection_says_what_is_wrong_with_its_data() {
         "{}",
         refused.technical()
     );
+}
+
+/// A Vega-Lite spec is drawn as the home's own chart; what the subset does not read is refused
+/// by name, and every string in the spec is checked as shown text.
+#[test]
+fn a_vega_lite_spec_is_drawn_as_the_homes_chart() {
+    let spec = json!({
+        "mark": "bar",
+        "encoding": {
+            "x": { "field": "quarter", "type": "nominal", "title": "Quarter" },
+            "y": { "field": "revenue", "type": "quantitative", "title": "Revenue" },
+            "color": { "field": "region", "type": "nominal" }
+        }
+    });
+    let rows = json!([
+        { "quarter": "Q1", "region": "East", "revenue": 4 },
+        { "quarter": "Q1", "region": "West", "revenue": 3 },
+        { "quarter": "Q2", "region": "East", "revenue": 6 }
+    ]);
+    let built = Screen::new("sales")
+        .data(json!({ "rows": rows }))
+        .with(column("root", ["chart"]))
+        .with(
+            VegaLite::new("chart", spec.clone())
+                .title("Revenue by region")
+                .data(bind("/rows")),
+        );
+    built
+        .validate(&validator())
+        .expect("a VegaLite chart is accepted");
+
+    let drawn = home(
+        "VegaLite",
+        json!({ "title": "Revenue by region", "spec": spec.clone(), "data": rows }),
+    );
+    let chart = chart_of(&drawn);
+    assert_eq!(chart.kind, HomeChartKind::Bar);
+    assert_eq!(
+        chart.x,
+        ChartAxis::Category {
+            labels: vec!["Q1".into(), "Q2".into()]
+        }
+    );
+    let names: Vec<&str> = chart.series.iter().map(|s| s.name.as_str()).collect();
+    assert_eq!(names, ["East", "West"], "a series per color value");
+
+    for (bad, says) in [
+        (json!({ "transform": [{ "filter": "true" }] }), "transforms"),
+        (json!({ "layer": [] }), "layers"),
+        (json!({ "params": [] }), "params"),
+        (json!({ "mark": "rect" }), "not drawn here"),
+    ] {
+        let mut wrong = spec.clone();
+        for (key, value) in bad.as_object().unwrap() {
+            wrong[key] = value.clone();
+        }
+        let refused = refusal(&screen(
+            json!({ "component": "VegaLite", "spec": wrong, "data": { "path": "/rows" } }),
+            json!({ "rows": [] }),
+        ));
+        assert!(
+            refused.detail.contains(says),
+            "{says}: {}",
+            refused.technical()
+        );
+    }
+
+    for (pointer, value, kind) in [
+        (
+            "/encoding/y/title",
+            json!("Allow once"),
+            RefusalKind::LooksLikeDecision,
+        ),
+        ("/title", json!("Approve"), RefusalKind::LooksLikeDecision),
+        (
+            "/data",
+            json!({ "url": "https://example.com/rows.csv" }),
+            RefusalKind::CannotShow,
+        ),
+    ] {
+        let mut wrong = spec.clone();
+        if pointer == "/data" || pointer == "/title" {
+            wrong[&pointer[1..]] = value.clone();
+        } else {
+            *wrong.pointer_mut(pointer).unwrap() = value.clone();
+        }
+        let refused = refusal(&screen(
+            json!({ "component": "VegaLite", "spec": wrong, "data": { "path": "/rows" } }),
+            json!({ "rows": [{ "quarter": "Q1", "region": "East", "revenue": 4 }] }),
+        ));
+        assert_eq!(refused.kind, kind, "{pointer}: {}", refused.technical());
+    }
 }

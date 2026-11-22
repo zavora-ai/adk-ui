@@ -38,11 +38,15 @@ describe('brand kits', () => {
         assert.equal(variables['--chart-2'], undefined, 'a value that is not a colour is left out');
         assert.equal(variables['--radius'], '12px');
         assert.match(variables['--font'], /^"Source Sans 3"/);
+        const listed = kitStyleVariables(kit({ tokens: { ...kit().tokens, typography: { ...kit().tokens.typography, bodyFamily: 'Avenir Next, sans-serif' } } }));
+        assert.match(listed['--font'], /^"Avenir Next", sans-serif, ui-sans-serif/);
+        const aliased = kitStyleVariables(kit({ tokens: { ...kit().tokens, colors: { ...kit().tokens.colors, primary: 'var(--decision)' } } }));
+        assert.equal(aliased['--accent'], undefined, 'never a colour borrowed from another token');
         assert.ok(Object.keys(variables).every((name) => !/decision|pill|waiting/.test(name)));
         assert.deepEqual(kitA2uiTheme(kit()), { primaryColor: '#2F6BFF' });
     });
 
-    it('apply only when approved and signed', () => {
+    it('apply only when approved, reviewed and dated', () => {
         assert.equal(isApprovedKit(kit()), true);
         assert.equal(isApprovedKit(kit({ status: 'draft' })), false);
         assert.equal(isApprovedKit(kit({ provenance: { reviewedBy: 'brand-team' } })), false);

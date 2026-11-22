@@ -1,6 +1,7 @@
 .DS_Store
 .env
 .playwright-cli/
+.playwright-mcp/
 .vscode/
 *.log
 
@@ -13,3 +14,6 @@ coverage/
 
 # Local adk-rust patch (see .cargo/config.toml.example)
 .cargo/config.toml
+
+# Copied in by `npm pack` (prepack)
+packages/adk-ui-react/LICENSE

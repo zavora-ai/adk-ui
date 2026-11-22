@@ -41,7 +41,8 @@ Approval is a human step:
 4. Set `status` to `approved` and fill `reviewedBy` and `approvedAt`.
 5. Run `BrandKitManifest::validate()`.
 
-Only an approved, signed, valid kit applies: `ApprovedKit::try_from` refuses anything else, and
+Only an approved, valid kit applies (status `approved`, with `reviewedBy` and `approvedAt`):
+`ApprovedKit::try_from` refuses anything else, and
 the React `KitProvider` throws for a draft unless `allowDraft` is set for an isolated preview.
 
 ## Apply it in a host

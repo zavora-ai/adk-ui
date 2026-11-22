@@ -25,7 +25,7 @@ let agent = HarnessAgent::builder("operations")
     // ...
     .build()?;
 // ...and the home shows what it draws.
-let engine = adk_ui::catalogs::register(SurfaceEngine::builder(source)).build();
+let engine = adk_ui::catalogs::register(SurfaceEngine::builder(Arc::new(source))).build();
 let app = ServerBuilder::new(config).with_ag_ui_extension(Arc::new(adk_ui::catalogs::ag_ui()));
 ```
 
@@ -33,7 +33,7 @@ let app = ServerBuilder::new(config).with_ag_ui_extension(Arc::new(adk_ui::catal
 |---|---|
 | `UiToolset`, `UiToolset::all_tools()` | `adk_ui::toolset()` / `toolset_for(catalog)`: `genui`'s `DrawToolset` in an adk-ui catalog |
 | `render_form`, `render_card`, `render_table` | `genui`'s tools of the same names |
-| `render_chart` | `render_screen` with a `Chart` or `Sparkline` (insight catalog) |
+| `render_chart` | `render_screen` with a `Chart`, `VegaLite` (a Vega-Lite spec) or `Sparkline` (insight catalog) |
 | `render_layout` (KPIs, dashboards) | `render_screen` with `Metric`, `KeyValue`, `Chart`, `Badge` |
 | `render_progress` | `Progress`, then `patch_surface` as the work moves |
 | `render_page`, `render_app` | `render_screen` with `App`, `Page`, `Region` (studio catalog) |
@@ -44,8 +44,8 @@ let app = ServerBuilder::new(config).with_ag_ui_extension(Arc::new(adk_ui::catal
 | `render_kit`, `kit_id` | None in a drawing: the host applies an approved kit (`kit::ApprovedKit`, React `KitProvider`); see [BRAND_KITS.md](BRAND_KITS.md) |
 | `patch_surface` | `genui`'s `patch_surface` |
 | `save_surface`, `load_surface`, `list_surfaces`, `SurfaceStore` | None needed: every drawing is an event of the session, versioned by its surface id |
-| Data sources (`binding_path`, `refresh`) | Bind with `{"path": "/rows"}` in `dataModel`; push new data with `patch_surface`. Interval and TTL refresh are gone: a timer must not drive the agent. Live feeds a host owns render adk-ui-react's components directly |
-| `interop::ag_ui`, `interop::mcp_apps`, `awp` feature | `genui`'s `GenuiAgUi` (`adk_ui::catalogs::ag_ui()`), `genui-apps`' MCP Apps host; AWP is gone |
+| Data sources (`binding_path`, `refresh`) | Bind with `{"@path": "/rows"}` (A2UI 1.0; v0.9.1's `{"path": …}` is read too) in `dataModel`; push new data with `patch_surface`. Interval and TTL refresh are gone: a timer must not drive the agent. Live feeds a host owns render adk-ui-react's components directly |
+| `interop::ag_ui`, `interop::mcp_apps`, `awp` feature | `genui`'s `GenuiAgUi` (`adk_ui::catalogs::ag_ui()`), `genui-apps`' MCP Apps host, and adk-ui's own MCP Apps server (`apps` feature: `show_3d_app`, `show_drawing`); AWP is gone |
 | `html` (server-side HTML) | Gone |
 | The `adk_ui` protocol profile | Gone from adk-ui; deprecated in `adk-server` until 2026-12-31 |
 | Templates | Gone (some asked for passwords, which rule 5 refuses) |
@@ -83,7 +83,7 @@ one; without WebGL, and in the terminal, a scene is its words.
 ## React
 
 ```bash
-npm install @zavora-ai/adk-ui-react@3 @zavora-ai/adk-surface-react
+npm install @zavora-ai/adk-ui-react@3 @zavora-ai/adk-surface-react@3
 ```
 
 ```tsx
@@ -101,7 +101,8 @@ import { adkUiRenderers } from "@zavora-ai/adk-ui-react";
 | `ApplicationRenderer` | `AppShell` (in a drawing, the `App` renderer) |
 | `AdkUiKitProvider`, `resolveApprovedUiKit`, slots | `KitProvider` (approved kits only), `kitStyleVariables` |
 | `ReasoningPanel` | Gone |
-| `react-markdown`, `lucide-react`, `clsx` | No runtime dependencies; `recharts` stays an optional peer. `DrawnView` draws 3D itself, and `three` is a peer only of the deprecated standalone `Scene3D` |
+| `react-markdown`, `lucide-react`, `clsx` | No runtime dependencies; `recharts` stays an optional peer |
+| `Scene3D` and the `three` peer | Gone: `DrawnView` draws every scene natively, from `genui`'s checked scene |
 
 Charts, metrics and the rest are also exported as components (`Chart`, `Metric`,
 `KeyValueList`, …) for data a host owns.
@@ -116,4 +117,12 @@ Charts, metrics and the rest are also exported as components (`Chart`, `Metric`,
 | adk-ui spatial 1.0 | `https://zavora.ai/a2ui/catalogs/adk-ui-spatial/1.0/catalog.json` |
 
 They replace `zavora.ai:adk-ui/extended@0.2.0` and the per-kit catalog ids. The documents are in
-`catalogs/`.
+`catalogs/`: A2UI 1.0 catalog documents in `catalogs/a2ui-1.0/`, and the v0.9.1 documents
+beside them.
+
+## New in 3
+
+- **Scoring drawings.** `adk_ui::eval` and `examples/drawing_eval.rs` check drawings the way
+  `genui` will, so a prompt or model change can be measured.
+- **Drawings outside the home.** The `apps` feature's `show_drawing` shows a checked drawing
+  read-only in any MCP Apps host.

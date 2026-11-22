@@ -125,30 +125,3 @@ export interface RegionProps {
     variant?: 'plain' | 'hero';
     children: string[];
 }
-
-/** A primitive shape of a scene. */
-export type Shape = 'box' | 'sphere' | 'cylinder' | 'cone' | 'plane' | 'torus';
-
-/** One object of a scene: a primitive with a checked label. No model, texture or action. */
-export interface SceneObject {
-    id: string;
-    shape: Shape;
-    position?: [number, number, number];
-    /** Degrees about each axis. */
-    rotation?: [number, number, number];
-    scale?: [number, number, number];
-    color?: string;
-    label?: string;
-}
-
-/** The studio catalog's `Scene3D`. */
-export interface Scene3DProps {
-    title?: string;
-    description?: string;
-    height?: number;
-    background?: string;
-    camera?: { position?: [number, number, number]; target?: [number, number, number]; fov?: number };
-    objects: SceneObject[];
-    autoRotate?: boolean;
-    controls?: 'none' | 'orbit';
-}

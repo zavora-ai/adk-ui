@@ -16,11 +16,16 @@ a call the person decides. adk-ui 3 adds extension catalogs `genui` checks and d
 
 - **The insight catalog** (`catalogs::insight`, id
   `https://zavora.ai/a2ui/catalogs/adk-ui-insight/1.0/catalog.json`): `forms` 1.0 plus
-  `Chart` (bar, line, area, pie, scatter over category, number or time axes), `Sparkline`,
-  `Metric` (value, unit, currency or percent, change, status, trend), `KeyValue`, `Progress`
-  and `Badge`. Every one only shows, binds its data with `{"path"}`, and says what the
-  ADK-Rust web home and terminal show for it: charts as the home's native chart, the rest as
-  `forms` components. `genui` checks every string in them and in the data they bind.
+  `Chart` (bar, line, area, pie, scatter over category, number or time axes), `VegaLite`,
+  `Sparkline`, `Metric` (value, unit, currency or percent, change, status, trend),
+  `KeyValue`, `Progress` and `Badge`. Every one only shows, binds its data with
+  `{"@path": …}`, and says what the ADK-Rust web home and terminal show for it: charts as the
+  home's native chart, the rest as `forms` components. `genui` checks every string in them and
+  in the data they bind.
+- `VegaLite`: a Vega-Lite subset drawn as the home's chart (one mark: bar, line, area, point
+  or arc; encodings `x`, `y`, `color` as a series per value, and `theta`). Transforms, layers,
+  facets, concatenation, params, selections, URL data, `aggregate`, `bin` and `timeUnit` are
+  refused by name, and every string in the spec is checked as shown text.
 - `toolset()` and `toolset_for()`: `genui`'s render tools drawing in an adk-ui catalog, under
   their usual names; `catalogs::register` and `catalogs::ag_ui` register the catalogs with a
   home and with AG-UI.
@@ -58,14 +63,26 @@ a call the person decides. adk-ui 3 adds extension catalogs `genui` checks and d
   - A renderer draws from the server's resolved, checked properties and never gets a way to
     send; forms inside an app's pages stay `DrawnView`'s own.
   - `Chart` (recharts) loads lazily as an optional peer and falls back to the home's own view.
-  - 3D scenes, cards with depth and 3D layouts have no renderer: `DrawnView` draws them.
+  - Vega-Lite charts, 3D scenes, cards with depth and 3D layouts have no renderer:
+    `DrawnView` draws them.
   - `Sparkline`, `Metric`, `KeyValueList`, `ProgressBar`, `Badge`, `AppShell`, `PageView` and
-    `RegionView` need no peer and also draw a host's own data. The standalone `Scene3D` is
-    deprecated.
+    `RegionView` need no peer and also draw a host's own data.
   - `KitProvider` applies approved kits only.
-- **3D apps** (feature `apps`): `apps::ThreeApps`, an MCP server whose one tool,
-  `show_3d_app`, shows three.js the model writes in genui-apps' sandbox, on its own origin
-  (`adk-ui-apps` serves it over stdio).
+  - The package ships its LICENSE, and names its repository directory, issues page and
+    Node 20 floor.
+- **Drawing evaluation**: `eval::score` checks a drawing as genui will and reports whether it
+  is shown (with the refusal the model is told), its dark-pattern warnings, the expected
+  components it lacks, unlabelled fields, size and depth, folded into 0 to 100 points;
+  `eval::scenarios` are prompts across the three catalogs, and `examples/drawing_eval.rs`
+  scores the sample drawings or a JSONL file of a model's drawings, exiting non-zero on a
+  refusal.
+- **MCP Apps** (feature `apps`): `apps::UiApps`, an MCP server with two tools
+  (`adk-ui-apps` serves both over stdio; `UiApps::three_d()` serves the first alone).
+  - `show_drawing` shows a drawing in adk-ui's catalogs read-only in any MCP Apps host:
+    checked by rule 5 and resolved on the server (`genui::drawn_tree`), drawn by a page that
+    sets text only and reaches no site. It declares no actions, so a button is refused.
+- **3D apps**: `show_3d_app` shows three.js the model writes in genui-apps' sandbox, on its
+  own origin.
   - The page loads three.js 0.185.1 from its one declared site. It runs the code in a block
     of its own, given `THREE`, `scene`, `camera`, `onFrame`, `label`, `theme` and more, so
     code that declares a given name again still runs.
@@ -75,11 +92,20 @@ a call the person decides. adk-ui 3 adds extension catalogs `genui` checks and d
     limit, a motion's 0.2 to 120 seconds included, so a model knows when to use an app
     instead.
 - `catalogs/`: the catalog documents and an index, written from the Rust catalogs and
-  drift-checked by `cargo test`; the React registry is checked against them.
+  drift-checked by `cargo test`; the React registry is checked against them. A2UI 1.0
+  documents are in `catalogs/a2ui-1.0/`: only the components each catalog adds, which a 1.0
+  surface mixes with `forms`, its rules as `instructions` (`prompts::catalog_rules`) and
+  `App`/`Page` composition rules, checked against the pinned A2UI 1.0 meta-schema.
+- Agents are told to bind data in A2UI 1.0's syntax (`{"@path": "/sales"}`); the render
+  tools read v0.9.1's too.
 - Eleven sample drawings (`fixtures/drawings/`, six in studio and five in spatial), the
   `insight_home` example (the ADK-Rust web home over a scripted agent that draws them), and
   `examples/custom_host` (a Vite app drawing them with `DrawnView`, adk-ui's renderers and two
   approved kits).
+- The `capabilities_tour` example (feature `apps`): the web home over a scripted agent that
+  walks through Vega-Lite charts, a live update, a held and sealed send, dark-pattern warnings
+  and a refusal, both MCP Apps tools and two MCP elicitations, one stop a message; `--wire`
+  prints what has no screen.
 - The `insight_agent` example: a harness agent on an Anthropic model (adaptive thinking, prompt
   caching) that studies a directory with its own workspace tools and answers with adk-ui's
   catalogs (spatial by default), everything configured from the environment and nothing
@@ -90,7 +116,10 @@ a call the person decides. adk-ui 3 adds extension catalogs `genui` checks and d
     summaries;
   - a form inside a drawing is held for the person with only its fields;
   - a dock picked in a 3D scene is sent as a field and asks first.
-- `docs/MIGRATING_TO_3.md` maps every 2.x tool, module and React export to its replacement.
+- `docs/MIGRATING_TO_3.md` maps every 2.x tool, module and React export to its replacement,
+  and `docs/ARCHITECTURE.md` says how adk-ui fits on genui and how to add a component.
+- docs.rs builds every feature and marks `apps` as feature-gated; public items are documented
+  (`#![warn(missing_docs)]`).
 
 ### Removed
 
@@ -105,9 +134,12 @@ a call the person decides. adk-ui 3 adds extension catalogs `genui` checks and d
   validation, the catalog registry and the 2.x catalogs: `genui` owns A2UI v0.9.1, AG-UI and
   MCP Apps.
 - The `adk-core`, `awp` and `remote-catalogs` features, and the 2.x examples (`ui_server`,
-  `agentic_ui`, the Agent UI Studio client). The protocol migration notes move to
-  `docs/archive/2.x/`.
-- From `@zavora-ai/adk-ui-react`: `Renderer`, `StreamingRenderer`, the A2UI renderer, parser
+  `agentic_ui`, the Agent UI Studio client). The 2.x protocol migration notes, roadmaps and
+  release notes stay on the `release/2.x` branch.
+- The crate-root re-exports of the kit types (`adk_ui::KitGenerator` and the rest) and the
+  public `kit::spec` and `kit::generator` modules: every kit type is at `adk_ui::kit`.
+- From `@zavora-ai/adk-ui-react`: the standalone `Scene3D` and its `three` peer (`DrawnView`
+  draws every scene natively), `Renderer`, `StreamingRenderer`, the A2UI renderer, parser
   and store, the protocol client, `uiEventToMessage` (UI events no longer reach the model as the
   person's words), `ApplicationRenderer`, `ReasoningPanel`, kit slots and `kit://` assets, and
   the `react-markdown`, `lucide-react` and `clsx` dependencies.
@@ -119,9 +151,14 @@ a call the person decides. adk-ui 3 adds extension catalogs `genui` checks and d
 - A brand kit generates its manifest, tokens and CSS only, never a catalog or instructions for
   the model; its recipes use the `forms` names (`TextField` for 2.x's `TextInput`). A kit is the
   host's: the agent never picks one and a drawing never carries one (`docs/BRAND_KITS.md`).
+  `KitArtifacts::theme_css` sets the adk-surface tokens an approved kit sets (`--card`,
+  `--accent`, `--chart-1` …), so a draft previews as it will look once approved; 2.x's
+  `--adk-ui-*` variables, which nothing reads any more, are gone. A generated kit says
+  `generatedBy: "adk-ui/KitGenerator"`.
+- The crate ships only its library, catalog documents, docs and LICENSE (`include`).
 - The crate and `@zavora-ai/adk-ui-react` are both 3.0.0, released after ADK-Rust 3.0
   (`adk-surface`, `@zavora-ai/adk-surface-react`) is published ([RELEASING.md](RELEASING.md)).
-- The 2026 generative UI market brief, written for 2.x, moves to `docs/archive/2.x/`.
+- The 2026 generative UI market brief, written for 2.x, stays on the `release/2.x` branch.
 
 ## [2.2.1] - Unreleased (`release/2.x`)
 

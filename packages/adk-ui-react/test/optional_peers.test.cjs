@@ -1,5 +1,5 @@
-// `recharts` and `three` are optional peers: the entry point never reaches for them, and a
-// chart or scene draws the home's view without them.
+// `recharts` is an optional peer: the entry point never reaches for it, a chart draws the
+// home's view without it, and nothing in the package imports `three` (DrawnView draws scenes).
 const { describe, it, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const Module = require('node:module');
@@ -38,7 +38,7 @@ describe('optional peer dependencies', () => {
         assert.deepEqual(requested, []);
     });
 
-    it('draws a chart and a scene as their fallbacks', () => {
+    it('draws a chart as its fallback', () => {
         const chart = renderToStaticMarkup(
             React.createElement(pkg.Chart, {
                 kind: 'line',
@@ -49,14 +49,10 @@ describe('optional peer dependencies', () => {
         );
         assert.match(chart, /<table class="adk-ui-table">/);
         assert.match(chart, /<th scope="col">Visits<\/th>/);
-        const scene = renderToStaticMarkup(
-            React.createElement(pkg.Scene3D, { objects: [{ id: 'a', shape: 'box', label: 'Dock' }], fallback: 'plain' }),
-        );
-        assert.match(scene, /plain/);
-        assert.match(scene, /<li>Dock<\/li>/);
+        assert.equal(pkg.Scene3D, undefined, 'no standalone scene: DrawnView draws every scene');
     });
 
-    it("draws the home's own view of a chart or scene in a DrawnView without them", () => {
+    it("draws the home's own view of a chart in a DrawnView without them", () => {
         const renderChild = (node) => React.createElement('span', { 'data-node': node.key }, node.text);
         const home = { key: 'c#1', component: 'Text', text: 'home view' };
         const draw = (catalog, component, props) =>

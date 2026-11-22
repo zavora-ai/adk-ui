@@ -9,6 +9,18 @@ use std::sync::LazyLock;
 use adk_surface::SurfaceEngineBuilder;
 use adk_surface::genui::{Catalog, ExtensionSpec, GenuiAgUi};
 
+/// A catalog with its rules (`prompts::catalog_rules`) as its A2UI 1.0 `instructions`.
+trait WithRules {
+    fn with_rules(self) -> Catalog;
+}
+
+impl WithRules for Catalog {
+    fn with_rules(self) -> Catalog {
+        let rules = crate::prompts::catalog_rules(&self);
+        self.with_instructions(rules)
+    }
+}
+
 /// The insight catalog's id.
 pub const INSIGHT_ID: &str = "https://zavora.ai/a2ui/catalogs/adk-ui-insight/1.0/catalog.json";
 
@@ -20,10 +32,11 @@ static INSIGHT: LazyLock<Catalog> = LazyLock::new(|| {
         components: crate::insight::components(),
     })
     .unwrap_or_else(|error| panic!("adk-ui's insight catalog does not compile: {error}"))
+    .with_rules()
 });
 
-/// The insight catalog: `forms` 1.0 plus charts, sparklines, metrics, key-value lists,
-/// progress and badges.
+/// The insight catalog: `forms` 1.0 plus charts, Vega-Lite charts, sparklines, metrics,
+/// key-value lists, progress and badges.
 ///
 /// ```rust
 /// let insight = adk_ui::catalogs::insight();
@@ -47,6 +60,7 @@ static STUDIO: LazyLock<Catalog> = LazyLock::new(|| {
         components,
     })
     .unwrap_or_else(|error| panic!("adk-ui's studio catalog does not compile: {error}"))
+    .with_rules()
 });
 
 /// The studio catalog: the insight catalog plus apps of pages, regions and primitive 3D
@@ -75,6 +89,7 @@ static SPATIAL: LazyLock<Catalog> = LazyLock::new(|| {
         components,
     })
     .unwrap_or_else(|error| panic!("adk-ui's spatial catalog does not compile: {error}"))
+    .with_rules()
 });
 
 /// The spatial catalog: the studio catalog plus 3D charts, laid-out scenes with motion, panels
@@ -90,9 +105,10 @@ pub fn spatial() -> &'static Catalog {
     &SPATIAL
 }
 
-/// The components whose home view the home draws natively as a 3D scene or with depth, so a
-/// host needs no renderer of its own for them.
+/// The components whose home view the home draws natively, as its own chart (a Vega-Lite
+/// spec), a 3D scene or with depth, so a host needs no renderer of its own for them.
 pub const HOME_DRAWN: &[&str] = &[
+    "VegaLite",
     "Scene3D",
     "Bar3D",
     "Scatter3D",

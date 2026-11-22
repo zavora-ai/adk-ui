@@ -13,7 +13,6 @@ export {
     PageView,
     ProgressBar,
     RegionView,
-    Scene3D,
     Sparkline,
 } from './components';
 export type { ShellPage } from './components';

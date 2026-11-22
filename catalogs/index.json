@@ -1,20 +1,25 @@
 {
   "catalogs": [
     {
+      "a2ui1_0File": "a2ui-1.0/adk-ui-insight-1.0.json",
       "extensions": [
         "Badge",
         "Chart",
         "KeyValue",
         "Metric",
         "Progress",
-        "Sparkline"
+        "Sparkline",
+        "VegaLite"
       ],
       "file": "adk-ui-insight-1.0.json",
-      "homeDrawn": [],
+      "homeDrawn": [
+        "VegaLite"
+      ],
       "id": "https://zavora.ai/a2ui/catalogs/adk-ui-insight/1.0/catalog.json",
       "label": "insight 1.0"
     },
     {
+      "a2ui1_0File": "a2ui-1.0/adk-ui-studio-1.0.json",
       "extensions": [
         "App",
         "Badge",
@@ -25,16 +30,19 @@
         "Progress",
         "Region",
         "Scene3D",
-        "Sparkline"
+        "Sparkline",
+        "VegaLite"
       ],
       "file": "adk-ui-studio-1.0.json",
       "homeDrawn": [
-        "Scene3D"
+        "Scene3D",
+        "VegaLite"
       ],
       "id": "https://zavora.ai/a2ui/catalogs/adk-ui-studio/1.0/catalog.json",
       "label": "studio 1.0"
     },
     {
+      "a2ui1_0File": "a2ui-1.0/adk-ui-spatial-1.0.json",
       "extensions": [
         "App",
         "Badge",
@@ -53,7 +61,8 @@
         "Scene3D",
         "Sparkline",
         "Stage",
-        "SurfacePlot"
+        "SurfacePlot",
+        "VegaLite"
       ],
       "file": "adk-ui-spatial-1.0.json",
       "homeDrawn": [
@@ -65,7 +74,8 @@
         "Scene",
         "Scene3D",
         "Stage",
-        "SurfacePlot"
+        "SurfacePlot",
+        "VegaLite"
       ],
       "id": "https://zavora.ai/a2ui/catalogs/adk-ui-spatial/1.0/catalog.json",
       "label": "spatial 1.0"

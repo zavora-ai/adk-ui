@@ -37,7 +37,25 @@ export function isApprovedKit(kit: KitManifest): boolean {
     return kit.status === 'approved' && !!kit.provenance?.reviewedBy && !!kit.provenance?.approvedAt;
 }
 
-const quote = (family: string) => `"${family.replace(/["\\\n\r]/g, ' ')}"`;
+const GENERIC_FAMILIES = new Set([
+    'serif', 'sans-serif', 'monospace', 'cursive', 'fantasy', 'system-ui',
+    'ui-serif', 'ui-sans-serif', 'ui-monospace', 'ui-rounded', 'math', 'emoji',
+]);
+
+/** `families` (one name, or a comma-separated list) as a font stack ending in `fallbacks`. */
+const fontStack = (families: string, fallbacks: string) =>
+    [
+        ...families
+            .split(',')
+            .map((family) => family.trim())
+            .filter(Boolean)
+            .map((family) =>
+                GENERIC_FAMILIES.has(family.toLowerCase())
+                    ? family.toLowerCase()
+                    : `"${family.replace(/["\\\n\r]/g, ' ')}"`,
+            ),
+        fallbacks,
+    ].join(', ');
 
 /**
  * The adk-surface tokens `kit` sets, as CSS custom properties: card, border, text, accent,
@@ -62,8 +80,8 @@ export function kitStyleVariables(kit: KitManifest): Record<string, string> {
     colour('--chart-grid', colors.muted);
     colour('--chart-axis', colors.mutedForeground);
     (colors.chart ?? []).slice(0, 8).forEach((value, index) => colour(`--chart-${index + 1}`, value));
-    out['--font'] = `${quote(kit.tokens.typography.bodyFamily)}, ui-sans-serif, system-ui, sans-serif`;
-    out['--mono'] = `${quote(kit.tokens.typography.monoFamily)}, ui-monospace, monospace`;
+    out['--font'] = fontStack(kit.tokens.typography.bodyFamily, 'ui-sans-serif, system-ui, sans-serif');
+    out['--mono'] = fontStack(kit.tokens.typography.monoFamily, 'ui-monospace, monospace');
     out['--radius'] = RADIUS[kit.tokens.radius ?? 'md'];
     return out;
 }
@@ -90,7 +108,9 @@ export function useKit(): KitManifest | null {
  */
 export function KitProvider({ kit, allowDraft = false, children }: { kit: KitManifest; allowDraft?: boolean; children: ReactNode }) {
     if (!isApprovedKit(kit) && !allowDraft) {
-        throw new Error(`adk-ui kit "${kit.id}" is ${kit.status} or unsigned; a host applies approved kits only.`);
+        throw new Error(
+            `adk-ui kit "${kit.id}" is not approved (status ${kit.status}; an approved kit names reviewedBy and approvedAt); a host applies approved kits only.`,
+        );
     }
     return (
         <KitContext.Provider value={kit}>
