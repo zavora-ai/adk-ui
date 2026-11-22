@@ -7,13 +7,12 @@ commit `vX.Y.Z`. The 2.x line is published from `release/2.x`.
 
 adk-ui 3.0.0 builds on crates that aren't published yet, so the order matters.
 
-1. **adk-rust.** genui's scenes and depth (zavora-ai/adk-rust#1449), the axis-label fix
-   (#1447) and the extension-catalog docs (#1448) are merged. adk-ui 3 also needs genui's
-   2026-11 work on branch `feat/genui-sota`, not yet opened as a pull request: A2UI 1.0 on
+1. **adk-rust.** Everything adk-ui 3 needs is merged into adk-rust `main`: genui's scenes
+   and depth (zavora-ai/adk-rust#1449), the axis-label fix (#1447), the extension-catalog
+   docs (#1448), and genui's A2UI 1.0 work with the web home's redesign (#1499): A2UI 1.0 on
    the wire and catalogs as A2UI 1.0 documents (`Catalog::with_instructions`,
    `document_for`, `components_in`), `drawn_tree` (`show_drawing`, `eval`), dark-pattern
-   warnings (the fixtures test), and an origin per MCP server (`apps_tests`). It is rebased
-   onto `main`; open its pull request and merge it first (rebase again if `main` moved).
+   warnings (the fixtures test), and an origin per MCP server (`apps_tests`).
 2. **ADK-Rust 3.0.0.** Wait until it's on crates.io (every `adk-*` crate in `Cargo.toml`) and
    `@zavora-ai/adk-surface-react` 3.0.0 is on npm. If that work ships after 3.0.0, raise
    `adk-surface` in `Cargo.toml` to the first release that has it.
